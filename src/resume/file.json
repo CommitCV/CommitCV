@@ -1,0 +1,24 @@
+{
+  "Header": {
+    "name": "Connor",
+    "numObjects": 3,
+    "HeaderObject": {
+      {
+        "isLink": false,
+        "text": "connor@gmail.com",
+      },
+      {
+        "isLink": false,
+        "text": "431 444 4444",
+      },
+      {
+        "isLink": true,
+        "text": "github.com/cjlangan",
+        "link": "https://github.com/cjlangan"
+      }
+    }
+  },
+  "Sections": {
+    "sec1": {}
+  }
+}

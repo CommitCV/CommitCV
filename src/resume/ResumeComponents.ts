@@ -116,7 +116,7 @@ export function Preamble() {
 export type HeaderObject = {
     isLink: boolean,
     text: string,
-    link: string | null
+    link?: string
 }
 
 export function HeaderComponent(name: string, data: HeaderObject[]) {
@@ -134,12 +134,13 @@ export function HeaderComponent(name: string, data: HeaderObject[]) {
             header += ` $|$ `
         }
     }
-    header += `\\end{center}`
+    header += `\n\\end{center}`
     return header;
 }
 
 export function GenerateSection(name: string) {
-    return `\\section{` + name + `}`;
+    return "%------" + name.toUpperCase() + "----------"
+            + `\n\\section{` + name + `}`;
 }
 
 export type TextObject = {
