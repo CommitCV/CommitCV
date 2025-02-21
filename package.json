@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "next": "15.1.7",
+    "node-pdflatex": "^0.3.0",
     "octokit": "^4.1.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
