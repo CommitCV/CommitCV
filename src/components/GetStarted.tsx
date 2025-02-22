@@ -42,12 +42,12 @@ return (
           <section className="w-full bg-gray-100 rounded-lg p-4">
             <div {...getRootProps({ className: "dropzone w-full h-32 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center text-center" })}>
               <input {...getInputProps()} />
-              <p className="text-gray-600">Drag 'n' drop some files here, or click to select files</p>
+              <p className="text-gray-600">Drag a .json file here</p>
             </div>
-            <aside className="mt-4">
-              <h4 className="font-semibold mb-2">Files</h4>
-              <ul>{files}</ul>
-            </aside>
+            {/*<aside className="mt-4">*/}
+            {/*  <h4 className="font-semibold mb-2">Files</h4>*/}
+            {/*  <ul>{files}</ul>*/}
+            {/*</aside>*/}
           </section>
         </div>
       </div>
