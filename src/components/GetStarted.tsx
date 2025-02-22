@@ -29,7 +29,7 @@ export default function GetStarted() {
 return (
     <div className={`flex justify-center items-center h-screen`}>
       <div className={`grid grid-rows-1 grid-cols-2 gap-2 p-4 w-fit`}>
-        <div className={`bg-gray-50 rounded-2xl shadow-lg w-full max-w-[30vw] h-auto p-6 flex flex-col items-center justify-center`}>
+        <div className={`bg-gray-200 rounded-2xl shadow-lg w-full max-w-[30vw] h-auto p-6 flex flex-col items-center justify-center`}>
           <h1 className={`text-2xl font-semibold mb-4 text-center`}>Start a new resume!</h1>
           <Link href="/resume/"> {/* Use Link component */}
             <button className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded`}>
@@ -37,7 +37,7 @@ return (
             </button>
           </Link>
         </div>
-        <div className={`bg-gray-50 rounded-2xl shadow-lg w-full max-w-[30vw] h-auto p-6 flex flex-col`}>
+        <div className={`bg-gray-200 rounded-2xl shadow-lg w-full max-w-[30vw] h-auto p-6 flex flex-col`}>
           <h1 className={`text-2xl font-semibold mb-4 text-center`}>I already have a file</h1>
           <section className="w-full bg-gray-100 rounded-lg p-4">
             <div {...getRootProps({ className: "dropzone w-full h-32 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center text-center" })}>
