@@ -1,11 +1,11 @@
-"use client"
+"use client";
+import { useEffect, useState } from "react";
+import { useFile } from "@/context/FileContext";
 import HeaderCard from "@/components/HeaderCard";
 import PDF from "@/components/PDF";
-import { useFile } from "@/context/FileContext";
-import { useEffect, useState } from "react";
 import SectionCard from "@/components/SectionCard";
-import { BulletCollection, ParagraphCollection, Subsection } from "@/resume/ResumeComponents";
 import { GenerateLatex } from "@/resume/ResumeGenerator";
+import { BulletCollection, ParagraphCollection, Subsection } from "@/resume/ResumeComponents";
 
 interface HeaderObject {
     text: string;
@@ -20,7 +20,7 @@ interface Section {
     paragraphCollection?: ParagraphCollection;
 }
 
-interface ResumeData {
+export interface ResumeData {
     Header: {
         name: string;
         HeaderObject: HeaderObject[];
@@ -34,6 +34,7 @@ export default function Resume() {
     const [jData, setJData] = useState<ResumeData | null>(null);
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
+    // Handle file reading
     useEffect(() => {
         if (fileData && fileData.path) {
             const reader = new FileReader();
@@ -47,6 +48,7 @@ export default function Resume() {
         }
     }, [fileData]);
 
+    // Parse file content and set state
     useEffect(() => {
         if (fileContent) {
             const parsedData: ResumeData = JSON.parse(fileContent);
@@ -62,12 +64,13 @@ export default function Resume() {
         }
     }, [fileContent]);
 
+    // Generate PDF from LaTeX
     useEffect(() => {
         const generatePdf = async () => {
             if (jData) {
                 const latex = GenerateLatex(jData);
                 try {
-                    const response = await fetch('http://localhost:3005/convert', {
+                    const response = await fetch('http://100.69.4.2:3005/convert', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -106,6 +109,7 @@ export default function Resume() {
                             subsections={section.subsections}
                             bulletCollection={section.bulletCollection}
                             paragraphCollection={section.paragraphCollection}
+                            setJData={setJData} // Pass setter function
                         />
                     ))}
                 </div>

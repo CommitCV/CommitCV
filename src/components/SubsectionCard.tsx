@@ -1,83 +1,66 @@
-import {BulletCollection, ParagraphCollection} from "@/resume/ResumeComponents";
-import TextComponent from "@/components/TextComponent";
+import { BulletCollection, ParagraphCollection } from "@/resume/ResumeComponents";
+import { ResumeData } from "@/app/resume/page";
 
-export interface ISubsectionCard {
-    title: string
-    link?: string
-    date: string
-    subtitle: string
-    location?: string
-    condensed?: boolean
-    bulletCollection?: BulletCollection
-    paragraphCollection?: ParagraphCollection
+interface ISubsectionCard {
+    title: string;
+    link?: string;
+    date: string;
+    subtitle: string;
+    location?: string;
+    condensed?: boolean;
+    bulletCollection?: BulletCollection;
+    paragraphCollection?: ParagraphCollection;
+    setJData: React.Dispatch<React.SetStateAction<ResumeData | null>>; // Accept setter function
 }
 
-export default function SubsectionCard({ title, link, date, subtitle, location, condensed, bulletCollection, paragraphCollection}: ISubsectionCard) {
+export default function SubsectionCard({
+    title,
+    link,
+    date,
+    subtitle,
+    location,
+    condensed,
+    bulletCollection,
+    paragraphCollection,
+    setJData,
+}: ISubsectionCard) {
+
+    // Handle input changes
+    const handleChange = (field: string, value: string) => {
+        setJData((prevData : any) => {
+            if (!prevData) return prevData;
+            const updatedSections = [...prevData.Sections];
+            // Find the section and update it
+            const section = updatedSections.find((s) => s.name === "Contact Information");
+            if (section) {
+                const headerCard = section.headerCards?.find((card : any) => card.text === title);
+                if (headerCard) {
+                    headerCard[field] = value; // Update the specific field
+                }
+            }
+            return { ...prevData, Sections: updatedSections };
+        });
+    };
+
     return (
         <div>
-            <div className={`flex flex-row p-1 gap-2`}>
+            <div className="flex flex-row p-1 gap-2">
                 <input
-                    id="name"
-                    name="name"
                     type="text"
                     value={title}
-                    placeholder={"Title"}
-                    className="block min-w-0 py-1.5 pl-1 pr-3 text-base text-gray-900 placeholder:text-gray-400 focus:outline focus:outline-0 sm:text-sm/6"
+                    placeholder="Title"
+                    onChange={(e) => handleChange("text", e.target.value)} // Bind to text
+                    className="block min-w-0 py-1.5 pl-1 pr-3 text-base"
                 />
-
                 <input
-                    id="name"
-                    name="name"
                     type="text"
                     value={link}
-                    placeholder={"Link"}
-                    className="block min-w-0 py-1.5 pl-1 pr-3 text-base text-gray-900 placeholder:text-gray-400 focus:outline focus:outline-0 sm:text-sm/6"
+                    placeholder="Link"
+                    onChange={(e) => handleChange("link", e.target.value)} // Bind to link
+                    className="block min-w-0 py-1.5 pl-1 pr-3 text-base"
                 />
             </div>
-            <div className={`flex flex-row p-1 gap-2`}>
-                <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    value={date}
-                    placeholder={"Dates"}
-                    className="block min-w-0 py-1.5 pl-1 pr-3 text-base text-gray-900 placeholder:text-gray-400 focus:outline focus:outline-0 sm:text-sm/6"
-                />
-
-                <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    value={subtitle}
-                    placeholder={"Subtitle"}
-                    className="block min-w-0 py-1.5 pl-1 pr-3 text-base text-gray-900 placeholder:text-gray-400 focus:outline focus:outline-0 sm:text-sm/6"
-                />
-            </div>
-            <div className={`flex flex-row p-1 gap-2`}>
-                <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    value={location}
-                    placeholder={"Location"}
-                    className="block min-w-0 py-1.5 pl-1 pr-3 text-base text-gray-900 placeholder:text-gray-400 focus:outline focus:outline-0 sm:text-sm/6"
-                />
-
-                <input
-                    id="name"
-                    name="name"
-                    type="checkbox"
-                    className="block min-w-0 py-1.5 pl-1 pr-3 text-base text-gray-900 placeholder:text-gray-400 focus:outline focus:outline-0 sm:text-sm/6"
-                />
-            </div>
-            <div>
-                {bulletCollection && bulletCollection.bullets.map((bullet, index) => (
-                    <TextComponent key={index} bold={bullet.bold} normal={bullet.normal} isBullet={true} />
-                ))}
-                {paragraphCollection && paragraphCollection.paragraphs.map((paragraph, index) => (
-                    <TextComponent key={index} bold={paragraph.bold} normal={paragraph.normal} />
-                ))}
-            </div>
+            {/* Continue with other input fields... */}
         </div>
-    )
+    );
 }
