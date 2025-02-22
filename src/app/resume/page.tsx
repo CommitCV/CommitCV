@@ -3,8 +3,9 @@ import HeaderCard from "@/components/HeaderCard";
 import PDF from "@/components/PDF";
 import { useFile } from "@/context/FileContext";
 import { useEffect, useState } from "react";
-import { Header as ResumeHeader } from "@/resume/ResumeComponents";
 import SectionCard from "@/components/SectionCard";
+import {BulletCollection, ParagraphCollection, Subsection} from "@/resume/ResumeComponents";
+import pdflatex from "node-pdflatex"
 
 interface HeaderObject {
     text: string;
@@ -14,9 +15,9 @@ interface HeaderObject {
 interface Section {
     name: string;
     headerCards?: HeaderObject[];
-    subsections?: any[]; // Replace `any` with the appropriate type if available
-    bulletCollection?: any; // Replace `any` with the appropriate type if available
-    paragraphCollection?: any; // Replace `any` with the appropriate type if available
+    subsections?: Subsection[]; // Replace `any` with the appropriate type if available
+    bulletCollection?: BulletCollection; // Replace `any` with the appropriate type if available
+    paragraphCollection?: ParagraphCollection; // Replace `any` with the appropriate type if available
 }
 
 interface ResumeData {
@@ -64,6 +65,8 @@ export default function Resume() {
         return <div>Loading...</div>;
     }
 
+    const pdfFile = pdflatex(jData);
+
     return (
         <div>
             <HeaderCard />
@@ -81,7 +84,7 @@ export default function Resume() {
                     ))}
                 </div>
                 <div>
-                    <PDF />
+                    <PDF file={} />
                 </div>
             </div>
         </div>
