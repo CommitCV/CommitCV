@@ -8,6 +8,7 @@ import { GenerateLatex } from "@/resume/ResumeGenerator";
 import { convertLatexToPdf } from "@/pages/api/pdfCV/generate";
 import { BulletCollection, ParagraphCollection, Subsection } from "@/resume/ResumeComponents";
 
+
 interface HeaderObject {
     text: string;
     link?: string;
@@ -31,57 +32,84 @@ export interface ResumeData {
     Sections: Section[];
 }
 
+
 export default function Resume() {
     const { fileData } = useFile();
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [jData, setJData] = useState<ResumeData | null>(null);
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-    const [fileProcessed, setFileProcessed] = useState(false); // New state to track if file was processed
+    const [fileProcessed, setFileProcessed] = useState(false);
+    const [useTemplateJson, setUseTemplateJson] = useState(false);
 
     console.log("Rendering Latex");
 
-    // Read file content when fileData changes
     useEffect(() => {
         if (fileData && fileData.path) {
             const reader = new FileReader();
             reader.onload = () => {
                 setFileContent(reader.result as string);
-                setFileProcessed(false); // Reset processing flag
+                setFileProcessed(false);
             };
             reader.onerror = () => {
                 console.error("Error reading file");
             };
             reader.readAsText(fileData);
+        } else if (!fileData) {
+            setUseTemplateJson(true);
         }
     }, [fileData]);
 
-    // Only initialize jData if it hasn't been processed yet
     useEffect(() => {
         if (fileContent && !fileProcessed) {
             console.log("Initializing JData");
-            const parsedData: ResumeData = JSON.parse(fileContent);
-            const headerSection: Section = {
-                name: parsedData.Header.name,
-                headerCards: parsedData.Header.HeaderObject.map((header: HeaderObject) => ({
-                    text: header.text,
-                    link: header.link,
-                    onTextChange: () => {},
-                    onLinkChange: () => {}
-                }))
-            };
-            parsedData.Sections.unshift(headerSection);
-            setJData(parsedData);
-            setFileProcessed(true); // Mark file as processed so we don’t overwrite changes
+            try {
+                const parsedData: ResumeData = JSON.parse(fileContent);
+                const headerSection: Section = {
+                    name: parsedData.Header.name,
+                    headerCards: parsedData.Header.HeaderObject.map((header: HeaderObject) => ({
+                        text: header.text,
+                        link: header.link,
+                        onTextChange: () => { },
+                        onLinkChange: () => { }
+                    }))
+                };
+                parsedData.Sections.unshift(headerSection);
+                setJData(parsedData);
+                setFileProcessed(true);
+                setUseTemplateJson(false);
+            } catch (error) {
+                console.error("Error parsing JSON:", error);
+                setUseTemplateJson(true);
+            }
         }
-    }, [fileContent, fileProcessed]); // Depend on fileProcessed instead of jData
+    }, [fileContent, fileProcessed]);
+
+    useEffect(() => {
+        if (useTemplateJson) {
+            fetch("/template.json")
+                .then((response) => response.json())
+                .then((templateData: ResumeData) => {
+                    setJData(templateData);
+                })
+                .catch((error) => {
+                    console.error("Error fetching template JSON:", error);
+                });
+        }
+    }, [useTemplateJson]);
 
     const generatePdf = useCallback(async () => {
         if (jData) {
-            const latex = GenerateLatex(jData);
-            const blob = await convertLatexToPdf(latex);
-            if (blob) {
-                const url = URL.createObjectURL(blob);
-                setPdfUrl(url);
+            try {
+                const latex = GenerateLatex(jData);
+                const blob = await convertLatexToPdf(latex);
+                if (blob) {
+                    const url = URL.createObjectURL(blob);
+                    setPdfUrl(url);
+                } else {
+                    console.error("PDF Blob is null");
+                }
+            } catch (error) {
+                console.error("Error generating PDF:", error);
             }
         }
     }, [jData]);
@@ -90,7 +118,7 @@ export default function Resume() {
         generatePdf();
     }, [jData, generatePdf]);
 
-    if (!jData || !pdfUrl) {
+    if (!jData && !useTemplateJson) {
         return <div>Loading...</div>;
     }
 
@@ -101,7 +129,7 @@ export default function Resume() {
             <HeaderCard />
             <div className="grid grid-cols-2">
                 <div className="flex flex-col gap-8 px-8 pt-4">
-                    {jData.Sections.map((section, index) => (
+                    {jData && jData.Sections.map((section, index) => (
                         <SectionCard
                             key={index}
                             name={section.name}
@@ -114,7 +142,8 @@ export default function Resume() {
                     ))}
                 </div>
                 <div>
-                    <PDF file={pdfUrl} />
+                    {pdfUrl && <PDF file={pdfUrl} />}
+                    {!pdfUrl && <div>No PDF Available</div>}
                 </div>
             </div>
         </div>

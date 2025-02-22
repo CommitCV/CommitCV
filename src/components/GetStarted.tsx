@@ -4,6 +4,7 @@ import { useDropzone } from "react-dropzone";
 import { useRouter } from "next/navigation";
 import { useFile } from "@/context/FileContext";
 import { useEffect } from "react";
+import Link from 'next/link';
 
 export default function GetStarted() {
     const { acceptedFiles, getRootProps, getInputProps } = useDropzone();
@@ -25,25 +26,31 @@ export default function GetStarted() {
         }
     }, [acceptedFiles, setFileData, router]); // Effect depends on acceptedFiles
 
-    return (
-        <div className={`grid grid-rows-1 grid-cols-2`}>
-            <div className={`bg-gray-200 rounded-2xl w-[30vw] h-[30vw] m-auto`}>
-                <h1 className={`text-4xl`}>Start a new resume!</h1>
-                <button>Click Here</button>
-            </div>
-            <div className={`bg-gray-200 rounded-2xl w-[30vw] h-[30vw] m-auto`}>
-                <h1 className={`text-4xl`}>I already have a file</h1>
-                <section className="w-container bg-gray-400">
-                    <div {...getRootProps({ className: "dropzone w-full h-full" })}>
-                        <input {...getInputProps()} />
-                        <p>Drag 'n' drop some files here, or click to select files</p>
-                    </div>
-                    <aside>
-                        <h4>Files</h4>
-                        <ul>{files}</ul>
-                    </aside>
-                </section>
-            </div>
+return (
+    <div className={`flex justify-center items-center h-screen`}>
+      <div className={`grid grid-rows-1 grid-cols-2 gap-2 p-4 w-fit`}>
+        <div className={`bg-gray-50 rounded-2xl shadow-lg w-full max-w-[30vw] h-auto p-6 flex flex-col items-center justify-center`}>
+          <h1 className={`text-2xl font-semibold mb-4 text-center`}>Start a new resume!</h1>
+          <Link href="/resume/"> {/* Use Link component */}
+            <button className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded`}>
+              Click Here
+            </button>
+          </Link>
         </div>
-    );
+        <div className={`bg-gray-50 rounded-2xl shadow-lg w-full max-w-[30vw] h-auto p-6 flex flex-col`}>
+          <h1 className={`text-2xl font-semibold mb-4 text-center`}>I already have a file</h1>
+          <section className="w-full bg-gray-100 rounded-lg p-4">
+            <div {...getRootProps({ className: "dropzone w-full h-32 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center text-center" })}>
+              <input {...getInputProps()} />
+              <p className="text-gray-600">Drag 'n' drop some files here, or click to select files</p>
+            </div>
+            <aside className="mt-4">
+              <h4 className="font-semibold mb-2">Files</h4>
+              <ul>{files}</ul>
+            </aside>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
 }
