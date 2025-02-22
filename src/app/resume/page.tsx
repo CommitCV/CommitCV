@@ -36,14 +36,17 @@ export default function Resume() {
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [jData, setJData] = useState<ResumeData | null>(null);
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+    const [fileProcessed, setFileProcessed] = useState(false); // New state to track if file was processed
 
     console.log("Rendering Latex");
 
+    // Read file content when fileData changes
     useEffect(() => {
         if (fileData && fileData.path) {
             const reader = new FileReader();
             reader.onload = () => {
                 setFileContent(reader.result as string);
+                setFileProcessed(false); // Reset processing flag
             };
             reader.onerror = () => {
                 console.error("Error reading file");
@@ -52,9 +55,10 @@ export default function Resume() {
         }
     }, [fileData]);
 
+    // Only initialize jData if it hasn't been processed yet
     useEffect(() => {
-        if (fileContent && !jData) {
-            console.log("Changing JData");
+        if (fileContent && !fileProcessed) {
+            console.log("Initializing JData");
             const parsedData: ResumeData = JSON.parse(fileContent);
             const headerSection: Section = {
                 name: parsedData.Header.name,
@@ -67,8 +71,9 @@ export default function Resume() {
             };
             parsedData.Sections.unshift(headerSection);
             setJData(parsedData);
+            setFileProcessed(true); // Mark file as processed so we don’t overwrite changes
         }
-    }, [fileContent, jData]); // Add jData as a dependency to prevent unnecessary updates
+    }, [fileContent, fileProcessed]); // Depend on fileProcessed instead of jData
 
     const generatePdf = useCallback(async () => {
         if (jData) {
@@ -88,6 +93,8 @@ export default function Resume() {
     if (!jData || !pdfUrl) {
         return <div>Loading...</div>;
     }
+
+    console.log(jData);
 
     return (
         <div>
