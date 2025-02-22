@@ -122,10 +122,10 @@ export type Bullet = {
 }
 
 function BulletToLatex(bullet: Bullet) {
-    let bold = bullet.bold ? bullet.bold : "";
-    let normal = bullet.normal ? bullet.normal : "";
+    const bold = bullet.bold ? bullet.bold : "";
+    const normal = bullet.normal ? bullet.normal : "";
 
-    return `\t\t\t\t\t\\resumeItem{\\textbf{${bold}}${normal}}`;
+    return `\t\t\t\t\t\\resumeItem{\\textbf{${bold}} ${normal}}\n`;
 }
 
 export type Paragraph = {
@@ -134,20 +134,33 @@ export type Paragraph = {
 }
 
 function ParagraphToLatex(paragraph: Paragraph) {
-    let bold = paragraph.bold ? paragraph.bold : "";
-    let normal = paragraph.normal ? paragraph.normal : "";
+    const bold = paragraph.bold ? paragraph.bold : "";
+    const normal = paragraph.normal ? paragraph.normal : "";
 
 
-    return `\t\t\t\t\t\\textbf{${bold}{${normal}} \\\\`
+    return `\t\t\t\t\t\\item \\small \\textbf{${bold}}{ ${normal}}\n`
 }
 
 export type BulletCollection = {
     bullets: Bullet[]
 }
 
-
 function BulletCollectionToLatex(bulls: BulletCollection) {
-    let text = `\t\t\t\\resumeItemListStart\n`;
+    let text = `\t\t\t\\begin{itemize}[leftmargin=0.20in, itemsep=0pt, topsep=5pt, partopsep=0pt]\n`;
+
+    for(const bullet of bulls.bullets) {
+        text += BulletToLatex(bullet);
+    }
+
+    text += `\t\t\t\\end{itemize}\n\n`;
+
+    return text;
+}
+
+/*
+function BulletCollectionToLatex(bulls: BulletCollection) {
+    let text = `\t\t\t\\resumeItemListStart
+                \\small\n`; // Adjust font size to small
 
     for(const bullet of bulls.bullets) {
         text += BulletToLatex(bullet);
@@ -157,6 +170,7 @@ function BulletCollectionToLatex(bulls: BulletCollection) {
 
     return text;
 }
+*/
 
 export type ParagraphCollection = {
     paragraphs: Paragraph[]
@@ -164,13 +178,12 @@ export type ParagraphCollection = {
 
 function ParagraphCollectionToLatex(paragraphs: ParagraphCollection) {
     let text = `\t\t\t\\begin{itemize}[leftmargin=0.15in, label={}]\n`;
-    text += `\t\t\t\t\\small{\\item`
 
     for(const para of paragraphs.paragraphs) {
         text += ParagraphToLatex(para);
     }
 
-    text += `\t\t\t\t}}\n\t\t\t\\end{itemize}\n\n`;
+    text += `t\t\t\\end{itemize}\n\n`;
 
     return text;
 }
@@ -190,9 +203,9 @@ function SubsectionToLatex(section : Subsection) {
     let subheading;
 
     if (!section.condensed) {
-        subheading = `\t\t\\resumePartHeading{${section.title}}{${section.date}}{${section.subtitle}}{${section.location}}\n`
+        subheading = `\t\t\\resumeSubheading{${section.title}}{${section.date}}{${section.subtitle}}{${section.location}}\n`
     } else {
-        subheading = `\t\t\\resumePartHeading{\\textbf{`
+        subheading = `\t\t\\resumeSubheading{\\textbf{`
         if (section.link) {
             subheading += `\\href{${section.link}}{\\underline{${section.title}}}`
         } else {
@@ -227,7 +240,7 @@ export function SectionToLatex(section: Section) {
             text += SubsectionToLatex(sec);
         }
 
-        text += `\t\\resumeSubHeadingListEnd\n`
+        text += `\t\\resumeSubHeadingListEnd\n\n\n`
     }
     if(section.bulletCollection) {
         text += BulletCollectionToLatex(section.bulletCollection);
@@ -240,7 +253,6 @@ export function SectionToLatex(section: Section) {
 }
 
 export type Header = {
-    isLink?: boolean,
     text: string,
     link?: string
 }
@@ -251,10 +263,9 @@ export function HeaderToLatex(name: string, data : Header[]) {
     \\textbf{\\Huge \\scshape ${name}} \\\\ \\vspace{1pt}`
 
     for (let i = 0; i < data.length; i++) {
-        if (data[i].isLink) {
+        if (data[i].link) {
             header += `\\href{${data[i].link}}{\\underline{${data[i].text}}}`
-        }
-        if (!data[i].isLink) {
+        } else {
             header += `\\small ${data[i].text}`
         }
         if (i+1 != data.length) {
