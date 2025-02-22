@@ -141,40 +141,60 @@ export default function Resume() {
         }
     };
 
-return (
-  <div>
-    <HeaderCard />
-    <div className="grid grid-cols-2">
-      <div className="flex flex-col gap-8 px-8 pt-4">
-        {jData &&
-          jData.Sections.map((section, index) => (
-            <SectionCard
-              key={index}
-              name={section.name}
-              headerCards={section.headerCards}
-              subsections={section.subsections}
-              bulletCollection={section.bulletCollection}
-              paragraphCollection={section.paragraphCollection}
-              setJData={setJData}
-            />
-          ))}
-      </div>
-      <div className="flex flex-row justify-start items-start gap-4"> {/* Changed flex-col to flex-row */}
-        {pdfUrl && <PDF file={pdfUrl} />}
-        <div className="flex flex-col justify-start">
-          {pdfUrl && (
-            <button
-              onClick={handleDownload}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Download Resume
-            </button>
-          )}
-          {!pdfUrl && <div>No PDF Available</div>}
-        </div>
-      </div>
-    </div>
-  </div>
-);
+    const handleDownloadJson = () => {
+            if (jData) {
+                const json = JSON.stringify(jData, null, 2);
+                const blob = new Blob([json], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = "resume.json";
+                link.click();
+            }
+        };
 
+
+    return (
+        <div>
+            <HeaderCard />
+            <div className="grid grid-cols-2">
+                <div className="flex flex-col gap-8 px-8 pt-4">
+                    {jData &&
+                        jData.Sections.map((section, index) => (
+                            <SectionCard
+                                key={index}
+                                name={section.name}
+                                headerCards={section.headerCards}
+                                subsections={section.subsections}
+                                bulletCollection={section.bulletCollection}
+                                paragraphCollection={section.paragraphCollection}
+                                setJData={setJData}
+                            />
+                        ))}
+                </div>
+                <div className="flex flex-row justify-start items-start gap-4">
+                    {pdfUrl && <PDF file={pdfUrl} />}
+                    <div className="flex flex-col justify-start">
+                        {pdfUrl && (
+                            <>
+                                <button
+                                    onClick={handleDownload}
+                                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2" // Added mb-2
+                                >
+                                    Download Resume
+                                </button>
+                                <button
+                                    onClick={handleDownloadJson}
+                                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                                >
+                                    Download JSON
+                                </button>
+                            </>
+                        )}
+                        {!pdfUrl && <div>No PDF Available</div>}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
