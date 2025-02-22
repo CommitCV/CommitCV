@@ -11,6 +11,8 @@ import { BulletCollection, ParagraphCollection, Subsection } from "@/resume/Resu
 interface HeaderObject {
     text: string;
     link?: string;
+    onTextChange: (text: string) => void;
+    onLinkChange: (link: string) => void;
 }
 
 interface Section {
@@ -55,7 +57,9 @@ export default function Resume() {
                 name: parsedData.Header.name,
                 headerCards: parsedData.Header.HeaderObject.map((header: HeaderObject) => ({
                     text: header.text,
-                    link: header.link
+                    link: header.link,
+                    onTextChange: () => {},
+                    onLinkChange: () => {}
                 }))
             };
             parsedData.Sections.unshift(headerSection);
@@ -95,7 +99,7 @@ export default function Resume() {
                             subsections={section.subsections}
                             bulletCollection={section.bulletCollection}
                             paragraphCollection={section.paragraphCollection}
-                            setJData={setJData} // Pass setter function
+                            setJData={setJData}
                         />
                     ))}
                 </div>

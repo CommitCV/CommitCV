@@ -1,20 +1,18 @@
 import { useState } from 'react';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import { IHeaderComponent } from "@/components/HeaderComponent";
-import HeaderObject from "@/components/HeaderComponent";
+import HeaderObject, { IHeaderComponent } from "@/components/HeaderComponent";
 import { BulletCollection, ParagraphCollection, Subsection } from "@/resume/ResumeComponents";
 import SubsectionCard from "@/components/SubsectionCard";
 import TextComponent from "@/components/TextComponent";
 import { ResumeData } from "@/app/resume/page";
 
-// Updated interface to include setJData
 interface ISectionCard {
     name: string,
     headerCards?: IHeaderComponent[],
     subsections?: Subsection[],
     bulletCollection?: BulletCollection,
     paragraphCollection?: ParagraphCollection,
-    setJData: React.Dispatch<React.SetStateAction<ResumeData | null>>; // Accepting setter function
+    setJData: React.Dispatch<React.SetStateAction<ResumeData | null>>;
 }
 
 export default function SectionCard({
@@ -23,12 +21,36 @@ export default function SectionCard({
     subsections,
     bulletCollection,
     paragraphCollection,
-    setJData, // Accepting setJData as prop here
+    setJData,
 }: ISectionCard) {
     const [isExpanded, setIsExpanded] = useState(false);
 
     const toggleExpand = () => {
         setIsExpanded(!isExpanded);
+    };
+
+    const handleHeaderTextChange = (index: number, text: string) => {
+        setJData(prevData => {
+            if (!prevData) return prevData;
+           if (!prevData || !prevData.Sections[0].headerCards) return prevData;
+            const updatedHeaderCards = [...prevData.Sections[0].headerCards!];
+            updatedHeaderCards[index].text = text;
+            const updatedSections = [...prevData.Sections];
+            updatedSections[0].headerCards = updatedHeaderCards;
+            return { ...prevData, Sections: updatedSections };
+        });
+    };
+
+    const handleHeaderLinkChange = (index: number, link: string) => {
+        setJData(prevData => {
+            if (!prevData) return prevData;
+            if (!prevData || !prevData.Sections[0].headerCards) return prevData;
+            const updatedHeaderCards = [...prevData.Sections[0].headerCards!];
+            updatedHeaderCards[index].link = link;
+            const updatedSections = [...prevData.Sections];
+            updatedSections[0].headerCards = updatedHeaderCards;
+            return { ...prevData, Sections: updatedSections };
+        });
     };
 
     return (
@@ -39,7 +61,7 @@ export default function SectionCard({
                     name="name"
                     type="text"
                     value={name}
-                    onChange={(e) => setJData((prevData) => 
+                    onChange={(e) => setJData((prevData) =>
                         prevData ? { ...prevData, name: e.target.value } : prevData
                     )}
                     placeholder={"Section Name"}
@@ -51,14 +73,20 @@ export default function SectionCard({
             </div>
             {isExpanded && (
                 <div className="mt-4">
-                    {headerCards && headerCards.map((headerCard: IHeaderComponent, index: number) => (
-                        <HeaderObject key={index} {...headerCard} />
+                    {headerCards && headerCards.map((headerCard, index) => (
+                        <HeaderObject
+                            key={index}
+                            text={headerCard.text}
+                            link={headerCard.link}
+                            onTextChange={(text) => handleHeaderTextChange(index, text)}
+                            onLinkChange={(link) => handleHeaderLinkChange(index, link)}
+                        />
                     ))}
-                    {subsections && subsections.map((subsection: Subsection, index: number) => (
-                        <SubsectionCard 
-                            key={index} 
-                            {...subsection} 
-                            setJData={setJData} // Pass down setJData here
+                    {subsections && subsections.map((subsection, index) => (
+                        <SubsectionCard
+                            key={index}
+                            {...subsection}
+                            setJData={setJData}
                         />
                     ))}
                     {bulletCollection && bulletCollection.bullets.map((bullet, index) => (
