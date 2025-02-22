@@ -1,30 +1,34 @@
+"use client";
+
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const UploadButton = ({ uploadError, setUploadError }: { uploadError: string, setUploadError: (error: string) => void }) => {
+const UploadButton = ({ setFileData }: { setFileData: (data: any) => void }) => {
     const uploadRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
 
     const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files.length > 0) {
             const file = event.target.files[0];
-            console.log(file);
 
-            if (file.type !== 'application/json') {
-                setUploadError('Please upload a .json file');
+            if (file.type !== "application/json") {
+                alert("Please upload a .json file");
                 return;
             }
 
             const reader = new FileReader();
             reader.onload = (e) => {
                 if (e.target && e.target.result) {
-                    const fileContent = e.target.result as string;
-                    const jsonFile = JSON.parse(fileContent);
+                    try {
+                        const fileContent = e.target.result as string;
+                        const jsonFile = JSON.parse(fileContent);
 
-                    // router.push({
-                    //     pathname: '/resume',
-                    //     query: { file: JSON.stringify(jsonFile) },
-                    // });
+                        setFileData(jsonFile); // Store data in state instead of URL
+                        router.push("/resume"); // Navigate without passing the data in the URL
+                    } catch (error) {
+                        console.error("Error parsing JSON file:", error);
+                        alert("Invalid JSON file.");
+                    }
                 }
             };
             reader.readAsText(file);
@@ -34,19 +38,19 @@ const UploadButton = ({ uploadError, setUploadError }: { uploadError: string, se
     return (
         <div>
             <button onClick={() => uploadRef.current?.click()}>Upload File</button>
-            <input type="file" ref={uploadRef} onChange={handleUpload} />
-            {uploadError && <p>{uploadError}</p>}
+            <input type="file" ref={uploadRef} onChange={handleUpload} hidden />
         </div>
     );
 };
 
 export default function FileUpload() {
-    const [uploadError, setUploadError] = useState<string>('');
+    const [fileData, setFileData] = useState<any>(null);
 
     return (
         <div>
             <h2>File Upload</h2>
-            <UploadButton uploadError={uploadError} setUploadError={setUploadError} />
+            <UploadButton setFileData={setFileData} />
+            {fileData && <pre>{JSON.stringify(fileData, null, 2)}</pre>}
         </div>
     );
 }

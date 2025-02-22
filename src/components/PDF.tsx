@@ -15,7 +15,7 @@ export default function PDF() {
 
     return (
         <div style={{ overflowY: 'scroll', height: '100vh' }}>
-            <Document file='/Travis_s_Resume-4.pdf' onLoadSuccess={onDocumentLoadSuccess}>
+            <Document file='/connor-langan-resume.pdf' onLoadSuccess={onDocumentLoadSuccess}>
                 {Array.from(new Array(numPages), (el, index) => (
                     <Page key={`page_${index + 1}`} pageNumber={index + 1} />
                 ))}

@@ -1,6 +1,9 @@
 "use client"
 import HeaderCard from "@/components/HeaderCard";
 import PDF from "@/components/PDF";
+import FileUpload from "@/components/FileUpload";
+import { useFile } from "@/context/FileContext";
+import { useEffect, useState } from "react";
 import { Header as ResumeHeader } from "@/resume/ResumeComponents";
 import SectionCard from "@/components/SectionCard";
 
@@ -195,11 +198,27 @@ export default function Resume() {
     };
 
     console.log(headerSection)
+export default function Resume() {
+    const { fileData } = useFile();
+    const [fileContent, setFileContent] = useState<string | null>(null);
 
     // Add the new section to the Sections array
     jData.Sections.unshift(headerSection);
 
+    useEffect(() => {
+        if (fileData && fileData.path) {
+            // Read the file's content if the file data exists
+            const reader = new FileReader();
+            reader.onload = () => {
+                setFileContent(reader.result as string); // Store the file content
+            };
+            reader.onerror = () => {
+                console.error("Error reading file");
+            };
 
+            reader.readAsText(fileData); // Read the file as text
+        }
+    }, [fileData]);
 
     return (
         <div>
