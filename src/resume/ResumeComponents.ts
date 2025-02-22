@@ -36,7 +36,7 @@ export function Preamble() {
 % \\usepackage{CormorantGaramond}
 % \\usepackage{charter}
 
-\\usepackage{fontawesome5}
+% \\usepackage{fontawesome5}
 
 \\pagestyle{fancy}
 \\fancyhf{} % clear all header and footer fields
@@ -113,20 +113,147 @@ export function Preamble() {
     return preamble;
 }
 
-export type HeaderObject = {
-    isLink: boolean,
+// let x: SkillObject = {title: "a", arr: ["b", "c"]}
+
+
+export type Bullet = {
+    bold?: string,
+    normal?: string
+}
+
+function BulletToLatex(bullet: Bullet) {
+    let bold = bullet.bold ? bullet.bold : "";
+    let normal = bullet.normal ? bullet.normal : "";
+
+    return `\t\t\t\t\t\\resumeItem{\\textbf{${bold}}${normal}}`;
+}
+
+export type Paragraph = {
+    bold?: string,
+    normal?: string
+}
+
+function ParagraphToLatex(paragraph: Paragraph) {
+    let bold = paragraph.bold ? paragraph.bold : "";
+    let normal = paragraph.normal ? paragraph.normal : "";
+
+
+    return `\t\t\t\t\t\\textbf{${bold}{${normal}} \\\\`
+}
+
+export type BulletCollection = {
+    bullets: Bullet[]
+}
+
+
+function BulletCollectionToLatex(bulls: BulletCollection) {
+    let text = `\t\t\t\\resumeItemListStart\n`;
+
+    for(const bullet of bulls.bullets) {
+        text += BulletToLatex(bullet);
+    }
+
+    text += `\t\t\t\\resumeItemListEnd\n\n`;
+
+    return text;
+}
+
+export type ParagraphCollection = {
+    paragraphs: Paragraph[]
+}
+
+function ParagraphCollectionToLatex(paragraphs: ParagraphCollection) {
+    let text = `\t\t\t\\begin{itemize}[leftmargin=0.15in, label={}]\n`;
+    text += `\t\t\t\t\\small{\\item`
+
+    for(const para of paragraphs.paragraphs) {
+        text += ParagraphToLatex(para);
+    }
+
+    text += `\t\t\t\t}}\n\t\t\t\\end{itemize}\n\n`;
+
+    return text;
+}
+
+export type Subsection = {
+    title: string,
+    link?: string,
+    date: string,
+    subtitle: string,
+    location: string,
+    condensed?: boolean,
+    bulletCollection?: BulletCollection,
+    paragraphCollection?: ParagraphCollection
+}
+
+function SubsectionToLatex(section : Subsection) {
+    let subheading;
+
+    if (!section.condensed) {
+        subheading = `\t\t\\resumePartHeading{${section.title}}{${section.date}}{${section.subtitle}}{${section.location}}\n`
+    } else {
+        subheading = `\t\t\\resumePartHeading{\\textbf{`
+        if (section.link) {
+            subheading += `\\href{${section.link}}{\\underline{${section.title}}}`
+        } else {
+            subheading += section.title
+        }
+        subheading += `} $|$ \\emph{${section.subtitle}}}{${section.date}}\n`
+    }
+    if(section.bulletCollection) {
+        subheading += BulletCollectionToLatex(section.bulletCollection);
+    }
+    if(section.paragraphCollection) {
+        subheading += ParagraphCollectionToLatex(section.paragraphCollection);
+    }
+
+    return subheading;
+}
+
+export type Section = {
+    name: string,
+    subsections?: Subsection[]
+    bulletCollection?: BulletCollection,
+    paragraphCollection?: ParagraphCollection
+}
+
+export function SectionToLatex(section: Section) {
+    let text = `\\section{${section.name}}\n`;
+
+    if(section.subsections) {
+        text += `\t\\resumeSubHeadingListStart\n`
+
+        for(const sec of section.subsections) {
+            text += SubsectionToLatex(sec);
+        }
+
+        text += `\t\\resumeSubHeadingListEnd\n`
+    }
+    if(section.bulletCollection) {
+        text += BulletCollectionToLatex(section.bulletCollection);
+    }
+    if(section.paragraphCollection) {
+        text += ParagraphCollectionToLatex(section.paragraphCollection);
+    }
+
+    return text;
+}
+
+export type Header = {
+    isLink?: boolean,
     text: string,
     link?: string
 }
 
-export function HeaderComponent(name: string, data: HeaderObject[]) {
+// Function that returns Latex of the Header
+export function HeaderToLatex(name: string, data : Header[]) {
     let header = `\\begin{center}
     \\textbf{\\Huge \\scshape ${name}} \\\\ \\vspace{1pt}`
 
     for (let i = 0; i < data.length; i++) {
         if (data[i].isLink) {
-        header += `\\href{${data[i].link}}{\\underline{${data[i].text}}}`
-    }
+            header += `\\href{${data[i].link}}{\\underline{${data[i].text}}}`
+        }
         if (!data[i].isLink) {
             header += `\\small ${data[i].text}`
         }
@@ -134,100 +261,6 @@ export function HeaderComponent(name: string, data: HeaderObject[]) {
             header += ` $|$ `
         }
     }
-    header += `\n\\end{center}`
+    header += `\n\\end{center}\n\n`
     return header;
-}
-
-export function GenerateSection(name: string) {
-    return "%------" + name.toUpperCase() + "----------"
-            + `\n\\section{` + name + `}`;
-}
-
-export type TextObject = {
-    isBold: boolean,
-    text: string
-}
-
-export function GenerateTextSection(data: TextObject[]) {
-    let text = `\\begin{quote}\n`
-    for (let i = 0; i < data.length; i++) {
-        if (data[i].isBold) {
-            text += `\\textbf{${data[i].text}}`
-        }
-        if (!data[i].isBold) {
-            text += data[i].text
-        }
-    }
-    text += `\\end{quote}`
-    return text;
-}
-
-export type ResumeSubheadingObject = {
-    title: string,
-    link?: string,
-    date: string,
-    subtitle: string,
-    location: string
-    condensed?: boolean
-}
-
-export function GenerateResumeSubheading(data: ResumeSubheadingObject) {
-    let subheading
-    if (!data.condensed) {
-        subheading = `\\resumeSubheading{${data.title}}{${data.date}}{${data.subtitle}}{${data.location}}`
-    } else {
-        subheading = `\\resumeProjectHeading{\\textbf{`
-        if (data.link) {
-            subheading += `\\href{${data.link}}{\\underline{${data.title}}}`
-        } else {
-            subheading += data.title
-        }
-        subheading += `} $|$ \\emph{${data.subtitle}}}{${data.date}}
-           \\resumeItemListStart`
-    }
-    return subheading;
-}
-
-export type SkillObject = {
-    title: string,
-    skills: string[]
-}
-
-export function GenerateSkills(data: SkillObject[]) {
-    let skills = `\\begin{itemize}[leftmargin=0.15in, label={}]
-    \\small{\\item{`
-
-    for (let i = 0; i < data.length; i++) {
-        skills += `\\textbf{` + data[i].title + `}{: `
-
-        for (let j = 0; j < data[i].skills.length; j++) {
-            skills += data[i].skills[j]
-            if (j+1 != data[i].skills.length) {
-                skills += `, `
-            }
-        }
-        if (i+1 != data.length) {
-            skills += `} \\\\`
-        }
-    }
-    skills += `\end{itemize}`
-    return skills;
-}
-
-export type BulletObject = {
-    text: string
-}
-
-export function GenerateBulletPoints(data: BulletObject[]) {
-    let bullets = `\\resumeItemListStart`
-
-    for (let i = 0; i < data.length; i++) {
-        bullets += `\\resumeItem{${data[i].text}}`
-    }
-    bullets += `\\resumeItemListEnd`
-    return bullets;
-}
-
-export function EndDocument() {
-    return `\\end{document}`
 }

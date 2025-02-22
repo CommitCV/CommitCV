@@ -1,16 +1,17 @@
 import * as RC from './ResumeComponents';
-import { HeaderObject } from './ResumeComponents';
+import { Header } from './ResumeComponents';
+import { Section } from './ResumeComponents';
 
 
-export function makeLatex(file : any) {
+export function GenerateLatex(file : any) {
     const data = file //JSON.parse(file);
 
     // Add preamble
     let tex = "";
-    tex += RC.Preamble() + "\n";
+    tex += RC.Preamble() + "\n\n\n";
 
     // Add Header
-    const objArray: HeaderObject[] = [];
+    const objArray: Header[] = [];
 
     for(const key of Object.keys(data.Header.HeaderObject)) {
         const obj = data.Header.HeaderObject[key];
@@ -20,19 +21,20 @@ export function makeLatex(file : any) {
         }
     }
 
-    tex += RC.HeaderComponent(data.Header.name, objArray);
+    tex += RC.HeaderToLatex(data.Header.name, objArray);
+    tex += "\n\n";
 
-    // Iterate over all Components
-    for(const key of Object.keys(data.Components)) {
-        const obj = data.Components[key];
+    //const sectionArray: Section[] = [];
 
-        // Get type of component 
-        console.log(key);
+    for (const section of data.Sections) {
+      tex += RC.SectionToLatex(section);
     }
 
+    tex += "\n\n\\end{document}"
 
     console.log(tex);
 }
+
 
 const file = {
   "Header": {
@@ -53,24 +55,31 @@ const file = {
       }
     ]
   },
-  "Components": [
-      {
-        "subheading": {
-            "title": "University of Manitoba", 
-            "date": "2025",
-            "subtitle": "Computer Science Honours",
-            "location": "Manitoba",
+    "Sections": [
+        {
+            "name": "Projects",
+            "subsections": [
+                {
+                    "title": "Friend Locator", 
+                    "date": "2025",
+                    "subtitle": "Geolocation WebApp",
+                    "location": "Manitoba",
+                    "bulletCollection": [
+                        "fostered innovation",
+                        "js, html, css",
+                        "communication"
+                    ],
+                },
+              ],
         },
-      },
-      {
-        "subheading": {
-            "title": "Brandon University", 
-            "date": "2023",
-            "subtitle": "Computer Science",
-            "condensed": true
-          }
-      }
-  ]
+        {
+            "name": "Skills",
+              "bulletCollection": [
+                  "REACT",
+                  "Command Line"
+              ],
+        },
+    ]
 }
 
-makeLatex(file);
+GenerateLatex(file);
