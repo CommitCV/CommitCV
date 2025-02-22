@@ -1,10 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useFile } from "@/context/FileContext";
 import HeaderCard from "@/components/HeaderCard";
 import PDF from "@/components/PDF";
 import SectionCard from "@/components/SectionCard";
 import { GenerateLatex } from "@/resume/ResumeGenerator";
+import { convertLatexToPdf } from "@/pages/api/pdfCV/generate";
 import { BulletCollection, ParagraphCollection, Subsection } from "@/resume/ResumeComponents";
 
 interface HeaderObject {
@@ -34,7 +35,6 @@ export default function Resume() {
     const [jData, setJData] = useState<ResumeData | null>(null);
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
-    // Handle file reading
     useEffect(() => {
         if (fileData && fileData.path) {
             const reader = new FileReader();
@@ -48,12 +48,11 @@ export default function Resume() {
         }
     }, [fileData]);
 
-    // Parse file content and set state
     useEffect(() => {
         if (fileContent) {
             const parsedData: ResumeData = JSON.parse(fileContent);
             const headerSection: Section = {
-                name: "Contact Information",
+                name: parsedData.Header.name,
                 headerCards: parsedData.Header.HeaderObject.map((header: HeaderObject) => ({
                     text: header.text,
                     link: header.link
@@ -64,33 +63,20 @@ export default function Resume() {
         }
     }, [fileContent]);
 
-    // Generate PDF from LaTeX
-    useEffect(() => {
-        const generatePdf = async () => {
-            if (jData) {
-                const latex = GenerateLatex(jData);
-                try {
-                    const response = await fetch('http://100.69.4.2:3005/convert', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ latex: latex.toString() }), // Ensure latex is a string
-                    });
-                    if (response.ok) {
-                        const blob = await response.blob();
-                        const url = URL.createObjectURL(blob);
-                        setPdfUrl(url);
-                    } else {
-                        console.error('Failed to convert LaTeX to PDF');
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                }
+    const generatePdf = useCallback(async () => {
+        if (jData) {
+            const latex = GenerateLatex(jData);
+            const blob = await convertLatexToPdf(latex);
+            if (blob) {
+                const url = URL.createObjectURL(blob);
+                setPdfUrl(url);
             }
-        };
-        generatePdf();
+        }
     }, [jData]);
+
+    useEffect(() => {
+        generatePdf();
+    }, [jData, generatePdf]);
 
     if (!jData || !pdfUrl) {
         return <div>Loading...</div>;
