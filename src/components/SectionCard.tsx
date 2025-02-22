@@ -1,102 +1,127 @@
-import { useState } from 'react';
-import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import HeaderObject, { IHeaderComponent } from "@/components/HeaderComponent";
-import { BulletCollection, ParagraphCollection, Subsection } from "@/resume/ResumeComponents";
-import SubsectionCard from "@/components/SubsectionCard";
-import TextComponent from "@/components/TextComponent";
-import { ResumeData } from "@/app/resume/page";
+// src/components/SectionCard.tsx
+    import { useState } from 'react';
+    import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+    import { ResumeData } from '@/app/resume/page';
+    import { Subsection, BulletCollection, ParagraphCollection } from '@/resume/ResumeComponents';
+    import TextComponent from './TextComponent';
 
-interface ISectionCard {
-    name: string,
-    headerCards?: IHeaderComponent[],
-    subsections?: Subsection[],
-    bulletCollection?: BulletCollection,
-    paragraphCollection?: ParagraphCollection,
-    setJData: React.Dispatch<React.SetStateAction<ResumeData | null>>;
-}
+    interface IHeaderCard {
+      text: string;
+      link?: string;
+    }
 
-export default function SectionCard({
-    name,
-    headerCards,
-    subsections,
-    bulletCollection,
-    paragraphCollection,
-    setJData,
-}: ISectionCard) {
-    const [isExpanded, setIsExpanded] = useState(false);
+    interface ISectionCardProps {
+      name: string;
+      headerCards?: IHeaderCard[];
+      subsections?: Subsection[];
+      bulletCollection?: BulletCollection;
+      paragraphCollection?: ParagraphCollection;
+      setJData: React.Dispatch<React.SetStateAction<ResumeData | null>>;
+    }
 
-    const toggleExpand = () => {
-        setIsExpanded(!isExpanded);
-    };
+    export default function SectionCard({
+      name,
+      headerCards,
+      subsections,
+      bulletCollection,
+      paragraphCollection,
+      setJData,
+    }: ISectionCardProps) {
+      const [isExpanded, setIsExpanded] = useState(false);
 
-    const handleHeaderTextChange = (index: number, text: string) => {
+      const toggleExpand = () => setIsExpanded(!isExpanded);
+
+      const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newName = e.target.value;
         setJData(prevData => {
-            if (!prevData) return prevData;
-           if (!prevData || !prevData.Sections[0].headerCards) return prevData;
-            const updatedHeaderCards = [...prevData.Sections[0].headerCards!];
-            updatedHeaderCards[index].text = text;
-            const updatedSections = [...prevData.Sections];
-            updatedSections[0].headerCards = updatedHeaderCards;
-            return { ...prevData, Sections: updatedSections };
+          if (!prevData) return prevData;
+          const updatedSections = prevData.Sections.map(section =>
+            section.name === name ? { ...section, name: newName } : section
+          );
+          return { ...prevData, Sections: updatedSections };
         });
-    };
+      };
 
-    const handleHeaderLinkChange = (index: number, link: string) => {
+      const handleBulletChange = (index: number, bold: string, normal: string) => {
         setJData(prevData => {
-            if (!prevData) return prevData;
-            if (!prevData || !prevData.Sections[0].headerCards) return prevData;
-            const updatedHeaderCards = [...prevData.Sections[0].headerCards!];
-            updatedHeaderCards[index].link = link;
-            const updatedSections = [...prevData.Sections];
-            updatedSections[0].headerCards = updatedHeaderCards;
-            return { ...prevData, Sections: updatedSections };
+          if (!prevData) return prevData;
+          const updatedSections = prevData.Sections.map(section => {
+            if (section.name === name) {
+              const bullets = section.bulletCollection?.bullets ?? [];
+              const updatedBullets = [...bullets];
+              updatedBullets[index] = { bold, normal };
+              return {
+                ...section,
+                bulletCollection: {
+                  ...section.bulletCollection,
+                  bullets: updatedBullets,
+                },
+              };
+            }
+            return section;
+          });
+          return { ...prevData, Sections: updatedSections };
         });
-    };
+      };
 
-    return (
+      const handleParagraphChange = (index: number, bold: string, normal: string) => {
+        setJData(prevData => {
+          if (!prevData) return prevData;
+          const updatedSections = prevData.Sections.map(section => {
+            if (section.name === name) {
+              const paragraphs = section.paragraphCollection?.paragraphs ?? [];
+              const updatedParagraphs = [...paragraphs];
+              updatedParagraphs[index] = { bold, normal };
+              return {
+                ...section,
+                paragraphCollection: {
+                  ...section.paragraphCollection,
+                  paragraphs: updatedParagraphs,
+                },
+              };
+            }
+            return section;
+          });
+          return { ...prevData, Sections: updatedSections };
+        });
+      };
+
+      return (
         <div className="bg-gray-100 shadow-lg rounded-lg p-8">
-            <div className="flex justify-between items-center">
-                <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setJData((prevData) =>
-                        prevData ? { ...prevData, name: e.target.value } : prevData
-                    )}
-                    placeholder={"Section Name"}
-                    className="block min-w-0 p-2 w-[25vw] text-base rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline focus:outline-0 sm:text-sm/6"
+          <div className="flex justify-between items-center">
+            <input
+              type="text"
+              value={name}
+              placeholder="Section Name"
+              onChange={handleNameChange}
+              className="block min-w-0 p-2 w-[25vw] text-base rounded-xl"
+            />
+            <button onClick={toggleExpand}>
+              {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
+            </button>
+          </div>
+          {isExpanded && (
+            <div className="mt-4">
+              {bulletCollection?.bullets?.map((bullet, index) => (
+                <TextComponent
+                  key={index}
+                  bold={bullet.bold ?? ""}
+                  normal={bullet.normal ?? ""}
+                  onBoldChange={(newBold: string) => handleBulletChange(index, newBold, bullet.normal ?? "")}
+                  onNormalChange={(newNormal: string) => handleBulletChange(index, bullet.bold ?? "", newNormal)}
                 />
-                <button onClick={toggleExpand} className="focus:outline-none">
-                    {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
-                </button>
+              ))}
+              {paragraphCollection?.paragraphs?.map((paragraph, index) => (
+                <TextComponent
+                  key={index}
+                  bold={paragraph.bold ?? ""}
+                  normal={paragraph.normal ?? ""}
+                  onBoldChange={(newBold: string) => handleParagraphChange(index, newBold, paragraph.normal ?? "")}
+                  onNormalChange={(newNormal: string) => handleParagraphChange(index, paragraph.bold ?? "", newNormal)}
+                />
+              ))}
             </div>
-            {isExpanded && (
-                <div className="mt-4">
-                    {headerCards && headerCards.map((headerCard, index) => (
-                        <HeaderObject
-                            key={index}
-                            text={headerCard.text}
-                            link={headerCard.link}
-                            onTextChange={(text) => handleHeaderTextChange(index, text)}
-                            onLinkChange={(link) => handleHeaderLinkChange(index, link)}
-                        />
-                    ))}
-                    {subsections && subsections.map((subsection, index) => (
-                        <SubsectionCard
-                            key={index}
-                            {...subsection}
-                            setJData={setJData}
-                        />
-                    ))}
-                    {bulletCollection && bulletCollection.bullets.map((bullet, index) => (
-                        <TextComponent key={index} bold={bullet.bold} normal={bullet.normal} isBullet={true} />
-                    ))}
-                    {paragraphCollection && paragraphCollection.paragraphs.map((paragraph, index) => (
-                        <TextComponent key={index} bold={paragraph.bold} normal={paragraph.normal} />
-                    ))}
-                </div>
-            )}
+          )}
         </div>
-    );
-}
+      );
+    }

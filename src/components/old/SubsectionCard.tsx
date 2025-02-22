@@ -16,12 +16,12 @@ interface ISubsectionCard {
 export default function SubsectionCard({
     title,
     link,
-    date,
-    subtitle,
-    location,
-    condensed,
-    bulletCollection,
-    paragraphCollection,
+    // date,
+    // subtitle,
+    // location,
+    // condensed,
+    // bulletCollection,
+    // paragraphCollection,
     setJData,
 }: ISubsectionCard) {
 
