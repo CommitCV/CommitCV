@@ -1,11 +1,8 @@
 "use client"
-//import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import SectionCard from "@/components/SectionCard";
-
-// import Link from "next/link";
-import {useState} from "react";
 import PDF from "@/components/PDF";
+import FileUpload from "@/components/FileUpload";
 
 export default function Home() {
     //const router = useRouter();
@@ -27,7 +24,8 @@ export default function Home() {
         <div>
             <Header/>
             <div className={`grid grid-cols-2`}>
-                <div><SectionCard/></div>
+                <div><SectionCard/>
+                <FileUpload/></div>
                 <div>
                     <PDF/>
                 </div>

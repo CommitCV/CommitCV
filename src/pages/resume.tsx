@@ -1,30 +1,23 @@
-import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 
-export default function ProtectedPage() {
-    const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+export default function Resume() {
     const router = useRouter();
+    const [fileData, setFileData] = useState(null);
 
     useEffect(() => {
-        fetch("/api/github/session")
-            .then((res) => res.json())
-            .then((data) => {
-                if (!data.authenticated) {
-                    router.push("/"); // Redirect to homepage if not logged in
-                } else {
-                    setAuthenticated(true);
-                }
-            });
-    }, [router]);
-
-    if (authenticated === null) {
-        return <p>Loading...</p>; // Show loading while checking
-    }
+        if (router.query.file) {
+            const data = JSON.parse(router.query.file as string);
+            setFileData(data);
+        }
+    }, [router.query.file]);
 
     return (
         <div>
-            <h1>Protected Page</h1>
-            <p>You are logged in with GitHub!</p>
+            <h1>Resume</h1>
+            {fileData && (
+                <pre>{JSON.stringify(fileData, null, 2)}</pre>
+            )}
         </div>
     );
 }
