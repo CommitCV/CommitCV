@@ -53,16 +53,6 @@
       "name": "Volunteer Experience",
       "subsections": [
         {
-          "title": "Dev Club Hackathon | Mentor",
-          "date": "2025",
-          "bulletCollection": {
-            "bullets": [
-              { "normal": "Provided administrative support by enrolling 100+ competitors and managing event logistics" },
-              { "normal": "Guided participants through technical challenges, fostering innovation and problem-solving skills" }
-            ]
-          }
-        },
-        {
           "title": "Instructor/Lecturer | Dev Club Exam Cram",
           "date": "2024",
           "bulletCollection": {
@@ -103,19 +93,6 @@
           }
         },
         {
-          "title": "VoiceCompanion: Raspberry Pi AI Assistant",
-          "date": "2025",
-          "location": "Manitoba",
-          "subtitle": "Bash, Text-to-Speech, Speech-to-Text",
-          "bulletCollection": {
-            "bullets": [
-              { "normal": "Engineered an AI assistant for natural language processing" },
-              { "normal": "Implemented text-to-speech and speech-to-text capabilities for seamless interaction" },
-              { "normal": "Optimized performance for Raspberry Pi, achieving real-time responses without external APIs" }
-            ]
-          }
-        },
-        {
           "title": "WebChess: AI Chess Game",
           "date": "Ongoing",
           "subtitle": "JavaScript, Object-Oriented Programming",
@@ -135,10 +112,8 @@
       "bulletCollection": {
         "bullets": [
           { "normal": "Highschool Average of 98; Valedictorian" },
-          { "normal": "Work Ethic and Community Volunteer Scholarship" },
           { "normal": "Governor General Academic Medal" },
           { "normal": "MHSAA Credit Union Scholar-Athlete Certificate" },
-          { "normal": "Boundary Co-op Scholarship for Academic Standing" },
           { "normal": "Askew Memorial Scholarship; Highest Academic Standing" }
         ]
         }
