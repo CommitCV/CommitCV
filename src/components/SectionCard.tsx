@@ -39,6 +39,9 @@ export default function SectionCard({
                     name="name"
                     type="text"
                     value={name}
+                    onChange={(e) => setJData((prevData) => 
+                        prevData ? { ...prevData, name: e.target.value } : prevData
+                    )}
                     placeholder={"Section Name"}
                     className="block min-w-0 p-2 w-[25vw] text-base rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline focus:outline-0 sm:text-sm/6"
                 />
