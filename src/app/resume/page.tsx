@@ -37,6 +37,8 @@ export default function Resume() {
     const [jData, setJData] = useState<ResumeData | null>(null);
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
+    console.log("Rendering Latex");
+
     useEffect(() => {
         if (fileData && fileData.path) {
             const reader = new FileReader();
@@ -51,7 +53,8 @@ export default function Resume() {
     }, [fileData]);
 
     useEffect(() => {
-        if (fileContent) {
+        if (fileContent && !jData) {
+            console.log("Changing JData");
             const parsedData: ResumeData = JSON.parse(fileContent);
             const headerSection: Section = {
                 name: parsedData.Header.name,
@@ -65,7 +68,7 @@ export default function Resume() {
             parsedData.Sections.unshift(headerSection);
             setJData(parsedData);
         }
-    }, [fileContent]);
+    }, [fileContent, jData]); // Add jData as a dependency to prevent unnecessary updates
 
     const generatePdf = useCallback(async () => {
         if (jData) {

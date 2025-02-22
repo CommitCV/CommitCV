@@ -11,7 +11,7 @@ export const convertLatexToPdf = (() => {
         lastCall = now;
 
         try {
-            const response = await fetch('http://localhost:3005/convert', {
+            const response = await fetch('http://100.69.4.2:3005/convert', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
