@@ -2,7 +2,7 @@ import { Red_Hat_Mono } from "next/font/google";
 
 const rhm = Red_Hat_Mono({ subsets: ['latin'] })
 
-export default function Header() {
+export default function HeaderCard() {
     return (
         <div>
             <div className={`flex flex-row`}>

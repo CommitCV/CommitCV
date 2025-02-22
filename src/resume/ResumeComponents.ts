@@ -193,7 +193,7 @@ export type Subsection = {
     link?: string,
     date: string,
     subtitle: string,
-    location: string,
+    location?: string,
     condensed?: boolean,
     bulletCollection?: BulletCollection,
     paragraphCollection?: ParagraphCollection
