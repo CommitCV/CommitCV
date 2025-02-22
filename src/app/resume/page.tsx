@@ -8,7 +8,6 @@ import { GenerateLatex } from "@/resume/ResumeGenerator";
 import { convertLatexToPdf } from "@/pages/api/pdfCV/generate";
 import { BulletCollection, ParagraphCollection, Subsection } from "@/resume/ResumeComponents";
 
-
 interface HeaderObject {
     text: string;
     link?: string;
@@ -89,6 +88,16 @@ export default function Resume() {
             fetch("/template.json")
                 .then((response) => response.json())
                 .then((templateData: ResumeData) => {
+                    const headerSection: Section = {
+                        name: templateData.Header.name,
+                        headerCards: templateData.Header.HeaderObject.map((header: HeaderObject) => ({
+                            text: header.text,
+                            link: header.link,
+                            onTextChange: () => { },
+                            onLinkChange: () => { }
+                        }))
+                    };
+                    templateData.Sections.unshift(headerSection);
                     setJData(templateData);
                 })
                 .catch((error) => {
