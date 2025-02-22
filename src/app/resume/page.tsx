@@ -4,8 +4,8 @@ import PDF from "@/components/PDF";
 import { useFile } from "@/context/FileContext";
 import { useEffect, useState } from "react";
 import SectionCard from "@/components/SectionCard";
-import {BulletCollection, ParagraphCollection, Subsection} from "@/resume/ResumeComponents";
-import pdflatex from "node-pdflatex"
+import { BulletCollection, ParagraphCollection, Subsection } from "@/resume/ResumeComponents";
+import { GenerateLatex } from "@/resume/ResumeGenerator";
 
 interface HeaderObject {
     text: string;
@@ -15,9 +15,9 @@ interface HeaderObject {
 interface Section {
     name: string;
     headerCards?: HeaderObject[];
-    subsections?: Subsection[]; // Replace `any` with the appropriate type if available
-    bulletCollection?: BulletCollection; // Replace `any` with the appropriate type if available
-    paragraphCollection?: ParagraphCollection; // Replace `any` with the appropriate type if available
+    subsections?: Subsection[];
+    bulletCollection?: BulletCollection;
+    paragraphCollection?: ParagraphCollection;
 }
 
 interface ResumeData {
@@ -32,6 +32,7 @@ export default function Resume() {
     const { fileData } = useFile();
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [jData, setJData] = useState<ResumeData | null>(null);
+    const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
     useEffect(() => {
         if (fileData && fileData.path) {
@@ -50,7 +51,7 @@ export default function Resume() {
         if (fileContent) {
             const parsedData: ResumeData = JSON.parse(fileContent);
             const headerSection: Section = {
-                name: parsedData.Header.name,
+                name: "Contact Information",
                 headerCards: parsedData.Header.HeaderObject.map((header: HeaderObject) => ({
                     text: header.text,
                     link: header.link
@@ -61,11 +62,36 @@ export default function Resume() {
         }
     }, [fileContent]);
 
-    if (!jData) {
+    useEffect(() => {
+        const generatePdf = async () => {
+            if (jData) {
+                const latex = GenerateLatex(jData);
+                try {
+                    const response = await fetch('http://localhost:3005/convert', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ latex: latex.toString() }), // Ensure latex is a string
+                    });
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const url = URL.createObjectURL(blob);
+                        setPdfUrl(url);
+                    } else {
+                        console.error('Failed to convert LaTeX to PDF');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+        };
+        generatePdf();
+    }, [jData]);
+
+    if (!jData || !pdfUrl) {
         return <div>Loading...</div>;
     }
-
-    const pdfFile = pdflatex(jData);
 
     return (
         <div>
@@ -84,7 +110,7 @@ export default function Resume() {
                     ))}
                 </div>
                 <div>
-                    <PDF file={} />
+                    <PDF file={pdfUrl} />
                 </div>
             </div>
         </div>
