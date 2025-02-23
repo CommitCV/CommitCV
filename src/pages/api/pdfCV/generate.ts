@@ -1,4 +1,3 @@
-// src/api/pdfApi.ts
 export const convertLatexToPdf = (() => {
     let lastCall = 0;
 
@@ -11,7 +10,7 @@ export const convertLatexToPdf = (() => {
         lastCall = now;
 
         try {
-            const response = await fetch('http://100.69.4.2:3005/convert', {
+            const response = await fetch(`${process.env.PDF_ENDPOINT}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
