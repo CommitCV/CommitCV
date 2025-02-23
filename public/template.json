@@ -1,16 +1,16 @@
 {
   "Header": {
-    "name": "Connor Langan",
+    "name": "Alex Reynolds",
     "HeaderObject": [
       {
-        "text": "connorlangan@gmail.com"
+        "text": "alex.reynolds@example.com"
       },
       {
-        "text": "420-69-9999"
+        "text": "555-12-3456"
       },
       {
-        "text": "github.com/cjlangan",
-        "link": "https://github.com/cjlangan"
+        "text": "github.com/alexreynoldsdev",
+        "link": "https://github.com/alexreynoldsdev"
       }
     ]
   },
@@ -19,14 +19,14 @@
       "name": "Education",
       "subsections": [
         {
-          "title": "University of Manitoba",
-          "date": "Sep. 2023 -- Present",
-          "subtitle": "Bachelor of Science in Computer Science (Honours), Minor in Mathematics",
-          "location": "Winnipeg, MB",
+          "title": "University of Cascadia",
+          "date": "Sep. 2022 -- Present",
+          "subtitle": "Bachelor of Science in Software Engineering, Minor in Cybersecurity",
+          "location": "Seattle, WA",
           "bulletCollection": {
             "bullets": [
-              { "normal": "GPA: 4.45 / 4.5, Honours and entering Co-op program Winter 2025" },
-              { "normal": "Relevant Courses: Data Structures and Algorithms, Object Orientation, Computer Systems" }
+              { "normal": "GPA: 3.95 / 4.0, Member of the Dean's Honour List" },
+              { "normal": "Relevant Courses: Systems Programming, Web Development, Network Security" }
             ]
           }
         }
@@ -36,14 +36,14 @@
       "name": "Work Experience",
       "subsections": [
         {
-          "title": "Supervisor/Lifeguard/Water Safety Instructor",
-          "date": "June 2020 -- August 2024",
-          "subtitle": "Louise Recreation Commission",
-          "location": "Pilot Mound, MB",
+          "title": "Software Development Intern",
+          "date": "May 2023 -- August 2023",
+          "subtitle": "NexusTech Solutions",
+          "location": "Portland, OR",
           "bulletCollection": {
             "bullets": [
-              { "normal": "Led pool operations, including scheduling, water quality maintenance, and staff training" },
-              { "normal": "Instructed water safety and swimming skills to various skill levels, enhancing community safety" }
+              { "normal": "Developed internal web applications using React and Flask" },
+              { "normal": "Optimized SQL queries to improve database efficiency by 30 percent" }
             ]
           }
         }
@@ -53,12 +53,12 @@
       "name": "Volunteer Experience",
       "subsections": [
         {
-          "title": "Instructor/Lecturer | Dev Club Exam Cram",
-          "date": "2024",
+          "title": "Tutor | CodeCamp for Kids",
+          "date": "2023",
           "bulletCollection": {
             "bullets": [
-              { "normal": "Delivered an engaging lecture on Analysis of Algorithms to 20 2nd-year students" },
-              { "normal": "Developed comprehensive study materials, enhancing students' understanding of complex concepts" }
+              { "normal": "Mentored students in Python programming fundamentals" },
+              { "normal": "Designed interactive coding exercises to enhance learning engagement" }
             ]
           }
         }
@@ -68,40 +68,38 @@
       "name": "Projects",
       "subsections": [
         {
-          "title": "FriendLocator: Geolocation Social App",
-          "date": "2025",
-          "subtitle": "SQLite, Python, Flask, JavaScript",
-          "location": "Manitoba",
+          "title": "EcoTrack: Sustainability Tracker",
+          "date": "2024",
+          "subtitle": "React, Node.js, PostgreSQL",
+          "location": "Seattle, WA",
           "bulletCollection": {
             "bullets": [
-              { "normal": "Engineered a self-hosted server with real-time location sharing and direction" },
-              { "normal": "Secured 2nd Place in the Robobisons Competition for innovative application of geolocation technology" }
+              { "normal": "Built a web platform for tracking personal carbon footprints and eco-friendly habits" },
+              { "normal": "Integrated an API for real-time environmental impact calculations" }
             ]
           }
         },
         {
-          "title": "HomeServer: Adblock and Data Storage",
-          "date": "2025",
-          "location": "Manitoba",
-          "subtitle": "Site Hosting, Remote, Headless",
+          "title": "HomeServer: Self-Hosted Cloud Storage",
+          "date": "2024",
+          "location": "Seattle, WA",
+          "subtitle": "Docker, Linux, Nextcloud",
           "bulletCollection": {
             "bullets": [
-              { "normal": "Configured a headless Home Server running 24/7, accessible remotely when using VPN" },
-              { "normal": "Initiated network-wide adblock, family data storage and media share capabilities" },
-              { "normal": "Hosting project websites such as friend-locator.duckdns.org" }
+              { "normal": "Configured a secure, self-hosted cloud storage solution for personal and family use" },
+              { "normal": "Implemented automated backups and remote access via VPN" }
             ]
           }
         },
         {
-          "title": "WebChess: AI Chess Game",
+          "title": "AI Chess Bot",
           "date": "Ongoing",
-          "subtitle": "JavaScript, Object-Oriented Programming",
+          "subtitle": "Python, TensorFlow, Flask",
           "location": "Online",
           "bulletCollection": {
             "bullets": [
-              { "normal": "Developed a fully functional chess game with an intuitive user interface" },
-              { "normal": "Implemented complex game logic and move validation using object-oriented principles" },
-              { "normal": "Designing an AI opponent using minimax algorithm with alpha-beta pruning" }
+              { "normal": "Developing an AI-powered chess opponent with machine learning techniques" },
+              { "normal": "Implemented an interactive web interface for gameplay and analysis" }
             ]
           }
         }
@@ -111,10 +109,10 @@
       "name": "Awards",
       "bulletCollection": {
         "bullets": [
-          { "normal": "Highschool Average of 98; Valedictorian" },
-          { "normal": "Governor General Academic Medal" },
-          { "normal": "MHSAA Credit Union Scholar-Athlete Certificate" },
-          { "normal": "Askew Memorial Scholarship; Highest Academic Standing" }
+          { "normal": "President’s Scholarship for Academic Excellence" },
+          { "normal": "Hackathon Winner: Best AI Project at CodeSprint 2024" },
+          { "normal": "Google Cloud Developer Scholarship Recipient" },
+          { "normal": "National Merit Scholar" }
         ]
         }
     },
@@ -122,8 +120,8 @@
       "name": "Technical Skills",
       "paragraphCollection": {
         "paragraphs": [
-          { "bold": "Languages:", "normal": "C, C++, SQL, Java, Rust, JavaScript, Python, R, Bash, HTML/CSS" },
-          { "bold": "Tools and Technologies:", "normal": "Git, Unix, Vim, Docker, LaTeX, Flask, React, Node.js, SQL" }
+          { "bold": "Languages:", "normal": "Python, JavaScript, C++, SQL, Rust, Java, Bash, HTML/CSS" },
+          { "bold": "Tools and Technologies:", "normal": "Git, Docker, Linux, PostgreSQL, Flask, React, Node.js, Kubernetes" }
         ]
       }
     },
@@ -131,10 +129,11 @@
       "name": "Activities and Interests",
       "paragraphCollection": {
         "paragraphs": [
-          { "bold": "YouTuber:", "normal": "Manage a channel with 6500+ subscribers and 2.6M+ views, featuring parameter modification hacking" },
-          { "bold": "Linux Enthusiast:", "normal": "Daily drive Arch Linux, constantly exploring and customizing advanced system configurations" }
+          { "bold": "Tech Blogger:", "normal": "Run a blog with 10,000+ monthly readers covering open-source projects and cybersecurity" },
+          { "bold": "Home Lab Enthusiast:", "normal": "Experiment with self-hosted services, network security, and virtualization" }
         ]
       }
     }
   ]
 }
+
