@@ -1,5 +1,6 @@
 export const convertLatexToPdf = (() => {
     let lastCall = 0;
+    const apiEndpoint = process.env.NEXT_PUBLIC_PDF_ENDPOINT;
 
     return async (latex: string): Promise<Blob | null> => {
         const now = Date.now();
@@ -9,8 +10,13 @@ export const convertLatexToPdf = (() => {
         }
         lastCall = now;
 
+        if (!apiEndpoint) {
+            console.log('PDF_ENDPOINT is not set');
+            return null;
+        }
+
         try {
-            const response = await fetch(`${process.env.PDF_ENDPOINT}`, {
+            const response = await fetch(apiEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
