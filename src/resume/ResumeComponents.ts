@@ -1,4 +1,4 @@
-export function Preamble() {
+function Preamble() {
     const preamble = `%-------------------------
 % Resume in Latex
 % Author : Jake Gutierrez
@@ -113,12 +113,46 @@ export function Preamble() {
     return preamble;
 }
 
-// let x: SkillObject = {title: "a", arr: ["b", "c"]}
-
-
 export type Bullet = {
     bold?: string,
     normal?: string
+}
+
+export type Paragraph = {
+    bold?: string,
+    normal?: string
+}
+
+export type Subsection = {
+    title: string,
+    link?: string,
+    date: string,
+    subtitle: string,
+    location?: string,
+    bulletCollection?: Bullet[],
+    paragraphCollection?: Paragraph[]
+}
+
+export type Section = {
+    name: string,
+    subsections?: Subsection[]
+    bulletCollection?: Bullet[],
+    paragraphCollection?: Paragraph[]
+}
+
+export type HeaderObject = {
+    text: string,
+    link?: string
+}
+
+export type Header = {
+    name: string,
+    subheaders?: HeaderObject[]
+}
+
+export type Resume = {
+    header: Header,
+    sections: Section[]
 }
 
 function BulletToLatex(bullet: Bullet) {
@@ -128,109 +162,53 @@ function BulletToLatex(bullet: Bullet) {
     return `\t\t\t\t\t\\resumeItem{\\textbf{${bold}} ${normal}}\n`;
 }
 
-export type Paragraph = {
-    bold?: string,
-    normal?: string
-}
-
 function ParagraphToLatex(paragraph: Paragraph) {
     const bold = paragraph.bold ? paragraph.bold : "";
     const normal = paragraph.normal ? paragraph.normal : "";
 
-
     return `\t\t\t\t\t\\item \\small \\textbf{${bold}}{ ${normal}}\n`
 }
-
-export type BulletCollection = {
-    bullets: Bullet[]
-}
-
-function BulletCollectionToLatex(bulls: BulletCollection) {
-    let text = `\t\t\t\\begin{itemize}[leftmargin=0.20in, itemsep=0pt, topsep=5pt, partopsep=0pt]\n`;
-
-    for(const bullet of bulls.bullets) {
-        text += BulletToLatex(bullet);
-    }
-
-    text += `\t\t\t\\end{itemize}\n\n`;
-
-    return text;
-}
-
-/*
-function BulletCollectionToLatex(bulls: BulletCollection) {
-    let text = `\t\t\t\\resumeItemListStart
-                \\small\n`; // Adjust font size to small
-
-    for(const bullet of bulls.bullets) {
-        text += BulletToLatex(bullet);
-    }
-
-    text += `\t\t\t\\resumeItemListEnd\n\n`;
-
-    return text;
-}
-*/
-
-export type ParagraphCollection = {
-    paragraphs: Paragraph[]
-}
-
-function ParagraphCollectionToLatex(paragraphs: ParagraphCollection) {
-    let text = `\t\t\t\\begin{itemize}[leftmargin=0.15in, label={}]\n`;
-
-    for(const para of paragraphs.paragraphs) {
-        text += ParagraphToLatex(para);
-    }
-
-    text += `t\t\t\\end{itemize}\n\n`;
-
-    return text;
-}
-
-export type Subsection = {
-    title: string,
-    link?: string,
-    date: string,
-    subtitle: string,
-    location?: string,
-    condensed?: boolean,
-    bulletCollection?: BulletCollection,
-    paragraphCollection?: ParagraphCollection
-}
-
 function SubsectionToLatex(section : Subsection) {
     let subheading;
 
-    if (!section.condensed) {
+    if (section.location) {
         subheading = `\t\t\\resumeSubheading{${section.title}}{${section.date}}{${section.subtitle}}{${section.location}}\n`
     } else {
-        subheading = `\t\t\\resumeSubheading{\\textbf{`
+        subheading = `\t\t\\resumeSubSubheading{\\textbf{`
         if (section.link) {
             subheading += `\\href{${section.link}}{\\underline{${section.title}}}`
         } else {
             subheading += section.title
         }
-        subheading += `} $|$ \\emph{${section.subtitle}}}{${section.date}}\n`
+        subheading += `} \\textbar\\ \\emph{${section.subtitle}}}{${section.date}}\n`
     }
     if(section.bulletCollection) {
-        subheading += BulletCollectionToLatex(section.bulletCollection);
+        let bulletText = `\t\t\t\\resumeItemListStart\n`;
+
+        for(const bullet of section.bulletCollection) {
+            bulletText += BulletToLatex(bullet);
+        }
+
+        bulletText += `\t\t\t\\resumeItemListEnd\n\n`;
+
+        subheading += bulletText;
     }
     if(section.paragraphCollection) {
-        subheading += ParagraphCollectionToLatex(section.paragraphCollection);
+        let paragraphText = `\t\t\t\\begin{itemize}[leftmargin=0.15in, label={}]\n`;
+
+        for(const para of section.paragraphCollection) {
+            paragraphText += ParagraphToLatex(para);
+        }
+
+        paragraphText+= `t\t\t\\end{itemize}\n\n`;
+
+        subheading += paragraphText;
     }
 
     return subheading;
 }
 
-export type Section = {
-    name: string,
-    subsections?: Subsection[]
-    bulletCollection?: BulletCollection,
-    paragraphCollection?: ParagraphCollection
-}
-
-export function SectionToLatex(section: Section) {
+function SectionToLatex(section: Section) {
     let text = `\\section{${section.name}}\n`;
 
     if(section.subsections) {
@@ -243,35 +221,233 @@ export function SectionToLatex(section: Section) {
         text += `\t\\resumeSubHeadingListEnd\n\n\n`
     }
     if(section.bulletCollection) {
-        text += BulletCollectionToLatex(section.bulletCollection);
+        let bulletText = `\t\t\t\\resumeItemListStart\n`;
+
+        for(const bullet of section.bulletCollection) {
+            bulletText += BulletToLatex(bullet);
+        }
+
+        bulletText += `\t\t\t\\resumeItemListEnd\n\n`;
+
+        text += bulletText;
     }
     if(section.paragraphCollection) {
-        text += ParagraphCollectionToLatex(section.paragraphCollection);
+        let paragraphText = `\t\t\t\\begin{itemize}[leftmargin=0.15in, label={}]\n`;
+
+        for(const para of section.paragraphCollection) {
+            paragraphText += ParagraphToLatex(para);
+        }
+
+        paragraphText+= `t\t\t\\end{itemize}\n\n`;
+
+        text += paragraphText;
     }
 
     return text;
 }
 
-export type Header = {
-    text: string,
-    link?: string
-}
-
-// Function that returns Latex of the Header
-export function HeaderToLatex(name: string, data : Header[]) {
+function HeaderToLatex(data : Header) {
     let header = `\\begin{center}
-    \\textbf{\\Huge \\scshape ${name}} \\\\ \\vspace{1pt}`
+    \\textbf{\\Huge \\scshape ${data.name}} \\\\ \\vspace{1pt}`
 
-    for (let i = 0; i < data.length; i++) {
-        if (data[i].link) {
-            header += `\\href{${data[i].link}}{\\underline{${data[i].text}}}`
-        } else {
-            header += `\\small ${data[i].text}`
-        }
-        if (i+1 != data.length) {
-            header += ` $|$ `
+    if(data.subheaders) {
+        for (let i = 0; i < data.subheaders.length; i++) {
+            const part = data.subheaders[i];
+
+            if (part.link) {
+                header += `\\href{${part.link}}{\\underline{${part.text}}}`;
+            } else {
+                header += `\\small ${part.text}`;
+            }
+            if(i < data.subheaders.length - 1) {
+                header += ` $|$ `;
+            }
         }
     }
-    header += `\n\\end{center}\n\n`
+    header += `\n\\end{center}\n\n`;
     return header;
 }
+
+export function ResumeToLatex(resume: Resume) {
+    let tex = Preamble() + `\n\n\n`;
+
+    tex += HeaderToLatex(resume.header);
+
+    for(const section of resume.sections) {
+        tex += SectionToLatex(section);
+    }
+
+    tex += `\n\n\\end{document}`
+    return tex;
+}
+
+export function CreateResumeObject(file: any): Resume {
+    return file as Resume;
+}
+
+const file = {
+  "header": {
+    "name": "Alex Reynolds",
+    "subheaders": [
+      {
+        "text": "alex.reynolds@example.com"
+      },
+      {
+        "text": "555-12-3456"
+      },
+      {
+        "text": "github.com/alexreynoldsdev",
+        "link": "https://github.com/alexreynoldsdev"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "name": "Education",
+      "subsections": [
+        {
+          "title": "University of Cascadia",
+          "date": "Sep. 2022 -- Present",
+          "subtitle": "Bachelor of Science in Software Engineering, Minor in Cybersecurity",
+          "location": "Seattle, WA",
+            "bulletCollection": [
+              {
+                "normal": "GPA: 3.95 / 4.0, Member of the Dean's Honour List"
+              },
+              {
+                "normal": "Relevant Courses: Systems Programming, Web Development, Network Security"
+              }
+            ]
+        }
+      ]
+    },
+    {
+      "name": "Work Experience",
+      "subsections": [
+        {
+          "title": "Software Development Intern",
+          "date": "May 2023 -- August 2023",
+          "subtitle": "NexusTech Solutions",
+          "location": "Portland, OR",
+            "bulletCollection": [
+              {
+                "normal": "Developed internal web applications using React and Flask"
+              },
+              {
+                "normal": "Optimized SQL queries to improve database efficiency by 30 percent"
+              }
+            ]
+        }
+      ]
+    },
+    {
+      "name": "Volunteer Experience",
+      "subsections": [
+        {
+          "title": "Tutor | CodeCamp for Kids",
+          "date": "2023",
+            "bulletCollection": [
+              {
+                "normal": "Mentored students in Python programming fundamentals"
+              },
+              {
+                "normal": "Designed interactive coding exercises to enhance learning engagement"
+              }
+            ]
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "subsections": [
+        {
+          "title": "EcoTrack: Sustainability Tracker",
+          "date": "2024",
+          "subtitle": "React, Node.js, PostgreSQL",
+          "location": "Seattle, WA",
+            "bulletCollection": [
+              {
+                "normal": "Built a web platform for tracking personal carbon footprints and eco-friendly habits"
+              },
+              {
+                "normal": "Integrated an API for real-time environmental impact calculations"
+              }
+            ]
+        },
+        {
+          "title": "HomeServer: Self-Hosted Cloud Storage",
+          "date": "2024",
+          "location": "Seattle, WA",
+          "subtitle": "Docker, Linux, Nextcloud",
+            "bulletCollection": [
+              {
+                "normal": "Configured a secure, self-hosted cloud storage solution for personal and family use"
+              },
+              {
+                "normal": "Implemented automated backups and remote access via VPN"
+              }
+            ]
+        },
+        {
+          "title": "AI Chess Bot",
+          "date": "Ongoing",
+          "subtitle": "Python, TensorFlow, Flask",
+          "location": "Online",
+            "bulletCollection": [
+              {
+                "normal": "Developing an AI-powered chess opponent with machine learning techniques"
+              },
+              {
+                "normal": "Implemented an interactive web interface for gameplay and analysis"
+              }
+            ]
+        }
+      ]
+    },
+    {
+      "name": "Awards",
+        "bulletCollection": [
+          {
+            "normal": "President’s Scholarship for Academic Excellence"
+          },
+          {
+            "normal": "Hackathon Winner: Best AI Project at CodeSprint 2024"
+          },
+          {
+            "normal": "Google Cloud Developer Scholarship Recipient"
+          },
+          {
+            "normal": "National Merit Scholar"
+          }
+        ]
+    },
+    {
+      "name": "Technical Skills",
+        "paragraphCollection": [
+          {
+            "bold": "Languages:",
+            "normal": "Python, JavaScript, C++, SQL, Rust, Java, Bash, HTML/CSS"
+          },
+          {
+            "bold": "Tools and Technologies:",
+            "normal": "Git, Docker, Linux, PostgreSQL, Flask, React, Node.js, Kubernetes"
+          }
+        ]
+    },
+    {
+      "name": "Activities and Interests",
+        "paragraphCollection": [
+          {
+            "bold": "Tech Blogger:",
+            "normal": "Run a blog with 10,000+ monthly readers covering open-source projects and cybersecurity"
+          },
+          {
+            "bold": "Home Lab Enthusiast:",
+            "normal": "Experiment with self-hosted services, network security, and virtualization"
+          }
+        ]
+    }
+  ]
+}
+
+console.log(ResumeToLatex(CreateResumeObject(file)));
