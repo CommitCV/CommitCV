@@ -14,6 +14,10 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: ./CommitCV
+
     strategy:
       matrix:
         node-version: [22.14.x]
@@ -28,6 +32,4 @@ jobs:
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
     - run: bun install
-      working-directory: CommitCV
     - run: bun run build
-      working-directory: CommitCV
