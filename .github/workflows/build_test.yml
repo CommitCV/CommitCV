@@ -25,11 +25,11 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-      working-directory: ./CommitCV
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
-      working-directory: ./CommitCV
-    - run: bun install
-      working-directory: ./CommitCV
-    - run: bun run build
-      working-directory: ./CommitCV
+    - run: |
+            cd CommitCV
+            bun install
+    - run: |
+            cd CommitCV
+            bun run build
