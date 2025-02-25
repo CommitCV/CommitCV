@@ -2,4 +2,4 @@
 
 ### Customize and Modularize your Latex Resume with version control
 
-![](public/preview.png)
+![](CommitCV/public/preview.png)

@@ -1,114 +1,49 @@
-"use client";
-import { useEffect, useState, useCallback } from "react";
-import { useFile } from "@/context/FileContext";
+"use client"
 import HeaderCard from "@/components/HeaderCard";
-import PDF from "@/components/PDF";
-import SectionCard from "@/components/SectionCard";
-import { GenerateLatex } from "@/resume/ResumeGenerator";
+import ResumeEditor from "@/components/ResumeEditor";
+import { useCallback, useState, useEffect } from "react";
+import { Resume } from "@/types/resume";
+import { useFile } from "@/context/FileContext";
 import { convertLatexToPdf } from "@/pages/api/pdfCV/generate";
-import { BulletCollection, ParagraphCollection, Subsection } from "@/resume/ResumeComponents";
+import PDF from "@/components/PDF";
+import { ResumeToLatex }  from "@/context/ResumeToLatex"
 
-interface HeaderObject {
-    text: string;
-    link?: string;
-    onTextChange: (text: string) => void;
-    onLinkChange: (link: string) => void;
-}
-
-interface Section {
-    name: string;
-    headerCards?: HeaderObject[];
-    subsections?: Subsection[];
-    bulletCollection?: BulletCollection;
-    paragraphCollection?: ParagraphCollection;
-}
-
-export interface ResumeData {
-    Header: {
-        name: string;
-        HeaderObject: HeaderObject[];
-    };
-    Sections: Section[];
-}
-
-export default function Resume() {
+export default function ResumeHome() {
     const { fileData } = useFile();
-    const [fileContent, setFileContent] = useState<string | null>(null);
-    const [jData, setJData] = useState<ResumeData | null>(null);
+    const [resume, setResume] = useState<Resume | null>(null);
+    const [useTemplateJson, setUseTemplateJson] = useState(true);
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-    const [fileProcessed, setFileProcessed] = useState(false);
-    const [useTemplateJson, setUseTemplateJson] = useState(false);
 
-    console.log("Rendering Latex");
-
+    // Fetch template.json data in Home
     useEffect(() => {
-        if (fileData && fileData.path) {
+        if (fileData) {
             const reader = new FileReader();
             reader.onload = () => {
-                setFileContent(reader.result as string);
-                setFileProcessed(false);
-            };
-            reader.onerror = () => {
-                console.error("Error reading file");
+                try {
+                    const jsonData: Resume = JSON.parse(reader.result as string);
+                    setResume(jsonData);
+                    setUseTemplateJson(false);
+                } catch (error) {
+                    console.error("Error reading JSON file", error);
+                    setUseTemplateJson(true); // fallback to template if JSON parsing fails
+                }
             };
             reader.readAsText(fileData);
-        } else if (!fileData) {
-            setUseTemplateJson(true);
-        }
-    }, [fileData]);
-
-    useEffect(() => {
-        if (fileContent && !fileProcessed) {
-            console.log("Initializing JData");
-            try {
-                const parsedData: ResumeData = JSON.parse(fileContent);
-                const headerSection: Section = {
-                    name: parsedData.Header.name,
-                    headerCards: parsedData.Header.HeaderObject.map((header: HeaderObject) => ({
-                        text: header.text,
-                        link: header.link,
-                        onTextChange: () => { },
-                        onLinkChange: () => { }
-                    }))
-                };
-                parsedData.Sections.unshift(headerSection);
-                setJData(parsedData);
-                setFileProcessed(true);
-                setUseTemplateJson(false);
-            } catch (error) {
-                console.error("Error parsing JSON:", error);
-                setUseTemplateJson(true);
-            }
-        }
-    }, [fileContent, fileProcessed]);
-
-    useEffect(() => {
-        if (useTemplateJson) {
+        } else if (useTemplateJson) {
             fetch("/template.json")
-                .then((response) => response.json())
-                .then((templateData: ResumeData) => {
-                    const headerSection: Section = {
-                        name: templateData.Header.name,
-                        headerCards: templateData.Header.HeaderObject.map((header: HeaderObject) => ({
-                            text: header.text,
-                            link: header.link,
-                            onTextChange: () => { },
-                            onLinkChange: () => { }
-                        }))
-                    };
-                    templateData.Sections.unshift(headerSection);
-                    setJData(templateData);
+                .then((res) => res.json())
+                .then((data) => {
+                    setResume(data);
+                    setUseTemplateJson(false); // Switch off template usage once data is loaded
                 })
-                .catch((error) => {
-                    console.error("Error fetching template JSON:", error);
-                });
+                .catch((err) => console.error("Failed to load resume template", err));
         }
-    }, [useTemplateJson]);
+    }, [fileData, useTemplateJson]);
 
     const generatePdf = useCallback(async () => {
-        if (jData) {
+        if (resume) {
             try {
-                const latex = GenerateLatex(jData);
+                const latex = ResumeToLatex(resume);
                 const blob = await convertLatexToPdf(latex);
                 if (blob) {
                     const url = URL.createObjectURL(blob);
@@ -120,17 +55,12 @@ export default function Resume() {
                 console.error("Error generating PDF:", error);
             }
         }
-    }, [jData]);
+    }, [resume]); // Use resume to regenerate PDF when data changes
 
     useEffect(() => {
         generatePdf();
-    }, [jData, generatePdf]);
+    }, [resume, generatePdf]);
 
-    if (!jData && !useTemplateJson) {
-        return <div>Loading...</div>;
-    }
-
-    console.log(jData);
 
     const handleDownload = () => {
         if (pdfUrl) {
@@ -140,17 +70,15 @@ export default function Resume() {
             link.click();
         }
     };
-
+    
     const handleDownloadJson = () => {
-            if (jData) {
-                const json = JSON.stringify(jData, null, 2);
-                const blob = new Blob([json], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = "resume.json";
-                link.click();
-            }
+            const json = JSON.stringify(resume, null, 2);
+            const blob = new Blob([json], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "resume.json";
+            link.click();
         };
 
 
@@ -158,20 +86,9 @@ export default function Resume() {
         <div>
             <HeaderCard />
             <div className="grid grid-cols-2">
-                <div className="flex flex-col gap-8 px-8 pt-4">
-                    {jData &&
-                        jData.Sections.map((section, index) => (
-                            <SectionCard
-                                key={index}
-                                name={section.name}
-                                headerCards={section.headerCards}
-                                subsections={section.subsections}
-                                bulletCollection={section.bulletCollection}
-                                paragraphCollection={section.paragraphCollection}
-                                setJData={setJData}
-                            />
-                        ))}
-                </div>
+                    <div className="container mx-auto">
+                        <ResumeEditor resume={resume} setResume={setResume}/>
+                    </div>
                 <div className="flex flex-row justify-start items-start gap-4">
                     {pdfUrl && <PDF file={pdfUrl} />}
                     <div className="flex flex-col justify-start">
