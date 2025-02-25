@@ -28,6 +28,6 @@ jobs:
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
     - run: bun install
-      working-directory: ./CommitCV
+      working-directory: CommitCV
     - run: bun run build
-      working-directory: ./CommitCV
+      working-directory: CommitCV
