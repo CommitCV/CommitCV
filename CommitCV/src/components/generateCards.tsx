@@ -1,4 +1,3 @@
-// /components/generateCards.tsx
 import ResumeCard from "./ResumeCard";
 import { Resume } from "../types/resume";
 import { Subsection } from "../types/resume";

@@ -1,4 +1,3 @@
-// /components/ResumeCard.tsx
 import { Subsection } from "@/types/resume";
 
 type ResumeCardProps = {
