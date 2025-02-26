@@ -3,3 +3,9 @@
 .env*
 
 package-lock.json
+
+*.aux
+*.log
+*.out
+*.tex
+*.pdf
