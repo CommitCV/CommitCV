@@ -1,4 +1,4 @@
-import Header from "@/components/HeaderCard";
+import Header from "@/components/Header";
 import GetStarted from "@/components/GetStarted";
 
 export default function Home() {

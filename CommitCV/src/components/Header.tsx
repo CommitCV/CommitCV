@@ -3,7 +3,7 @@ import Link from "next/link";
 
 const rhm = Red_Hat_Mono({ subsets: ['latin'] })
 
-export default function HeaderCard() {
+export default function Header() {
     return (
         <div>
             <Link href={`/`}>

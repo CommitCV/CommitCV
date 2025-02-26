@@ -1,5 +1,5 @@
 "use client"
-import HeaderCard from "@/components/HeaderCard";
+import Header from "@/components/Header";
 import ResumeEditor from "@/components/ResumeEditor";
 import { useCallback, useState, useEffect } from "react";
 import { Resume } from "@/data/types/resume";
@@ -84,7 +84,7 @@ export default function ResumeHome() {
 
     return (
         <div>
-            <HeaderCard />
+            <Header />
             <div className="grid grid-cols-2">
                     <div className="container mx-auto">
                         <ResumeEditor resume={resume} setResume={setResume}/>
