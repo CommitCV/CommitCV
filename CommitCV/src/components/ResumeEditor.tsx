@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react";
-import { Resume } from "../types/resume";
+import { Resume } from "@/data/types/resume";
 import { FaChevronUp, FaChevronDown } from 'react-icons/fa';
 
 interface ResumeEditorProps {

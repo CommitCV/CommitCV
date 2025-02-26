@@ -1,4 +1,4 @@
-import { Resume, Header, Section, Subsection, Paragraph, Bullet } from "@/types/resume";
+import { Resume, Header, Section, Subsection, Paragraph, Bullet } from "@/data/types/resume";
 
 function Preamble() {
     const preamble = `%-------------------------

@@ -1,4 +1,4 @@
-import { Subsection } from "@/types/resume";
+import { Subsection } from "@/data/types/resume";
 
 type ResumeCardProps = {
     subsection: Subsection;

@@ -2,11 +2,11 @@
 import HeaderCard from "@/components/HeaderCard";
 import ResumeEditor from "@/components/ResumeEditor";
 import { useCallback, useState, useEffect } from "react";
-import { Resume } from "@/types/resume";
-import { useFile } from "@/context/FileContext";
+import { Resume } from "@/data/types/resume";
+import { useFile } from "@/data/context/FileContext";
 import { convertLatexToPdf } from "@/pages/api/pdfCV/generate";
 import PDF from "@/components/PDF";
-import { ResumeToLatex }  from "@/context/ResumeToLatex"
+import { ResumeToLatex }  from "@/data/ResumeToLatex"
 
 export default function ResumeHome() {
     const { fileData } = useFile();

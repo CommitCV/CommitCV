@@ -2,7 +2,7 @@
 
 import { useDropzone } from "react-dropzone";
 import { useRouter } from "next/navigation";
-import { useFile } from "@/context/FileContext";
+import { useFile } from "@/data/context/FileContext";
 import { useEffect } from "react";
 import Link from 'next/link';
 
