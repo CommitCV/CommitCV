@@ -1,6 +1,6 @@
 import ResumeCard from "./ResumeCard";
-import { Resume } from "@/data/types/resume";
-import { Subsection } from "@/data/types/resume";
+import { Resume } from "@/data/types/Resume";
+import { Subsection } from "@/data/types/Resume";
 
 export function generateCards(resume: Resume, onUpdate: (sectionIdx: number, subIdx: number, key: keyof Subsection, value: string) => void) {
     return resume.sections.map((section, sectionIdx) => (

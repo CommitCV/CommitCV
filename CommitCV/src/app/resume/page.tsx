@@ -2,7 +2,7 @@
 import Header from "@/components/Header";
 import ResumeEditor from "@/components/ResumeEditor";
 import { useCallback, useState, useEffect } from "react";
-import { Resume } from "@/data/types/resume";
+import { Resume } from "@/data/types/Resume";
 import { useFile } from "@/data/context/FileContext";
 import { convertLatexToPdf } from "@/pages/api/pdfCV/generate";
 import PDF from "@/components/PDF";
