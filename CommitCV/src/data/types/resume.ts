@@ -1,14 +1,14 @@
-export type Bullet = {
+export interface Bullet {
     bold?: string,
     normal?: string
 }
 
-export type Paragraph = {
+export interface Paragraph {
     bold?: string,
     normal?: string
 }
 
-export type Subsection = {
+export interface Subsection {
     title: string,
     link?: string,
     date: string,
@@ -18,24 +18,24 @@ export type Subsection = {
     paragraphCollection?: Paragraph[]
 }
 
-export type Section = {
+export interface Section {
     name: string,
     subsections?: Subsection[]
     bulletCollection?: Bullet[],
     paragraphCollection?: Paragraph[]
 }
 
-export type HeaderObject = {
+export interface HeaderObject {
     text: string,
     link?: string
 }
 
-export type Header = {
+export interface Header {
     name: string,
     subheaders?: HeaderObject[]
 }
 
-export type Resume = {
+export interface Resume {
     header: Header,
     sections: Section[]
 }
