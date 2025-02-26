@@ -1,0 +1,22 @@
+services:
+  commitcv-server:
+    build:
+      context: ./CommitCV/
+      dockerfile: ./Dockerfile
+      args:
+        NEXT_PUBLIC_PDF_ENDPOINT: ${NEXT_PUBLIC_PDF_ENDPOINT}
+    ports:
+        - "${DOCKER_NETWORK_IP}:${COMMITCV_PORT}:${COMMITCV_PORT}"
+    env_file:
+      - .env
+    depends_on:
+      - pdfcv
+
+  pdfcv:
+    build:
+      context: ./pdfCV/
+      dockerfile: ./Dockerfile
+    ports:
+      - "${DOCKER_NETWORK_IP}:${SERVER_PORT}:${SERVER_PORT}"
+    env_file:
+      - .env
