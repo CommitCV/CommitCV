@@ -2,7 +2,7 @@ import { FaChevronUp, FaChevronDown } from 'react-icons/fa';
 import { Section } from '@/data/types/Resume';
 import BulletCollection from '@/components/resume_cards/BulletCollection';
 import ParagraphCollection from '@/components/resume_cards/ParagraphCollection';
-import Subsection from '@/components/resume_cards/SubsectionCard';
+import SubsectionCard from '@/components/resume_cards/SubsectionCard';
 
 interface SectionCardProps {
   section: Section;
@@ -36,7 +36,7 @@ export default function SectionCard({ section, sectionIdx, expandedSections, tog
           <ParagraphCollection paragraphs={section.paragraphCollection || []} handleUpdate={handleUpdate} sectionIdx={sectionIdx} />
 
           {section.subsections?.map((sub, subIdx) => (
-            <Subsection key={subIdx} subsection={sub} handleUpdate={handleUpdate} sectionIdx={sectionIdx} subIdx={subIdx} />
+            <SubsectionCard key={subIdx} subsection={sub} handleUpdate={handleUpdate} sectionIdx={sectionIdx} subIdx={subIdx} />
           ))}
         </>
       )}

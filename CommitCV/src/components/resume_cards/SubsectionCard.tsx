@@ -8,7 +8,7 @@ interface SubsectionProps {
   subIdx: number;
 }
 
-export default function Subsection({ subsection, handleUpdate, sectionIdx, subIdx }: SubsectionProps) {
+export default function SubsectionCard({ subsection, handleUpdate, sectionIdx, subIdx }: SubsectionProps) {
   return (
     <div className="mb-4">
       <input
