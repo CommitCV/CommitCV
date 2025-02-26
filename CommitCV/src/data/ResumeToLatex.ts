@@ -411,4 +411,4 @@ const file = {
   ]
 }
 
-console.log(ResumeToLatex(CreateResumeObject(file)));
+//console.log(ResumeToLatex(CreateResumeObject(file)));
