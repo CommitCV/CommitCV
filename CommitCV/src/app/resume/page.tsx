@@ -42,7 +42,6 @@ export default function ResumeHome() {
                 })
                 .catch((err) => console.error("Failed to load resume template", err));
         }
-        generatePdf(); // Initial generation.
     }, [fileData, useTemplateJson]);
 
     const generatePdf = useCallback(async () => {
