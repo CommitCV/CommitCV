@@ -1,7 +1,7 @@
 "use client"
 import Header from "@/components/Header";
 import ResumeEditor from "@/components/ResumeEditor";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { Resume } from "@/data/types/Resume";
 import { useFile } from "@/data/context/FileContext";
 import { convertLatexToPdf } from "@/pages/api/pdfCV/generate";
@@ -13,9 +13,10 @@ export default function ResumeHome() {
     const [resume, setResume] = useState<Resume | null>(null);
     const [useTemplateJson, setUseTemplateJson] = useState(true);
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Fetch template.json data in Home
     useEffect(() => {
+        // Get user's file if provided
         if (fileData) {
             const reader = new FileReader();
             reader.onload = () => {
@@ -29,6 +30,8 @@ export default function ResumeHome() {
                 }
             };
             reader.readAsText(fileData);
+
+        // Fetch template.json data in Home
         } else if (useTemplateJson) {
             fetch("/template.json")
                 .then((res) => res.json())
@@ -55,10 +58,24 @@ export default function ResumeHome() {
                 console.error("Error generating PDF:", error);
             }
         }
-    }, [resume]); // Use resume to regenerate PDF when data changes
+    }, [resume, setPdfUrl]); // Use resume to regenerate PDF when data changes
 
     useEffect(() => {
-        generatePdf();
+        // Clear any existing timeout to debounce call
+        if(timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+
+        // set a new timeout to trigger PDF generation
+        timeoutRef.current = setTimeout(() => {
+            generatePdf();
+        }, 3000);
+
+        return () => {
+            if(timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
     }, [resume, generatePdf]);
 
 
