@@ -1,16 +1,21 @@
 "use client"
+import dynamic from 'next/dynamic';
 import { Document, Page, pdfjs } from "react-pdf";
 import { useState } from "react";
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
+import { GlobalWorkerOptions } from "pdfjs-dist";
+
+GlobalWorkerOptions.workerSrc = new URL(
+    "pdfjs-dist/build/pdf.worker.min.mjs",
+    import.meta.url
+).toString();
 
 interface IPDF {
     file: string;
 }
 
-pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.mjs`;
-
-export default function PDF({ file }: IPDF) {
+function PDFComponent({ file }: IPDF) {
     const [numPages, setNumPages] = useState<number>();
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }): void {
@@ -27,3 +32,7 @@ export default function PDF({ file }: IPDF) {
         </div>
     );
 }
+
+const PDF = dynamic(() => Promise.resolve(PDFComponent), { ssr: false });
+
+export default PDF;
