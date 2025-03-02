@@ -24,6 +24,7 @@ export default function ResumeHome() {
                     const jsonData: Resume = JSON.parse(reader.result as string);
                     setResume(jsonData);
                     setUseTemplateJson(false);
+                    generatePdf();
                 } catch (error) {
                     console.error("Error reading JSON file", error);
                     setUseTemplateJson(true); // fallback to template if JSON parsing fails
@@ -38,6 +39,7 @@ export default function ResumeHome() {
                 .then((data) => {
                     setResume(data);
                     setUseTemplateJson(false); // Switch off template usage once data is loaded
+                    generatePdf();
                 })
                 .catch((err) => console.error("Failed to load resume template", err));
         }
@@ -69,7 +71,7 @@ export default function ResumeHome() {
         // set a new timeout to trigger PDF generation
         timeoutRef.current = setTimeout(() => {
             generatePdf();
-        }, 3000);
+        }, 1200);
 
         return () => {
             if(timeoutRef.current) {
