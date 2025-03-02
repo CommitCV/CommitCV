@@ -4,7 +4,7 @@ export const convertLatexToPdf = (() => {
 
     return async (latex: string): Promise<Blob | null> => {
         const now = Date.now();
-        if (now - lastCall < 5000) {
+        if (now - lastCall < 1000) {
             console.warn('API call is rate-limited. Please wait.');
             return null;
         }
