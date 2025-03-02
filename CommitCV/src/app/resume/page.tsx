@@ -14,6 +14,7 @@ export default function ResumeHome() {
     const [useTemplateJson, setUseTemplateJson] = useState(true);
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [tex, setTex] = useState<string | null>(null)
 
     useEffect(() => {
         // Get user's file if provided
@@ -24,7 +25,6 @@ export default function ResumeHome() {
                     const jsonData: Resume = JSON.parse(reader.result as string);
                     setResume(jsonData);
                     setUseTemplateJson(false);
-                    generatePdf();
                 } catch (error) {
                     console.error("Error reading JSON file", error);
                     setUseTemplateJson(true); // fallback to template if JSON parsing fails
@@ -39,16 +39,19 @@ export default function ResumeHome() {
                 .then((data) => {
                     setResume(data);
                     setUseTemplateJson(false); // Switch off template usage once data is loaded
-                    generatePdf();
                 })
                 .catch((err) => console.error("Failed to load resume template", err));
         }
+        generatePdf(); // Initial generation.
     }, [fileData, useTemplateJson]);
 
     const generatePdf = useCallback(async () => {
         if (resume) {
             try {
+                // Set our tex data
                 const latex = ResumeToLatex(resume);
+                setTex(latex);
+
                 const blob = await convertLatexToPdf(latex);
                 if (blob) {
                     const url = URL.createObjectURL(blob);
@@ -81,7 +84,7 @@ export default function ResumeHome() {
     }, [resume, generatePdf]);
 
 
-    const handleDownload = () => {
+    const handlePdfDownload = () => {
         if (pdfUrl) {
             const link = document.createElement("a");
             link.href = pdfUrl;
@@ -90,7 +93,7 @@ export default function ResumeHome() {
         }
     };
     
-    const handleDownloadJson = () => {
+    const handleJsonDownload = () => {
             const json = JSON.stringify(resume, null, 2);
             const blob = new Blob([json], { type: "application/json" });
             const url = URL.createObjectURL(blob);
@@ -98,6 +101,17 @@ export default function ResumeHome() {
             link.href = url;
             link.download = "resume.json";
             link.click();
+        };
+
+    const handleTexDownload = () => {
+            if(tex) {
+                const blob = new Blob([tex], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = "resume.tex";
+                link.click();
+            }
         };
 
 
@@ -114,16 +128,21 @@ export default function ResumeHome() {
                         {pdfUrl && (
                             <>
                                 <button
-                                    onClick={handleDownload}
-                                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2" // Added mb-2
-                                >
+                                    onClick={handlePdfDownload}
+                                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2" >
                                     Download Resume
                                 </button>
+
                                 <button
-                                    onClick={handleDownloadJson}
-                                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-                                >
+                                    onClick={handleJsonDownload}
+                                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-2" >
                                     Download JSON
+                                </button>
+
+                                <button
+                                    onClick={handleTexDownload}
+                                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mb-2" >
+                                    Download tex
                                 </button>
                             </>
                         )}
