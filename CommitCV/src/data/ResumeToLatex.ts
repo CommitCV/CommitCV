@@ -27,19 +27,6 @@ function Preamble() {
 \\input{glyphtounicode}
 
 
-%----------FONT OPTIONS----------
-% sans-serif
-% \\usepackage[sfdefault]{FiraSans}
-% \\usepackage[sfdefault]{roboto}
-% \\usepackage[sfdefault]{noto-sans}
-% \\usepackage[default]{sourcesanspro}
-
-% serif
-% \\usepackage{CormorantGaramond}
-% \\usepackage{charter}
-
-% \\usepackage{fontawesome5}
-
 \\pagestyle{fancy}
 \\fancyhf{} % clear all header and footer fields
 \\fancyfoot{}
