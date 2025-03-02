@@ -44,6 +44,7 @@ export default function ResumeHome() {
         if (resume) {
             try {
                 const latex = ResumeToLatex(resume);
+                console.log(resume, latex)
                 const blob = await convertLatexToPdf(latex);
                 if (blob) {
                     const url = URL.createObjectURL(blob);

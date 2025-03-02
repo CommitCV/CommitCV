@@ -47,7 +47,11 @@ export default function SubsectionCard({ subsection, handleUpdate, sectionIdx, s
         className="w-full p-2 rounded-lg border border-gray-300"
         placeholder="Enter subtitle"
       />
-      <BulletCollection bullets={subsection.bulletCollection || []} handleUpdate={handleUpdate} sectionIdx={sectionIdx} />
+      <BulletCollection 
+      bullets={subsection.bulletCollection || []} 
+      handleUpdate={handleUpdate} 
+      sectionIdx={sectionIdx}
+      subIdx={subIdx} />
     </div>
   );
 }

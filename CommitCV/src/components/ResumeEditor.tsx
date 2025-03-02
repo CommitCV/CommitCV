@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Resume } from "@/data/types/Resume";
 import HeaderCard from "@/components/resume_cards/HeaderCard";
 import SectionCard from "@/components/resume_cards/SectionCard";

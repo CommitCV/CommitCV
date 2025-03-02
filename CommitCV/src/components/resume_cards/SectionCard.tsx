@@ -32,7 +32,10 @@ export default function SectionCard({ section, sectionIdx, expandedSections, tog
 
       {expandedSections.includes(sectionIdx) && (
         <>
-          <BulletCollection bullets={section.bulletCollection || []} handleUpdate={handleUpdate} sectionIdx={sectionIdx} />
+          <BulletCollection 
+          bullets={section.bulletCollection || []} 
+          handleUpdate={handleUpdate} 
+          sectionIdx={sectionIdx} />
           <ParagraphCollection paragraphs={section.paragraphCollection || []} handleUpdate={handleUpdate} sectionIdx={sectionIdx} />
 
           {section.subsections?.map((sub, subIdx) => (

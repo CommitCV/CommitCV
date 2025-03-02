@@ -4,9 +4,15 @@ interface BulletCollectionProps {
   bullets: Bullet[];
   handleUpdate: (path: string, value: string) => void;
   sectionIdx: number;
+  subIdx?: number;  // Make subIdx optional to allow section-level bullets
 }
 
-export default function BulletCollection({ bullets, handleUpdate, sectionIdx }: BulletCollectionProps) {
+export default function BulletCollection({ bullets, handleUpdate, sectionIdx, subIdx }: BulletCollectionProps) {
+  // Create a path for the section or subsection bullets
+  const path = subIdx !== undefined
+    ? `sections.${sectionIdx}.subsections.${subIdx}.bulletCollection`
+    : `sections.${sectionIdx}.bulletCollection`;
+
   return (
     <>
       {bullets.map((bullet, bulletIdx) => (
@@ -14,12 +20,12 @@ export default function BulletCollection({ bullets, handleUpdate, sectionIdx }: 
           <input
             type="text"
             value={bullet.normal}
-            onChange={(e) =>
+            onChange={(e) => {
               handleUpdate(
-                `sections.${sectionIdx}.bulletCollection.${bulletIdx}.normal`,
+                `${path}.${bulletIdx}.normal`,  // Update path based on subsection or section
                 e.target.value
-              )
-            }
+              );
+            }}
             className="w-full p-2 rounded-lg border border-gray-300"
             placeholder="Enter bullet text"
           />
