@@ -21,8 +21,10 @@ jobs:
       matrix:
         include:
           - dockerfile: ./CommitCV/Dockerfile
+            context: ./CommitCV
             image: ghcr.io/username/image1
           - dockerfile: ./pdfCV/Dockerfile
+            context: ./pdfCV
             image: ghcr.io/username/image2
     permissions:
       contents: read
