@@ -3,6 +3,7 @@ import { Section } from '@/data/types/Resume';
 import BulletCollection from '@/components/resume_cards/BulletCollection';
 import ParagraphCollection from '@/components/resume_cards/ParagraphCollection';
 import SubsectionCard from '@/components/resume_cards/SubsectionCard';
+import { FaGripVertical } from "react-icons/fa";
 
 interface SectionCardProps {
   section: Section;
@@ -16,6 +17,7 @@ export default function SectionCard({ section, sectionIdx, expandedSections, tog
   return (
     <div className="p-6 rounded-lg shadow-lg bg-gray-100">
       <div className="flex justify-between items-center">
+
         <input
           type="text"
           value={section.name}
@@ -28,7 +30,12 @@ export default function SectionCard({ section, sectionIdx, expandedSections, tog
         <button onClick={() => toggleSectionExpand(sectionIdx)} className="p-2">
           {expandedSections.includes(sectionIdx) ? <FaChevronUp /> : <FaChevronDown />}
         </button>
+
+        <div className="p-2 cursor-grab">
+            <FaGripVertical className="text-gray-500" />
+        </div>
       </div>
+
 
       {expandedSections.includes(sectionIdx) && (
         <>
