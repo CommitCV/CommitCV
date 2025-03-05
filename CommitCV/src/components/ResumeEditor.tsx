@@ -1,5 +1,6 @@
 "use client"
 import { useState } from "react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Resume } from "@/data/types/Resume";
 import HeaderCard from "@/components/resume_cards/HeaderCard";
 import SectionCard from "@/components/resume_cards/SectionCard";
@@ -37,24 +38,54 @@ export default function ResumeEditor({ resume, setResume }: ResumeEditorProps) {
       setResume(updatedResume);
   };
 
+  const onDragEnd = (result: any) => {
+      if (!result.destination || !resume) return;
+
+      const reorderedSections = [...resume.sections];
+      const [movedSection] = reorderedSections.splice(result.source.index, 1);
+      reorderedSections.splice(result.destination.index, 0, movedSection);
+
+      setResume({ ...resume, sections: reorderedSections });
+  };
+
   if (!resume) {
       return <p>Loading...</p>;
   }
 
   return (
-    <div className="p-4 space-y-6">
+      <div className="p-4 space-y-6">
       <HeaderCard header={resume.header} handleUpdate={handleUpdate} />
 
-      {resume.sections.map((section, sectionIdx) => (
-        <SectionCard
-          key={sectionIdx}
-          section={section}
-          sectionIdx={sectionIdx}
-          expandedSections={expandedSections}
-          toggleSectionExpand={toggleSectionExpand}
-          handleUpdate={handleUpdate}
-        />
-      ))}
-    </div>
+      {/* Drag and Drop Context */}
+      <DragDropContext onDragEnd={onDragEnd}>
+      <Droppable droppableId="sections">
+      {(provided) => (
+          <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
+          {resume.sections.map((section, sectionIdx) => (
+              <Draggable key={sectionIdx} draggableId={sectionIdx.toString()} index={sectionIdx}>
+              {(provided) => (
+                  <div
+                  ref={provided.innerRef}
+                  {...provided.draggableProps}
+                  {...provided.dragHandleProps}
+                  className="cursor-move"
+                  >
+                  <SectionCard
+                  section={section}
+                  sectionIdx={sectionIdx}
+                  expandedSections={expandedSections}
+                  toggleSectionExpand={toggleSectionExpand}
+                  handleUpdate={handleUpdate}
+                  />
+                  </div>
+              )}
+              </Draggable>
+          ))}
+          {provided.placeholder}
+          </div>
+      )}
+      </Droppable>
+      </DragDropContext>
+      </div>
   );
 }
