@@ -10,7 +10,7 @@ interface SubsectionProps {
 
 export default function SubsectionCard({ subsection, handleUpdate, sectionIdx, subIdx }: SubsectionProps) {
   return (
-    <div className="mb-4">
+    <div className="mb-4 bg-gray-300 p-2 rounded-lg">
       <input
         type="text"
         value={subsection.title}
@@ -47,6 +47,18 @@ export default function SubsectionCard({ subsection, handleUpdate, sectionIdx, s
         className="w-full p-2 rounded-lg border border-gray-300"
         placeholder="Enter subtitle"
       />
+        <input
+            type="text"
+            value={subsection.location}
+            onChange={(e) =>
+                handleUpdate(
+                    `sections.${sectionIdx}.subsections.${subIdx}.location`,
+                    e.target.value
+                )
+            }
+            className="w-full p-2 rounded-lg border border-gray-300"
+            placeholder="Enter location"
+        />
       <BulletCollection 
       bullets={subsection.bulletCollection || []} 
       handleUpdate={handleUpdate} 
