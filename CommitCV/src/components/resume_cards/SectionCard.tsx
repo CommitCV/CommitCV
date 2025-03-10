@@ -10,7 +10,7 @@ interface SectionCardProps {
     sectionIdx: number;
     expandedSections: number[];
     toggleSectionExpand: (sectionIdx: number) => void;
-    handleUpdate: (path: string, value: string) => void;
+    handleUpdate: (path: string, value: string | null) => void;
 }
 
 export default function SectionCard({
@@ -40,7 +40,9 @@ export default function SectionCard({
                         </button>
 
                         <div>
-                            <FaCircleMinus size={28} className="text-red-500"/>
+                            <button onClick={() => handleUpdate(`sections.${sectionIdx}`, null)}>
+                                <FaCircleMinus size={28} className="text-red-500"/>
+                            </button>
                         </div>
 
 

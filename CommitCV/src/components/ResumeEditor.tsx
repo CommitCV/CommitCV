@@ -22,7 +22,7 @@ export default function ResumeEditor({ resume, setResume }: ResumeEditorProps) {
       );
   };
 
-  const handleUpdate = (path: string, value: string) => {
+  const handleUpdate = (path: string, value: string | null) => {
       if (!resume) return;
 
       const updatedResume = { ...resume };
@@ -33,7 +33,12 @@ export default function ResumeEditor({ resume, setResume }: ResumeEditorProps) {
           obj = obj[keys[i]];
       }
 
-      obj[keys[keys.length - 1]] = value;
+      if (value === null) {
+          const index = parseInt(keys[keys.length - 1]);
+          obj.splice(index, 1);
+      } else {
+          obj[keys[keys.length - 1]] = value;
+      }
 
       setResume(updatedResume);
   };
