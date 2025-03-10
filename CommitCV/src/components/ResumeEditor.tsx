@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import {Resume, Subsection} from "@/data/types/Resume";
+import {Resume, Subsection, Paragraph, Bullet} from "@/data/types/Resume";
 import HeaderCard from "@/components/resume_cards/HeaderCard";
 import SectionCard from "@/components/resume_cards/SectionCard";
 import {FaCirclePlus} from "react-icons/fa6";
@@ -24,7 +24,7 @@ export default function ResumeEditor({ resume, setResume }: ResumeEditorProps) {
       );
   };
 
-  const handleUpdate = (path: string, value: string | Subsection[] | null) => {
+  const handleUpdate = (path: string, value: string | Subsection[] | Paragraph[] | Bullet[] | null) => {
       if (!resume) return;
 
       const updatedResume = { ...resume };

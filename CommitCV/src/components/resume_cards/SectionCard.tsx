@@ -1,5 +1,5 @@
 import {FaChevronUp, FaChevronDown} from 'react-icons/fa';
-import {Section, Subsection} from '@/data/types/Resume';
+import {Section, Subsection, Bullet, Paragraph} from '@/data/types/Resume';
 import BulletCollection from '@/components/resume_cards/BulletCollection';
 import ParagraphCollection from '@/components/resume_cards/ParagraphCollection';
 import SubsectionCard from '@/components/resume_cards/SubsectionCard'
@@ -11,7 +11,7 @@ interface SectionCardProps {
     sectionIdx: number;
     expandedSections: number[];
     toggleSectionExpand: (sectionIdx: number) => void;
-    handleUpdate: (path: string, value: string | Subsection[] | null) => void;
+    handleUpdate: (path: string, value: string | Subsection[] | Paragraph[] | Bullet[] | null) => void;
 }
 
 export default function SectionCard({
@@ -36,8 +36,6 @@ export default function SectionCard({
             paragraphCollection: []
         }
 
-
-
         if (section.subsections) {
             section.subsections.push(newSubsection);
             handleUpdate(`sections.${sectionIdx}.subsections`, section.subsections);
@@ -46,10 +44,34 @@ export default function SectionCard({
 
     const createParagraphCollection = () => {
         if (!section) return;
+
+        const newParagraph: Paragraph = {
+            bold: "",
+            normal: ""
+        }
+
+        if (section.paragraphCollection) {
+            section.paragraphCollection.push(newParagraph);
+            handleUpdate(`sections.${sectionIdx}.paragraphCollection`, section.paragraphCollection);
+        } else {
+            handleUpdate(`sections.${sectionIdx}.paragraphCollection`, [newParagraph]);
+        }
     }
 
     const createBulletCollection = () => {
         if (!section) return;
+
+        const newBullet: Bullet = {
+            bold: "",
+            normal: ""
+        }
+
+        if (section.bulletCollection) {
+            section.bulletCollection.push(newBullet);
+            handleUpdate(`sections.${sectionIdx}.bulletCollection`, section.bulletCollection);
+        } else {
+            handleUpdate(`sections.${sectionIdx}.bulletCollection`, [newBullet]);
+        }
     }
 
     return (
@@ -95,9 +117,11 @@ export default function SectionCard({
                                                 sectionIdx={sectionIdx} subIdx={subIdx}/>
                             ))}
                             <div className={`flex justify-center items-center pt-3`}>
-                                <button onClick={() => setShowSubmenu(!showSubmenu)}>
-                                    {showSubmenu ? <FaCircleXmark size={28}/> : <FaCirclePlus size={28}/>}
-                                </button>
+                                <div className={`p-2`}>
+                                    <button onClick={() => setShowSubmenu(!showSubmenu)}>
+                                        {showSubmenu ? <FaCircleXmark size={28}/> : <FaCirclePlus size={28}/>}
+                                    </button>
+                                </div>
                                 {showSubmenu && (
                                     <div className="submenu bg-gray-400 rounded-lg p-2">
                                         <div className="flex gap-2">
