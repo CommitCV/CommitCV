@@ -4,6 +4,8 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Resume } from "@/data/types/Resume";
 import HeaderCard from "@/components/resume_cards/HeaderCard";
 import SectionCard from "@/components/resume_cards/SectionCard";
+import {FaCirclePlus} from "react-icons/fa6";
+import { Section } from "@/data/types/Resume";
 
 interface ResumeEditorProps {
   resume: Resume | null;
@@ -57,6 +59,21 @@ export default function ResumeEditor({ resume, setResume }: ResumeEditorProps) {
       return <p>Loading...</p>;
   }
 
+  const createSection = () => {
+      if (!resume) return;
+
+      const newSection: Section = {
+          name: "",
+          subsections: [],
+          bulletCollection: [],
+          paragraphCollection: []
+      };
+
+      const updatedResume = { ...resume, sections: [...resume.sections, newSection] };
+
+      setResume(updatedResume);
+  };
+
   return (
       <div className="p-4 space-y-6">
       <HeaderCard header={resume.header} handleUpdate={handleUpdate} />
@@ -91,6 +108,11 @@ export default function ResumeEditor({ resume, setResume }: ResumeEditorProps) {
       )}
       </Droppable>
       </DragDropContext>
+          <div className={`flex justify-center items-center`}>
+              <button onClick={createSection}>
+                  <FaCirclePlus size={42}/>
+              </button>
+          </div>
       </div>
   );
 }
