@@ -130,7 +130,7 @@ function SubsectionToLatex(section : Subsection) {
         }
         subheading += `} \\textbar\\ \\emph{${section.subtitle}}}{${section.date}}\n`
     }
-    if(section.bulletCollection) {
+    if(section.bulletCollection && section.bulletCollection.length > 0) {
         let bulletText = `\t\t\t\\resumeItemListStart\n`;
 
         for(const bullet of section.bulletCollection) {
@@ -141,7 +141,7 @@ function SubsectionToLatex(section : Subsection) {
 
         subheading += bulletText;
     }
-    if(section.paragraphCollection) {
+    if(section.paragraphCollection && section.paragraphCollection.length > 0) {
         let paragraphText = `\t\t\t\\begin{itemize}[leftmargin=0.15in, label={}]\n`;
 
         for(const para of section.paragraphCollection) {
