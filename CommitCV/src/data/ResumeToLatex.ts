@@ -130,7 +130,7 @@ function SubsectionToLatex(section : Subsection) {
         }
         subheading += `} \\textbar\\ \\emph{${section.subtitle}}}{${section.date}}\n`
     }
-    if(section.bulletCollection) {
+    if(section.bulletCollection && section.bulletCollection.length > 0) {
         let bulletText = `\t\t\t\\resumeItemListStart\n`;
 
         for(const bullet of section.bulletCollection) {
@@ -141,14 +141,14 @@ function SubsectionToLatex(section : Subsection) {
 
         subheading += bulletText;
     }
-    if(section.paragraphCollection) {
+    if(section.paragraphCollection && section.paragraphCollection.length > 0) {
         let paragraphText = `\t\t\t\\begin{itemize}[leftmargin=0.15in, label={}]\n`;
 
         for(const para of section.paragraphCollection) {
             paragraphText += ParagraphToLatex(para);
         }
 
-        paragraphText+= `t\t\t\\end{itemize}\n\n`;
+        paragraphText+= `\t\t\t\\end{itemize}\n\n`;
 
         subheading += paragraphText;
     }
@@ -159,7 +159,7 @@ function SubsectionToLatex(section : Subsection) {
 function SectionToLatex(section: Section) {
     let text = `\\section{${section.name}}\n`;
 
-    if(section.subsections) {
+    if(section.subsections && section.subsections.length > 0) {
         text += `\t\\resumeSubHeadingListStart\n`
 
         for(const sec of section.subsections) {
@@ -168,7 +168,7 @@ function SectionToLatex(section: Section) {
 
         text += `\t\\resumeSubHeadingListEnd\n\n\n`
     }
-    if(section.bulletCollection) {
+    if(section.bulletCollection && section.bulletCollection.length > 0) {
         let bulletText = `\t\t\t\\resumeItemListStart\n`;
 
         for(const bullet of section.bulletCollection) {
@@ -179,14 +179,14 @@ function SectionToLatex(section: Section) {
 
         text += bulletText;
     }
-    if(section.paragraphCollection) {
+    if(section.paragraphCollection && section.paragraphCollection.length > 0) {
         let paragraphText = `\t\t\t\\begin{itemize}[leftmargin=0.15in, label={}]\n`;
 
         for(const para of section.paragraphCollection) {
             paragraphText += ParagraphToLatex(para);
         }
 
-        paragraphText+= `t\t\t\\end{itemize}\n\n`;
+        paragraphText+= `\t\t\t\\end{itemize}\n\n`;
 
         text += paragraphText;
     }
