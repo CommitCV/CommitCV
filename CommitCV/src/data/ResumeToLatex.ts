@@ -148,7 +148,7 @@ function SubsectionToLatex(section : Subsection) {
             paragraphText += ParagraphToLatex(para);
         }
 
-        paragraphText+= `t\t\t\\end{itemize}\n\n`;
+        paragraphText+= `\t\t\t\\end{itemize}\n\n`;
 
         subheading += paragraphText;
     }
@@ -186,7 +186,7 @@ function SectionToLatex(section: Section) {
             paragraphText += ParagraphToLatex(para);
         }
 
-        paragraphText+= `t\t\t\\end{itemize}\n\n`;
+        paragraphText+= `\t\t\t\\end{itemize}\n\n`;
 
         text += paragraphText;
     }
