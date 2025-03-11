@@ -11,8 +11,8 @@ export interface Paragraph {
 export interface Subsection {
     title: string,
     link?: string,
-    date: string,
-    subtitle: string,
+    date?: string,
+    subtitle?: string,
     location?: string,
     bulletCollection?: Bullet[],
     paragraphCollection?: Paragraph[]
