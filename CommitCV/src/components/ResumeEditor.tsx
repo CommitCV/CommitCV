@@ -51,7 +51,17 @@ export default function ResumeEditor({resume, setResume}: ResumeEditorProps) {
         const [movedSection] = reorderedSections.splice(result.source.index, 1);
         reorderedSections.splice(result.destination.index, 0, movedSection);
 
+        const updatedExpandedSections = expandedSections.map((idx) => {
+            if (idx === result.source.index) {
+                return result.destination.index;
+            } else if(idx === result.destination.index) {
+                return result.source.index;
+            }
+            return idx;
+        })
+
         setResume({...resume, sections: reorderedSections});
+        setExpandedSections(updatedExpandedSections);
     };
 
     if (!resume) {
