@@ -16,7 +16,20 @@ export default function BulletCollection({ bullets, handleUpdate, sectionIdx, su
   return (
     <>
       {bullets.map((bullet, bulletIdx) => (
-        <div key={bulletIdx} className="mb-4 p-4 border-l-4 border-blue-500 bg-blue-100">
+        <div key={bulletIdx} className="mb-4 flex items-center">
+          <span className="mr-2">•</span>
+          <input
+            type="text"
+            value={bullet.bold}
+            onChange={(e) => {
+              handleUpdate(
+                `${path}.${bulletIdx}.bold`,  // Update path based on subsection or section
+                e.target.value
+              );
+            }}
+            className="p-2 font-bold border border-gray-300 rounded-lg flex-[1] min-w-0"
+            placeholder="Enter bold part"
+          />
           <input
             type="text"
             value={bullet.normal}
@@ -26,8 +39,8 @@ export default function BulletCollection({ bullets, handleUpdate, sectionIdx, su
                 e.target.value
               );
             }}
-            className="w-full p-2 rounded-lg border border-gray-300"
-            placeholder="Enter bullet text"
+            className="p-2 border border-gray-300 rounded-lg ml-2 flex-[3] min-w-0"
+            placeholder="Enter normal part"
           />
         </div>
       ))}

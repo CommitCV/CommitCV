@@ -15,7 +15,7 @@ export default function ParagraphCollection({paragraphs, handleUpdate, sectionId
     return (
         <>
             {paragraphs.map((paragraph, paragraphIdx) => (
-                <div key={paragraphIdx} className="mb-4">
+                <div key={paragraphIdx} className="mb-4 flex items-center">
                     <input
                         type="text"
                         value={paragraph.bold}
@@ -25,7 +25,7 @@ export default function ParagraphCollection({paragraphs, handleUpdate, sectionId
                                 e.target.value
                             )
                         }
-                        className="w-full p-2 rounded-lg border border-gray-300"
+                        className="p-2 font-bold border border-gray-300 rounded-lg flex-[1] min-w-0"
                         placeholder="Enter bold text"
                     />
                     <input
@@ -37,7 +37,7 @@ export default function ParagraphCollection({paragraphs, handleUpdate, sectionId
                                 e.target.value
                             )
                         }
-                        className="w-full p-2 rounded-lg border border-gray-300"
+                        className="p-2 border border-gray-300 rounded-lg ml-2 flex-[3] min-w-0"
                         placeholder="Enter normal text"
                     />
                 </div>

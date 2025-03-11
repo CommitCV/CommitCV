@@ -25,10 +25,12 @@
           "location": "Seattle, WA",
             "bulletCollection": [
               {
-                "normal": "GPA: 3.95 / 4.0, Member of the Dean's Honour List"
+                "bold": "GPA:",
+                "normal": "3.95 / 4.0, Member of the Dean's Honour List"
               },
               {
-                "normal": "Relevant Courses: Systems Programming, Web Development, Network Security"
+                "bold": "Relevant Courses:",
+                "normal": "Systems Programming, Web Development, Network Security"
               }
             ]
         }
@@ -44,10 +46,12 @@
           "location": "Portland, OR",
             "bulletCollection": [
               {
-                "normal": "Developed internal web applications using React and Flask"
+                "bold": "Developed",
+                "normal": "internal web applications using React and Flask"
               },
               {
-                "normal": "Optimized SQL queries to improve database efficiency by 30 percent"
+                "bold": "Optimized",
+                "normal": "SQL queries to improve database efficiency by 30 percent"
               }
             ]
         }
@@ -62,10 +66,12 @@
           "location": "Online",
             "bulletCollection": [
               {
-                "normal": "Mentored students in Python programming fundamentals"
+                "bold": "Mentored",
+                "normal": "students in Python programming fundamentals"
               },
               {
-                "normal": "Designed interactive coding exercises to enhance learning engagement"
+                "bold": "Designed",
+                "normal": "interactive coding exercises to enhance learning engagement"
               }
             ]
         }
@@ -81,10 +87,12 @@
           "location": "Seattle, WA",
             "bulletCollection": [
               {
-                "normal": "Built a web platform for tracking personal carbon footprints and eco-friendly habits"
+                "bold": "Built",
+                "normal": "a web platform for tracking personal carbon footprints and eco-friendly habits"
               },
               {
-                "normal": "Integrated an API for real-time environmental impact calculations"
+                "bold": "Integrated",
+                "normal": "an API for real-time environmental impact calculations"
               }
             ]
         },
@@ -95,10 +103,12 @@
           "subtitle": "Docker, Linux, Nextcloud",
             "bulletCollection": [
               {
-                "normal": "Configured a secure, self-hosted cloud storage solution for personal and family use"
+                "bold": "Configured",
+                "normal": "a secure, self-hosted cloud storage solution for personal and family use"
               },
               {
-                "normal": "Implemented automated backups and remote access via VPN"
+                "bold": "Implemented",
+                "normal": "automated backups and remote access via VPN"
               }
             ]
         },
@@ -109,10 +119,12 @@
           "location": "Online",
             "bulletCollection": [
               {
-                "normal": "Developing an AI-powered chess opponent with machine learning techniques"
+                "bold": "Developing",
+                "normal": "an AI-powered chess opponent with machine learning techniques"
               },
               {
-                "normal": "Implemented an interactive web interface for gameplay and analysis"
+                "bold": "Implemented",
+                "normal": "an interactive web interface for gameplay and analysis"
               }
             ]
         }
@@ -122,10 +134,11 @@
       "name": "Awards",
         "bulletCollection": [
           {
-            "normal": "President’s Scholarship for Academic Excellence"
+            "bold": "Hackathon Winner:",
+            "normal": "Best AI Project at CodeSprint 2024"
           },
           {
-            "normal": "Hackathon Winner: Best AI Project at CodeSprint 2024"
+            "normal": "President’s Scholarship for Academic Excellence"
           },
           {
             "normal": "Google Cloud Developer Scholarship Recipient"
