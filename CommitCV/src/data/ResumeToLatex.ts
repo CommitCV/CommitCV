@@ -73,7 +73,7 @@ function Preamble() {
 \\newcommand{\\resumeSubSubheading}[2]{
     \\item
     \\begin{tabular*}{0.97\\textwidth}{l@{\\extracolsep{\\fill}}r}
-      \\textit{\\small#1} & \\textit{\\small #2} \\\\
+      \\textbf{\\small#1} & \\textit{\\small #2} \\\\
     \\end{tabular*}\\vspace{-7pt}
 }
 
@@ -119,7 +119,7 @@ function ParagraphToLatex(paragraph: Paragraph) {
 function SubsectionToLatex(section : Subsection) {
     let subheading;
 
-    if (section.location) {
+    if (section.location && section.subtitle) {
         subheading = `\t\t\\resumeSubheading{${section.title}}{${section.date}}{${section.subtitle}}{${section.location}}\n`
     } else {
         subheading = `\t\t\\resumeSubSubheading{\\textbf{`
@@ -128,7 +128,12 @@ function SubsectionToLatex(section : Subsection) {
         } else {
             subheading += section.title
         }
-        subheading += `} \\textbar\\ \\emph{${section.subtitle}}}{${section.date}}\n`
+        if (section.subtitle) {
+            subheading += `} \\textbar\\ \\textnormal{\\emph{${section.subtitle}}}}{${section.date}}\n`
+        } else {
+            subheading += `} }{${section.date}}\n`
+        }
+
     }
     if(section.bulletCollection && section.bulletCollection.length > 0) {
         let bulletText = `\t\t\t\\resumeItemListStart\n`;
