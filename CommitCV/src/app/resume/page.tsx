@@ -122,8 +122,10 @@ export default function ResumeHome() {
                         <ResumeEditor resume={resume} setResume={setResume}/>
                     </div>
                 <div className="flex flex-row justify-start items-start gap-4">
-                    {pdfUrl && <PDF file={pdfUrl} />}
-                    <div className="flex flex-col justify-start">
+                    <div className="sticky top-0">
+                        {pdfUrl && <PDF file={pdfUrl} />}
+                    </div>
+                    <div className="sticky top-4 flex flex-col justify-start">
                         {pdfUrl && (
                             <>
                                 <button
