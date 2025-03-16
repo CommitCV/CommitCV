@@ -49,7 +49,7 @@ export default function SubsectionCard({subsection, handleUpdate, sectionIdx, su
     }
 
     return (
-            <div className="py-4 px-4 rounded-lg shadow-lg bg-gray-300 inline-block w-full">
+            <div className="py-4 px-4 rounded-lg shadow-lg bg-gray-200 inline-block w-full mb-4">
                 <div className="grid grid-cols-10 gap-0">
                     <div className="col-span-9">
                         <input
