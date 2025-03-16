@@ -24,10 +24,13 @@ export default function ResumeEditor({resume, setResume}: ResumeEditorProps) {
         );
     };
 
-    const handleUpdate = (path: string, value: string | Subsection[] | Paragraph[] | Bullet[] | null) => {
+    const handleUpdate = (
+        path: string, 
+        value: string | Subsection[] | Paragraph[] | Bullet[] | null
+    ) => {
         if (!resume) return;
 
-        const updatedResume = {...resume};
+        const updatedResume = { ...resume };
         const keys = path.split(".");
         let obj: any = updatedResume;
 
@@ -37,10 +40,11 @@ export default function ResumeEditor({resume, setResume}: ResumeEditorProps) {
 
         if (value === null) {
             const index = parseInt(keys[keys.length - 1]);
-            obj.splice(index, 1);
+            obj.splice(index, 1); // If the value is null, remove the item
         } else {
-            obj[keys[keys.length - 1]] = value;
+            obj[keys[keys.length - 1]] = value; // Update the value at the specified path
         }
+
         setResume(updatedResume);
     };
 
