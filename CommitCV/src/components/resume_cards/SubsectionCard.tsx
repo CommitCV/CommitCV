@@ -7,7 +7,7 @@ import ParagraphCollection from "@/components/resume_cards/ParagraphCollection";
 
 interface SubsectionProps {
     subsection: Subsection;
-    handleUpdate: (path: string, value: string | Paragraph[] | Bullet[]) => void;
+    handleUpdate: (path: string, value: string | Paragraph[] | Bullet[] | null) => void;
     sectionIdx: number;
     subIdx: number;
     dragHandleProps?: any;
@@ -128,9 +128,18 @@ export default function SubsectionCard({subsection, handleUpdate, sectionIdx, su
                             )}
                         </div>
                     </div>
-                    {/* Only the vertical grip area receives dragHandleProps */}
-                    <div className="col-span-1 py-auto cursor-grab flex justify-center items-center" {...dragHandleProps}>
+                    <div className="col-span-1 py-auto flex justify-center items-center relative">
+                      {/* Button at the top */}
+                      <button 
+                        onClick={() => handleUpdate(`sections.${sectionIdx}.subsections.${subIdx}`, null)} 
+                        className="absolute top-0 left-1/2 transform -translate-x-1/2">
+                        <FaCircleXmark size={28} className="text-red-500" />
+                      </button>
+
+                      {/* Grip centered vertically */}
+                      <div className="flex justify-center items-center" {...dragHandleProps}>
                         <FaGripVertical size={21} className="text-gray-500" />
+                      </div>
                     </div>
                 </div>
             </div>
