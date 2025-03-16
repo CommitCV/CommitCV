@@ -1,10 +1,10 @@
-import {FaGripVertical} from "react-icons/fa"
+import {FaGripVertical, FaCircleXmark} from "react-icons/fa6"
 import { Paragraph } from '@/data/types/Resume';
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 interface ParagraphCollectionProps {
     paragraphs: Paragraph[];
-    handleUpdate: (path: string, value: string | Paragraph[]) => void;
+    handleUpdate: (path: string, value: string | Paragraph[] | null) => void;
     sectionIdx: number;
     subIdx?: number;
 }
@@ -73,6 +73,9 @@ export default function ParagraphCollection({ paragraphs, handleUpdate, sectionI
                                             className="p-2 border border-gray-300 rounded-lg ml-2 flex-[3] min-w-0"
                                             placeholder="Enter normal text"
                                         />
+                                          <button onClick={() => handleUpdate(`${path}.${paragraphIdx}`, null)}>
+                                            <FaCircleXmark size={28} className="ml-2 text-red-500" />
+                                          </button>
                                         <div className="ml-2 cursor-grab flex justify-center items-center"
                                             {...provided.dragHandleProps} >
                                             <FaGripVertical size={21} className="text-gray-500"/>

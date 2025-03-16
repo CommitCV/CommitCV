@@ -1,10 +1,10 @@
-import {FaGripVertical} from "react-icons/fa"
+import {FaGripVertical, FaCircleXmark} from "react-icons/fa6"
 import { Bullet } from '@/data/types/Resume';
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 interface BulletCollectionProps {
   bullets: Bullet[];
-  handleUpdate: (path: string, value: string | Bullet[]) => void;
+  handleUpdate: (path: string, value: string | Bullet[] | null) => void;
   sectionIdx: number;
   subIdx?: number;  // Make subIdx optional to allow section-level bullets
 }
@@ -75,6 +75,9 @@ export default function BulletCollection({ bullets, handleUpdate, sectionIdx, su
                           className="p-2 border border-gray-300 rounded-lg ml-2 flex-[3] min-w-0"
                           placeholder="Enter normal part"
                         />
+                      <button onClick={() => handleUpdate(`${path}.${bulletIdx}`, null)}>
+                        <FaCircleXmark size={28} className="ml-2 text-red-500" />
+                      </button>
                         {/* Vertical Grip Icon for Bullets */}
                         <div
                           className="ml-2 cursor-grab flex justify-center items-center"
