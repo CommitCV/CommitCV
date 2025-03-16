@@ -98,7 +98,6 @@ export default function ResumeEditor({resume, setResume}: ResumeEditorProps) {
                                         <div
                                             ref={provided.innerRef}
                                             {...provided.draggableProps}
-                                            {...provided.dragHandleProps}
                                             className="cursor-move"
                                         >
                                             <SectionCard
@@ -107,6 +106,7 @@ export default function ResumeEditor({resume, setResume}: ResumeEditorProps) {
                                                 expandedSections={expandedSections}
                                                 toggleSectionExpand={toggleSectionExpand}
                                                 handleUpdate={handleUpdate}
+                                                dragHandleProps={provided.dragHandleProps}
                                             />
                                         </div>
                                     )}

@@ -12,6 +12,7 @@ interface SectionCardProps {
     expandedSections: number[];
     toggleSectionExpand: (sectionIdx: number) => void;
     handleUpdate: (path: string, value: string | Subsection[] | Paragraph[] | Bullet[] | null) => void;
+    dragHandleProps?: any;
 }
 
 export default function SectionCard({
@@ -19,7 +20,8 @@ export default function SectionCard({
                                         sectionIdx,
                                         expandedSections,
                                         toggleSectionExpand,
-                                        handleUpdate
+                                        handleUpdate,
+                                        dragHandleProps
                                     }: SectionCardProps) {
 
     const [showSubmenu, setShowSubmenu] = useState(false);
@@ -135,7 +137,7 @@ export default function SectionCard({
                         </>
                     )}
                 </div>
-                <div className="col-span-1 py-auto cursor-grab flex justify-center items-center">
+                <div className="col-span-1 py-auto cursor-grab flex justify-center items-center" {...dragHandleProps}>
                     <FaGripVertical size={21} className="text-gray-500 w-auto"/>
                 </div>
             </div>
