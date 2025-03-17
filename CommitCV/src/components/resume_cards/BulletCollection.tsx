@@ -53,7 +53,7 @@ export default function BulletCollection({ bullets, handleUpdate, sectionIdx, su
                         <span className="mr-2">•</span>
                         <input
                           type="text"
-                          value={bullet.bold}
+                          value={bullet.bold || ""}
                           onChange={(e) => {
                             handleUpdate(
                               `${path}.${bulletIdx}.bold`,  // Update path based on subsection or section
@@ -65,7 +65,7 @@ export default function BulletCollection({ bullets, handleUpdate, sectionIdx, su
                         />
                         <input
                           type="text"
-                          value={bullet.normal}
+                          value={bullet.normal || ""}
                           onChange={(e) => {
                             handleUpdate(
                               `${path}.${bulletIdx}.normal`,  // Update path based on subsection or section
