@@ -6,7 +6,7 @@ services:
       args:
         NEXT_PUBLIC_PDF_ENDPOINT: ${NEXT_PUBLIC_PDF_ENDPOINT}
     ports:
-        - "${DOCKER_NETWORK_IP}:${COMMITCV_PORT}:${COMMITCV_PORT}"
+        - "${DOCKER_NETWORK_IP}:${COMMITCV_PORT}:3000"
     env_file:
       - .env
     depends_on:
