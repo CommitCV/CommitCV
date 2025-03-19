@@ -17,7 +17,7 @@ RUN npm install
 COPY . .
 
 # Create a prestart.js file to run the application
-RUN echo "require('./index.js');" >> prestart.js
+RUN echo "import './index.js';" >> prestart.js
 
 # Expose the port from the .env file
 ARG SERVER_PORT
