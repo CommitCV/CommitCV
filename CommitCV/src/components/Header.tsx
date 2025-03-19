@@ -8,7 +8,7 @@ export default function Header() {
     return (
         <div>
             <div className={`flex flex-row p-2`}>
-                <Link href={`/`}>
+                <Link className={`flex flex-row`} href={`/`}>
                     <h1 className={`${rhm.className} font-thin font text-6xl`}>Commit</h1> <h1 className={`${rhm.className} font-extrabold text-6xl`}>CV</h1>
                 </Link>
                 <div className={`ml-auto flex flex-row items-center`}>
