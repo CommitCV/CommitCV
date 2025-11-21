@@ -1,0 +1,205 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* LaTeX Content Styling */
+.latex-content {
+  font-family: "Georgia", "Times New Roman", "Times", serif;
+  line-height: 1.15;
+  color: #000;
+  max-width: 850px;
+  margin: 0 auto;
+  font-size: 11pt;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Resume Document Container */
+.resume-document {
+  padding: 0;
+}
+
+/* Resume Header */
+.resume-header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.resume-name {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 0.5rem 0 0.25rem 0;
+  letter-spacing: 0.02em;
+}
+
+.resume-contact {
+  font-size: 0.9rem;
+  margin: 0.25rem 0;
+}
+
+.resume-contact .separator {
+  margin: 0 0.5rem;
+}
+
+/* Resume Sections */
+.resume-section {
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.resume-section-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #000;
+  padding-bottom: 0.15rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Resume Entries (for Experience, Education, Projects) */
+.resume-entries {
+  margin-left: 0.15in;
+}
+
+.resume-entry {
+  margin-bottom: 0.5rem;
+}
+
+.resume-entry-header,
+.resume-entry-subheader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.1rem;
+}
+
+.resume-entry-left {
+  flex: 0 0 70%;
+  text-align: left;
+}
+
+.resume-entry-right {
+  flex: 0 0 28%;
+  text-align: right;
+  margin-left: auto;
+}
+
+.resume-entry-header strong {
+  font-weight: 600;
+  font-size: 1em;
+}
+
+.resume-entry-subheader em {
+  font-style: italic;
+  font-size: 0.95em;
+}
+
+/* Resume Items (bullet points) */
+.resume-items {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 0.3rem 0 0.5rem 0;
+}
+
+.resume-items li {
+  margin: 0.15rem 0;
+  font-size: 0.95em;
+  line-height: 1.4;
+}
+
+.resume-items li strong {
+  font-weight: 600;
+}
+
+/* Simple Lists (for Skills, Interests) */
+.resume-simple-list {
+  margin-left: 0.15in;
+  margin-top: 0.3rem;
+}
+
+.resume-list-item {
+  margin-bottom: 0.3rem;
+  font-size: 0.95em;
+}
+
+.resume-list-item strong {
+  font-weight: 600;
+}
+
+/* Text formatting */
+.latex-content strong,
+.latex-content b {
+  font-weight: 600;
+}
+
+.latex-content em,
+.latex-content i {
+  font-style: italic;
+}
+
+.latex-content code {
+  font-family: "Courier New", monospace;
+  font-size: 0.9em;
+}
+
+/* Print/PDF specific styles */
+@media print {
+  .latex-content {
+    background: white;
+    color: black;
+    max-width: 100%;
+    font-size: 10pt;
+  }
+
+  body {
+    background: white;
+  }
+
+  .resume-section {
+    page-break-inside: avoid;
+  }
+
+  .resume-section-title {
+    page-break-after: avoid;
+  }
+
+  .resume-entry {
+    page-break-inside: avoid;
+  }
+
+  .resume-items li {
+    page-break-inside: avoid;
+  }
+}
+
+@page {
+  size: letter;
+  margin: 0.5in 0.5in 0.5in 0.65in;
+}
+

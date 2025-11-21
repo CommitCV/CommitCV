@@ -1,4 +1,6 @@
-# CommitCV 
+# CommitCV v3 -- PROOF OF CONCEPT
+
+> A majority of the added code for this branch was generated using copilot. These proof of concept features will be migrated into the main releases over time.
 
 ### Customize and Modularize your Latex Resume with version control
 

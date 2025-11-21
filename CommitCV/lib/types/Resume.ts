@@ -39,4 +39,3 @@ export interface Resume {
     header: Header,
     sections: Section[]
 }
-

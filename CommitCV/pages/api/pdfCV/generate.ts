@@ -1,18 +1,9 @@
 export const convertLatexToPdf = (() => {
-    let lastCall = 0;
     const apiEndpoint = process.env.NEXT_PUBLIC_PDF_ENDPOINT;
 
-    return async (latex: string): Promise<Blob | null> => {
-        const now = Date.now();
-        if (now - lastCall < 1000) {
-            console.warn('API call is rate-limited. Please wait.');
-            return null;
-        }
-        lastCall = now;
-
+    return async (latex: string): Promise<Blob> => {
         if (!apiEndpoint) {
-            console.log('PDF_ENDPOINT is not set');
-            return null;
+            throw new Error('PDF_ENDPOINT is not set. Please configure NEXT_PUBLIC_PDF_ENDPOINT in your .env file.');
         }
 
         try {
@@ -23,15 +14,18 @@ export const convertLatexToPdf = (() => {
                 },
                 body: JSON.stringify({ latex: latex.toString() }),
             });
+
             if (response.ok) {
                 return await response.blob();
             } else {
-                console.error('Failed to convert LaTeX to PDF');
-                return null;
+                const errorText = await response.text().catch(() => 'Unknown error');
+                throw new Error(`Failed to convert LaTeX to PDF: ${response.status} ${response.statusText}. ${errorText}`);
             }
         } catch (error) {
-            console.error('Error:', error);
-            return null;
+            if (error instanceof Error) {
+                throw error;
+            }
+            throw new Error(`Network error while generating PDF: ${error}`);
         }
     };
 })();
