@@ -1,18 +1,24 @@
 export interface Resume {
     filename: string;
+    saveDate: string;
     dateCreated: string;
     version: number
-    resume: Section[]
+    sections: Section[]
 }
 
 export interface Section {
     title: string;
-    type: string;
+    type: SectionType;
+    toggled: boolean;
     content?: ResumeText[];
-    section?: Section[];
+    subsection?: Section[];
 }
 
 export interface ResumeText {
     content: string;
-    flags: string[];
+    flags: Flag[];
+    toggled: boolean;
 }
+
+type Flag = 'bold' | 'italic' | 'underline' | 'strikethrough' | 'link' | 'icon' | 'bullet' | 'bigger';
+type SectionType = 'header' | 'full-text' | 'sub-full-text' | 'two-split' | 'sub-two-split' | 'two-three-split' | 'sub-two-three-split';
