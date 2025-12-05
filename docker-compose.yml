@@ -1,5 +1,6 @@
 services:
   commitcv-server:
+    restart: unless-stopped
     build:
       context: ./CommitCV/
       dockerfile: ./Dockerfile

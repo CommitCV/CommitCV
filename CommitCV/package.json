@@ -1,6 +1,6 @@
 {
   "name": "commitcv",
-  "version": "2.0.2",
+  "version": "2.1.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -20,7 +20,7 @@
     "@octokit/auth-app": "^7.1.5",
     "@octokit/rest": "^21.1.1",
     "jsonwebtoken": "^9.0.2",
-    "next": "15.1.7",
+    "next": "15.1.9",
     "octokit": "^4.1.2",
     "pdfjs-dist": "4.8.69",
     "react": "^19.0.0",

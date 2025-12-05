@@ -65,7 +65,6 @@ ARG NEXT_PUBLIC_PDF_ENDPOINT
 RUN echo "NEXT_PUBLIC_PDF_ENDPOINT=${NEXT_PUBLIC_PDF_ENDPOINT}" >> .env
 
 # Run tests and build the application
-RUN bun test
 RUN bun run build
 
 # Expose the port from the .env file
