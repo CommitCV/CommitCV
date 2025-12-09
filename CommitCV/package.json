@@ -1,6 +1,6 @@
 {
   "name": "commitcv",
-  "version": "2.1.2",
+  "version": "2.1.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -17,26 +17,26 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hello-pangea/dnd": "^18.0.1",
-    "@octokit/auth-app": "^7.1.5",
+    "@octokit/auth-app": "^7.2.2",
     "@octokit/rest": "^21.1.1",
-    "jsonwebtoken": "^9.0.2",
-    "next": "15.1.9",
-    "octokit": "^4.1.2",
+    "jsonwebtoken": "^9.0.3",
+    "next": "^15.5.7",
+    "octokit": "^4.1.4",
     "pdfjs-dist": "4.8.69",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-dropzone": "^14.3.5",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "react-dropzone": "^14.3.8",
     "react-icons": "^5.5.0",
     "react-pdf": "^9.2.1"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@types/jsonwebtoken": "^9.0.8",
-    "@types/react": "^19",
-    "eslint": "^9",
+    "@eslint/eslintrc": "^3.3.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/react": "^19.2.7",
+    "eslint": "^9.39.1",
     "eslint-config-next": "15.1.7",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.18",
+    "typescript": "^5.9.3"
   }
 }
