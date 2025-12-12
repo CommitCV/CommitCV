@@ -5,9 +5,11 @@ import { useState } from "react";
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { GlobalWorkerOptions } from "pdfjs-dist";
+// @ts-expect-error not fixing for old version ;-;
+import { WorkerMessageHandler } from "pdfjs-dist/build/pdf.worker.min.mjs";
 
 GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
+    WorkerMessageHandler,
     import.meta.url
 ).toString();
 
