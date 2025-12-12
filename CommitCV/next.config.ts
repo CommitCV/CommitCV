@@ -8,14 +8,6 @@ const nextConfig: NextConfig = {
         }
       return config;
     },
-    experimental: {
-        turbo: {
-            resolveAlias: {
-                underscore: 'lodash',
-                mocha: { browser: 'mocha/browser-entry.js' },
-            },
-        },
-    },
 };
 
 export default nextConfig;
