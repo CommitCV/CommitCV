@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -8,33 +6,9 @@ function App() {
   return (
     <>
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-gray-800 gap-8">
-        <div className="flex gap-8">
-          <a
-            href="https://vite.dev"
-            target="_blank"
-            className="transition-transform hover:scale-110"
-          >
-            <img
-              src={viteLogo}
-              alt="Vite logo"
-              className="h-24 w-24 drop-shadow-md"
-            />
-          </a>
-          <a
-            href="https://react.dev"
-            target="_blank"
-            className="transition-transform hover:scale-110"
-          >
-            <img
-              src={reactLogo}
-              alt="React logo"
-              className="h-24 w-24 drop-shadow-md"
-            />
-          </a>
-        </div>
 
         <h1 className="text-4xl font-bold tracking-tight">
-          Vite + React
+          CommitCV
         </h1>
 
         <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center gap-4">
