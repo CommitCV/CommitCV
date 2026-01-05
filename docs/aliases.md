@@ -1,6 +1,6 @@
 # Path Aliases
 
-Path Aliases are used for shortening import paths. For instance, istead
+Path Aliases are used for shortening import paths. For instance, instead
 of writing:
 
 ```ts
