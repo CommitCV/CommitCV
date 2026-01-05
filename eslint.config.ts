@@ -30,7 +30,12 @@ export default defineConfig([
 	    jsxA11y.flatConfigs.recommended,
 	    prettier
     ],
-    languageOptions: { globals: globals.browser },
+    languageOptions: {
+	    parserOptions: {
+		    ecmaVersion: "latest"
+	    }
+	    globals: globals.browser
+    },
     rules: {
 	...reactRefresh.configs.vite.rules,
 	...reactHooks.configs.flat.recommended.rules,
