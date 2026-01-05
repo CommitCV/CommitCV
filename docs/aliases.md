@@ -39,14 +39,14 @@ Then we modify `vite.config.ts`:
 
 ```ts
 export default defineConfig({
-  resolve: {
-    alias: {
-      '@components': '/src/components',
-      '@branding': '/public/img/branding',
+    resolve: {
+        alias: {
+            "@components": "/src/components",
+            "@branding": "/public/img/branding",
+        },
     },
-  },
-  plugins: [react()]
-})
+    plugins: [react()],
+});
 ```
 
 That's it! You can now use `import <whatever> from '@branding';`

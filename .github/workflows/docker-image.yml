@@ -1,57 +1,57 @@
 name: Build CommitCV and pdfCV Containers
 
 on:
-  push:
-    branches:
-      - 'main'
-    tags:
-      - 'v*'
-  release:
-    types: [published]
+    push:
+        branches:
+            - "main"
+        tags:
+            - "v*"
+    release:
+        types: [published]
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+    REGISTRY: ghcr.io
+    IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push-image:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - dockerfile: ./CommitCV/Dockerfile
-            context: ./CommitCV
-            image: ghcr.io/username/image1
-          - dockerfile: ./pdfCV/Dockerfile
-            context: ./pdfCV
-            image: ghcr.io/username/image2
-    permissions:
-      contents: read
-      packages: write
+    build-and-push-image:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - dockerfile: ./CommitCV/Dockerfile
+                      context: ./CommitCV
+                      image: ghcr.io/username/image1
+                    - dockerfile: ./pdfCV/Dockerfile
+                      context: ./pdfCV
+                      image: ghcr.io/username/image2
+        permissions:
+            contents: read
+            packages: write
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v2
 
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3.3.0
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GH_PACKAGE_TOKEN }}
+            - name: Log in to the Container registry
+              uses: docker/login-action@v3.3.0
+              with:
+                  registry: ${{ env.REGISTRY }}
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GH_PACKAGE_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5.7.0
-        with:
-          images: ${{ matrix.image }}
+            - name: Extract metadata (tags, labels) for Docker
+              id: meta
+              uses: docker/metadata-action@v5.7.0
+              with:
+                  images: ${{ matrix.image }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6.15.0
-        with:
-          context: .
-          file: ${{ matrix.dockerfile }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+            - name: Build and push Docker image
+              uses: docker/build-push-action@v6.15.0
+              with:
+                  context: .
+                  file: ${{ matrix.dockerfile }}
+                  push: true
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}

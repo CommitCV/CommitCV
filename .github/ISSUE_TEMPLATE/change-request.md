@@ -2,9 +2,8 @@
 name: Change Request
 about: Describe this proposed change here.
 title: "[CHANGE REQUEST]"
-labels: ''
-assignees: ''
-
+labels: ""
+assignees: ""
 ---
 
 **What part of the project do you want changed?**
