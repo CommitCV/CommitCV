@@ -1,10 +1,10 @@
 {
-  "tabWidth": 4,
-  "semi": true,
-  "singleQuote": false,
-  "bracketSameLine": true,
-  "objectWrap": "preserve",
-  "singleAttributePerLine": true,
-  "printWidth": 80,
-  "bracketSpacing": true
+    "tabWidth": 4,
+    "semi": true,
+    "singleQuote": false,
+    "bracketSameLine": true,
+    "objectWrap": "preserve",
+    "singleAttributePerLine": true,
+    "printWidth": 80,
+    "bracketSpacing": true
 }
