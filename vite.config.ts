@@ -5,5 +5,10 @@ import eslint from "vite-plugin-eslint";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), eslint()],
+    resolve: {
+        alias: {
+            "@components": "/src/components",
+        },
+    },
+    plugins: [react(), tailwindcss(), eslint()],
 });
