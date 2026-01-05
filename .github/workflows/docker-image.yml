@@ -3,9 +3,9 @@ name: Build CommitCV and pdfCV Containers
 on:
   push:
     branches:
-      - 'main'
+      - "main"
     tags:
-      - 'v*'
+      - "v*"
   release:
     types: [published]
 
