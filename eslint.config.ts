@@ -3,6 +3,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 import pluginReact from "eslint-plugin-react";
 import json from "@eslint/json";
+import html from "@html-eslint/eslint-plugin";
 import markdown from "@eslint/markdown";
 import { defineConfig } from "eslint/config";
 import reactHooks from "eslint-plugin-react-hooks";
@@ -53,5 +54,11 @@ export default defineConfig([
         plugins: { markdown },
         language: "markdown/gfm",
         extends: ["markdown/recommended"],
+    },
+    {
+        files: ["**/*.html"],
+        plugins: { html },
+        language: "html/html",
+        extends: ["html/recommended"],
     },
 ]);
