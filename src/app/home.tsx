@@ -1,6 +1,8 @@
 import { NavLink } from "react-router";
 import Header from "@components/header";
 import Footer from "@components/footer";
+import ThemeSwitcher from "@components/theme-switcher";
+import ThemedCard from "@components/themed-card";
 
 export default function Home() {
     return (
@@ -13,6 +15,9 @@ export default function Home() {
                     Your Resume made easy, Wherever you go, Owned by you,
                     Version controlled
                 </p>
+
+                <ThemeSwitcher />
+                <ThemedCard title="hey" />
 
                 <nav>
                     <NavLink
