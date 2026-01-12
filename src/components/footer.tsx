@@ -1,7 +1,7 @@
 export default function Footer() {
     return (
-        <div className="flex flex-col container gap-4 place-items-center py-4 text-sm border-t border-t-gray-400">
-            <h1>TEST FOOTER</h1>
+        <div className="bg-light-50 dark:bg-dark-50 text-light-950 dark:text-dark-950 p-4 text-xl font-medium">
+            <h1>Test Footer for CommitCV</h1>
         </div>
     );
 }

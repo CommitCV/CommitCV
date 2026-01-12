@@ -1,27 +1,5 @@
 @import "tailwindcss";
 
-:root {
-    font-family:
-        IBM Plex Sans Variable,
-        system-ui,
-        Avenir,
-        Helvetica,
-        Arial,
-        sans-serif;
-    line-height: 1.21;
-    letter-spacing: -0.02em;
-    font-weight: 400;
-
-    color-scheme: light dark;
-    color: rgba(255, 255, 255, 0.87);
-    background-color: #242424;
-
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
 /* ibm-plex-sans-latin-wght-normal */
 @font-face {
     font-family: "IBM Plex Sans Variable";
@@ -36,13 +14,59 @@
         U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --color-dark-50: #070707;
+    --color-dark-100: #0b0b0b;
+    --color-dark-200: oklch(0.196 0.008 274.51);
+    --color-dark-300: oklch(0.224 0.026 270.99);
+    --color-dark-400: oklch(0.252 0.056 264);
+    --color-dark-500: oklch(0.381 0.041 267.87);
+    --color-dark-600: oklch(0.5 0.02 271.02);
+    --color-dark-700: #898989;
+    --color-dark-800: #aeaeae;
+    --color-dark-900: #d7d7d7;
+    --color-dark-950: #ebebeb;
+
+    --color-light-50: oklch(0.98 0.0034 325.6);
+    --color-light-100: oklch(0.9448 0.016 82.79);
+    --color-light-200: oklch(0.9096 0.0276 83.54);
+    --color-light-300: oklch(0.872 0.0398 82.33);
+    --color-light-400: oklch(0.8337 0.0503 82.11);
+    --color-light-500: oklch(0.8159 0.0561 82.3);
+    --color-light-600: oklch(0.7552 0.0513 82.05);
+    --color-light-700: oklch(0.6265 0.0414 81.34);
+    --color-light-800: oklch(0.4941 0.0322 81.27);
+    --color-light-900: oklch(0.2717 0.0146 76.27);
+    --color-light-950: oklch(0.1876 0.0085 84.57);
+}
+
+:root {
+    font-family:
+        IBM Plex Sans Variable,
+        system-ui,
+        Avenir,
+        Helvetica,
+        Arial,
+        sans-serif;
+    line-height: 1.21;
+    letter-spacing: -0.02em;
+    font-weight: 400;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
 a {
     font-weight: 500;
-    color: #646cff;
+    /* color: #646cff; */
     text-decoration: inherit;
 }
 a:hover {
-    color: #535bf2;
+    /* color: #535bf2; */
 }
 
 body {
@@ -52,11 +76,6 @@ body {
     min-height: 100vh;
 }
 
-h1 {
-    font-size: 3.2em;
-    line-height: 1.1;
-}
-
 button {
     border-radius: 8px;
     border: 1px solid transparent;
@@ -64,27 +83,14 @@ button {
     font-size: 1em;
     font-weight: 500;
     font-family: inherit;
-    background-color: #1a1a1a;
+    /* background-color: #1a1a1a; */
     cursor: pointer;
-    transition: border-color 0.25s;
+    /* transition: border-color 0.25s; */
 }
 button:hover {
-    border-color: #646cff;
+    /* border-color: #646cff; */
 }
 button:focus,
 button:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-    :root {
-        color: #213547;
-        background-color: #ffffff;
-    }
-    a:hover {
-        color: #747bff;
-    }
-    button {
-        background-color: #f9f9f9;
-    }
+    /* outline: 4px auto -webkit-focus-ring-color; */
 }
