@@ -8,7 +8,7 @@ export const useTheme = () => {
     useEffect(() => {
         const root = window.document.documentElement;
 
-        root.classList.remove("light", "dark", "sepia");
+        root.classList.remove("light", "dark");
         root.classList.add(theme);
         localStorage.setItem("theme", theme);
     }, [theme]);

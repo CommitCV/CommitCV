@@ -14,51 +14,32 @@
         U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-@layer base {
-    /* Default (Light) Theme */
-    :root {
-        --color-bg-1: #fbf9f5;
-        --color-bg-2: #f2ece1;
-        --color-bg-3: #eae0cd;
-        --color-bg-4: #e2d3b8;
-        --color-mid-1: #d9c6a4;
-        --color-mid-2: #d5c09a;
-        --color-mid-3: #c0ad8b;
-        --color-mid-4: #95866c;
-        --color-fg-3: #6b604d;
-        --color-fg-2: #2b261f;
-        --color-fg-1: #15130f;
-    }
+@custom-variant dark (&:where(.dark, .dark *));
 
-    /* Dark Theme */
-    .dark {
-        --color-bg-1: #060a12;
-        --color-bg-2: #0a111f;
-        --color-bg-3: #0e172b;
-        --color-bg-4: #101a31;
-        --color-mid-1: #121e37;
-        --color-mid-2: #14213d;
-        --color-mid-3: #2c3750;
-        --color-mid-4: #727a8b;
-        --color-fg-3: #a1a6b1;
-        --color-fg-2: #d0d3d8;
-        --color-fg-1: #e8e9ec;
-    }
+@theme {
+    --color-dark-50: #070707;
+    --color-dark-100: #0b0b0b;
+    --color-dark-200: oklch(0.196 0.008 274.51);
+    --color-dark-300: oklch(0.224 0.026 270.99);
+    --color-dark-400: oklch(0.252 0.056 264);
+    --color-dark-500: oklch(0.381 0.041 267.87);
+    --color-dark-600: oklch(0.5 0.02 271.02);
+    --color-dark-700: #898989;
+    --color-dark-800: #aeaeae;
+    --color-dark-900: #d7d7d7;
+    --color-dark-950: #ebebeb;
 
-    /* Sepia Theme */
-    .sepia {
-        --color-bg-1: #f5e3cf;
-        --color-bg-2: #f1d9bf;
-        --color-bg-3: #eed0af;
-        --color-bg-4: #e4b47e;
-        --color-mid-1: #dda15e;
-        --color-mid-2: #c79155;
-        --color-mid-3: #b1814b;
-        --color-mid-4: #856138;
-        --color-fg-3: #584026;
-        --color-fg-2: #2c2013;
-        --color-fg-1: #161009;
-    }
+    --color-light-50: oklch(0.98 0.006 75.38);
+    --color-light-100: oklch(0.962 0.013 86.78);
+    --color-light-200: oklch(0.928 0.022 80.67);
+    --color-light-300: oklch(0.89 0.034 81.96);
+    --color-light-400: oklch(0.857 0.044 83.18);
+    --color-light-500: oklch(0.816 0.056 82.29);
+    --color-light-600: oklch(0.724 0.083 81.98);
+    --color-light-700: oklch(0.601 0.087 81.15);
+    --color-light-800: oklch(0.454 0.063 82.12);
+    --color-light-900: oklch(0.283 0.035 82.57);
+    --color-light-950: oklch(0.194 0.02 84.08);
 }
 
 :root {
@@ -112,18 +93,4 @@ button:hover {
 button:focus,
 button:focus-visible {
     /* outline: 4px auto -webkit-focus-ring-color; */
-}
-
-@theme {
-    --color-bg-1: var(--bg-1);
-    --color-bg-2: var(--bg-2);
-    --color-bg-3: var(--bg-3);
-    --color-bg-4: var(--bg-4);
-    --color-mid-1: var(--mid-1);
-    --color-mid-2: var(--mid-2);
-    --color-mid-3: var(--mid-3);
-    --color-mid-4: var(--mid-4);
-    --color-fg-3: var(--fg-3);
-    --color-fg-2: var(--fg-2);
-    --color-fg-1: var(--fg-1);
 }

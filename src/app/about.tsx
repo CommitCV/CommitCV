@@ -6,7 +6,7 @@ export default function About() {
     return (
         <>
             <Header />
-            <div className="min-h-screen flex flex-col items-center justify-center bg-bg-1 text-fg-1 gap-8">
+            <div className="min-h-screen flex flex-col items-center justify-center gap-8 bg-light-100 text-light-950 dark:bg-dark-300 dark:text-dark-950">
                 <h1 className="text-4xl font-bold tracking-tight">
                     The Example About Page
                 </h1>
