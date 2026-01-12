@@ -29,17 +29,17 @@
     --color-dark-900: #d7d7d7;
     --color-dark-950: #ebebeb;
 
-    --color-light-50: oklch(0.98 0.006 75.38);
-    --color-light-100: oklch(0.962 0.013 86.78);
-    --color-light-200: oklch(0.928 0.022 80.67);
-    --color-light-300: oklch(0.89 0.034 81.96);
-    --color-light-400: oklch(0.857 0.044 83.18);
-    --color-light-500: oklch(0.816 0.056 82.29);
-    --color-light-600: oklch(0.724 0.083 81.98);
-    --color-light-700: oklch(0.601 0.087 81.15);
-    --color-light-800: oklch(0.454 0.063 82.12);
-    --color-light-900: oklch(0.283 0.035 82.57);
-    --color-light-950: oklch(0.194 0.02 84.08);
+    --color-light-50: oklch(0.98 0.0034 325.6);
+    --color-light-100: oklch(0.9448 0.016 82.79);
+    --color-light-200: oklch(0.9096 0.0276 83.54);
+    --color-light-300: oklch(0.872 0.0398 82.33);
+    --color-light-400: oklch(0.8337 0.0503 82.11);
+    --color-light-500: oklch(0.8159 0.0561 82.3);
+    --color-light-600: oklch(0.7552 0.0513 82.05);
+    --color-light-700: oklch(0.6265 0.0414 81.34);
+    --color-light-800: oklch(0.4941 0.0322 81.27);
+    --color-light-900: oklch(0.2717 0.0146 76.27);
+    --color-light-950: oklch(0.1876 0.0085 84.57);
 }
 
 :root {
