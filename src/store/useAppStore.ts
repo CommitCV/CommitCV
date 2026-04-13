@@ -1,7 +1,7 @@
 import type { IResume } from "src/data/IResume";
 import { create } from "zustand";
 
-type TTheme = "light" | "dark";
+export type TTheme = "light" | "dark";
 
 interface IAppStore {
     theme: TTheme;
