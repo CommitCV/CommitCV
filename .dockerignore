@@ -1,0 +1,9 @@
+.git
+.github
+.factory
+node_modules
+dist
+e2e
+docs
+*.log
+.DS_Store

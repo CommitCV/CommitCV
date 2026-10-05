@@ -1,34 +1,26 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
-
-name: CommitCV Build Deployment Test
+name: Build and test
 
 on:
     push:
-        branches: ["main"]
+        branches: [main]
     pull_request:
-        branches: ["main"]
+        branches: [main]
 
 jobs:
-    build:
+    verify:
         runs-on: ubuntu-latest
-
-        strategy:
-            matrix:
-                node-version: [22.14.x]
-                # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
         steps:
             - uses: actions/checkout@v4
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
+            - uses: pnpm/action-setup@v4
               with:
-                  node-version: ${{ matrix.node-version }}
-            - name: Setup Bun
-              uses: oven-sh/setup-bun@v2
-            - run: |
-                  cd CommitCV
-                  bun install
-            - run: |
-                  cd CommitCV
-                  bun run build
+                  version: 10
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+                  cache: pnpm
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm lint
+            - run: pnpm test
+            - run: pnpm exec playwright install --with-deps chromium
+            - run: pnpm build
+            - run: pnpm test:e2e
