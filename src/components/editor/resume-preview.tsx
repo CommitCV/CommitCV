@@ -1,0 +1,147 @@
+import { useEffect, useRef, useState } from "react";
+import type { IResume } from "@resume/resume";
+import { resumeToTypst } from "@typst/resume-to-typst";
+import { typst } from "@typst/typst-compiler";
+
+interface ResumePreviewProps {
+    resume: IResume;
+    onPageCount?: (count: number) => void;
+    zoom?: number;
+    /** Request to scroll to a page; `id` makes repeat jumps to the same page re-fire. */
+    jump?: { page: number; id: number };
+    onVisiblePageChange?: (page: number) => void;
+}
+
+export default function ResumePreview({
+    resume,
+    onPageCount,
+    zoom = 1,
+    jump,
+    onVisiblePageChange,
+}: ResumePreviewProps) {
+    const [pages, setPages] = useState<string[]>([]);
+    const [error, setError] = useState("");
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!jump) return;
+        const target = scrollRef.current?.querySelector(
+            `[data-testid="preview-page-${jump.page}"]`,
+        );
+        target?.scrollIntoView({ block: "start" });
+    }, [jump]);
+
+    function handleScroll() {
+        const container = scrollRef.current;
+        if (!container || !onVisiblePageChange) return;
+        const midline =
+            container.getBoundingClientRect().top + container.clientHeight / 2;
+        const nodes = container.querySelectorAll(
+            "[data-testid^='preview-page-']",
+        );
+        let current = 1;
+        nodes.forEach((node, index) => {
+            if (node.getBoundingClientRect().top <= midline)
+                current = index + 1;
+        });
+        onVisiblePageChange(current);
+    }
+
+    useEffect(() => {
+        let active = true;
+        const source = resumeToTypst(resume);
+        const timer = window.setTimeout(() => {
+            typst
+                .renderSvg(source)
+                .then((nextSvg) => {
+                    if (active) {
+                        const nextPages = splitSvgPages(nextSvg);
+                        setPages(nextPages);
+                        onPageCount?.(nextPages.length);
+                        setError("");
+                    }
+                })
+                .catch((reason: unknown) => {
+                    if (active) {
+                        setPages([]);
+                        onPageCount?.(0);
+                        setError(
+                            reason instanceof Error
+                                ? reason.message
+                                : "Preview failed",
+                        );
+                    }
+                });
+        }, 50);
+
+        return () => {
+            active = false;
+            window.clearTimeout(timer);
+        };
+    }, [onPageCount, resume]);
+
+    return (
+        <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            data-testid="resume-preview"
+            className="flex h-full items-start overflow-auto bg-slate-100 p-6 dark:bg-dark-50">
+            {pages.length > 0 ? (
+                <div
+                    className="mx-auto flex shrink-0 flex-col gap-6"
+                    style={{ width: `calc(min(100%, 850px) * ${zoom})` }}>
+                    {pages.map((page, index) => (
+                        <div
+                            key={index}
+                            data-testid={`preview-page-${index + 1}`}
+                            className="bg-white shadow-lg [&_svg]:h-auto [&_svg]:w-full"
+                            dangerouslySetInnerHTML={{ __html: page }}
+                        />
+                    ))}
+                </div>
+            ) : (
+                <p className="m-auto max-w-md text-center text-sm text-light-700 dark:text-dark-700">
+                    {error || "Rendering preview…"}
+                </p>
+            )}
+        </div>
+    );
+}
+
+function splitSvgPages(source: string): string[] {
+    const document = new DOMParser().parseFromString(source, "text/html");
+    const root = document.querySelector("svg");
+    if (!root) return [source];
+    const pageNodes = Array.from(root.children).filter((child) =>
+        child.classList.contains("typst-page"),
+    );
+    if (pageNodes.length < 2) return [source];
+
+    const viewBox = (root.getAttribute("viewBox") ?? "")
+        .split(/\s+/)
+        .map(Number);
+    const [width, totalHeight] = [viewBox[2], viewBox[3]];
+    if (!width || !totalHeight) return [source];
+
+    const sharedNodes = Array.from(root.children).filter(
+        (child) => !child.classList.contains("typst-page"),
+    );
+    const pageHeight = totalHeight / pageNodes.length;
+
+    return pageNodes.map((pageNode) => {
+        const page = root.cloneNode(false) as SVGSVGElement;
+        page.setAttribute(
+            "viewBox",
+            `0 0 ${width.toFixed(3)} ${pageHeight.toFixed(3)}`,
+        );
+        page.setAttribute("height", pageHeight.toFixed(3));
+        page.setAttribute("data-height", pageHeight.toFixed(3));
+        for (const sharedNode of sharedNodes) {
+            page.appendChild(sharedNode.cloneNode(true));
+        }
+        const pageContent = pageNode.cloneNode(true) as SVGGElement;
+        pageContent.setAttribute("transform", "translate(0, 0)");
+        page.appendChild(pageContent);
+        return new XMLSerializer().serializeToString(page);
+    });
+}
