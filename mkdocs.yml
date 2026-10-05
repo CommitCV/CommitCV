@@ -1,0 +1,26 @@
+site_name: CommitCV
+site_description: Private, local-first resume editing with Typst and GitHub storage
+theme:
+    name: material
+    features:
+        - navigation.sections
+        - navigation.top
+        - content.code.copy
+markdown_extensions:
+    - pymdownx.superfences:
+          custom_fences:
+              - name: mermaid
+                class: mermaid
+                format: !!python/name:pymdownx.superfences.fence_code_format
+nav:
+    - Home: index.md
+    - Editor: editor.md
+    - Resume schema: schema.md
+    - Local storage: local-storage.md
+    - Remote storage: remote-storage.md
+    - Typst preview: typst-wasm.md
+    - Testing: testing.md
+    - Changelog: changelog.md
+    - Reference:
+          - Path aliases: aliases.md
+          - Fonts: fonts.md
