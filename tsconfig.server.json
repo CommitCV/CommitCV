@@ -1,13 +1,13 @@
 {
     "compilerOptions": {
-        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
-        "target": "ES2023",
-        "lib": ["ES2023"],
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.server.tsbuildinfo",
+        "target": "ES2022",
+        "lib": ["ES2022"],
         "module": "ESNext",
         "types": ["node"],
         "skipLibCheck": true,
 
-        /* Bundler mode */
+        /* Node 24+ strips types natively, so imports use .ts extensions */
         "moduleResolution": "bundler",
         "allowImportingTsExtensions": true,
         "verbatimModuleSyntax": true,
@@ -22,5 +22,5 @@
         "noFallthroughCasesInSwitch": true,
         "noUncheckedSideEffectImports": true
     },
-    "include": ["vite.config.ts", "types/**/*.d.ts"]
+    "include": ["server"]
 }

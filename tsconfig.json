@@ -1,15 +1,20 @@
 {
     "files": [],
+    "types": ["node"],
     "references": [
         { "path": "./tsconfig.app.json" },
-        { "path": "./tsconfig.node.json" }
+        { "path": "./tsconfig.node.json" },
+        { "path": "./tsconfig.server.json" }
     ],
     "compilerOptions": {
         "baseUrl": "./",
         "paths": {
             "@components/*": ["src/components/*"],
             "@hooks/*": ["src/hooks/*"],
-            "@store/*": ["src/store/*"]
+            "@store/*": ["src/store/*"],
+            "@resume/*": ["src/resume/*"],
+            "@typst/*": ["src/typst/*"],
+            "@storage/*": ["src/storage/*"]
         }
     }
 }

@@ -13,6 +13,17 @@ import prettier from "eslint-plugin-prettier/recommended";
 
 export default defineConfig([
     {
+        ignores: [
+            "dist/**",
+            "test-results/**",
+            "server/test-dist/**",
+            ".github/ISSUE_TEMPLATE/**",
+            "e2e/requirements/**",
+            "index.html",
+            "tsconfig*.json",
+        ],
+    },
+    {
         files: ["**/*.{ts,mts,cts,tsx}"],
         plugins: {
             js,
