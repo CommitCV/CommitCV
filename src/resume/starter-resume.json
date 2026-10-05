@@ -1,0 +1,161 @@
+{
+    "filename": "starter-resume",
+    "date": "01-01-26",
+    "schema_version": 1,
+    "sections": [
+        {
+            "title": "Alex Reynolds",
+            "type": "header",
+            "toggled": true,
+            "content": [
+                {
+                    "text": "[alex.reynolds@example.com](mailto:alex.reynolds@example.com)",
+                    "flags": ["link"],
+                    "toggled": true
+                },
+                {
+                    "text": "555-123-4567",
+                    "flags": [],
+                    "toggled": true
+                },
+                {
+                    "text": "[github.com/alexreynoldsdev](https://github.com/alexreynoldsdev)",
+                    "flags": ["link"],
+                    "toggled": true
+                }
+            ],
+            "subsections": []
+        },
+        {
+            "title": "Education",
+            "type": "four-text-split",
+            "toggled": true,
+            "content": [
+                {
+                    "text": "**Bachelor of Science in Software Engineering, Minor in Cybersecurity**",
+                    "flags": ["bold"],
+                    "toggled": true
+                },
+                {
+                    "text": "Sept. 2022 -- Present",
+                    "flags": [],
+                    "toggled": true
+                },
+                {
+                    "text": "*University of Cascadia - Seattle, WA*",
+                    "flags": ["italics"],
+                    "toggled": true
+                }
+            ],
+            "subsections": []
+        },
+        {
+            "title": "Experience",
+            "type": "full-text",
+            "toggled": true,
+            "content": [],
+            "subsections": [
+                {
+                    "title": "",
+                    "type": "sub-four-text-split",
+                    "toggled": true,
+                    "content": [
+                        {
+                            "text": "**Software Development Intern**",
+                            "flags": ["bold"],
+                            "toggled": true
+                        },
+                        {
+                            "text": "May 2023 -- Aug. 2023",
+                            "flags": [],
+                            "toggled": true
+                        },
+                        {
+                            "text": "*NexusTech Solutions - Portland, OR*",
+                            "flags": ["italics"],
+                            "toggled": true
+                        }
+                    ],
+                    "subsections": [
+                        {
+                            "title": "",
+                            "type": "sub-full-text",
+                            "toggled": true,
+                            "content": [
+                                {
+                                    "text": "Developed internal web applications using React and Flask",
+                                    "flags": ["bullet"],
+                                    "toggled": true
+                                },
+                                {
+                                    "text": "Optimized SQL queries to improve database efficiency by 30 percent",
+                                    "flags": ["bullet"],
+                                    "toggled": true
+                                }
+                            ],
+                            "subsections": []
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Projects",
+            "type": "full-text",
+            "toggled": true,
+            "content": [],
+            "subsections": [
+                {
+                    "title": "",
+                    "type": "sub-two-split",
+                    "toggled": true,
+                    "content": [
+                        {
+                            "text": "**EcoTrack** | React, Node.js",
+                            "flags": ["bold"],
+                            "toggled": true
+                        },
+                        {
+                            "text": "Jan. 2024",
+                            "flags": [],
+                            "toggled": true
+                        }
+                    ],
+                    "subsections": [
+                        {
+                            "title": "",
+                            "type": "sub-full-text",
+                            "toggled": true,
+                            "content": [
+                                {
+                                    "text": "Built a web platform for tracking personal carbon footprints",
+                                    "flags": ["bullet"],
+                                    "toggled": true
+                                }
+                            ],
+                            "subsections": []
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Technical Skills",
+            "type": "full-text",
+            "toggled": true,
+            "content": [
+                {
+                    "text": "**Languages:** Python, JavaScript, C++, SQL, Rust, Java, Bash, HTML/CSS",
+                    "flags": ["bold"],
+                    "toggled": true
+                },
+                {
+                    "text": "**Tools and Technologies:** Git, Docker, Linux, PostgreSQL, Flask, React, Node.js, Kubernetes",
+                    "flags": ["bold"],
+                    "toggled": true
+                }
+            ],
+            "subsections": []
+        }
+    ]
+}
