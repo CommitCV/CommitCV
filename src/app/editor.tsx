@@ -1,51 +1,94 @@
-import Header from "@components/header";
 import EditorToolbar from "@components/editor/editor-toolbar";
 import ViewportToolbar from "@components/editor/viewport-toolbar";
-import HeaderCard from "@components/editor/header-card";
-import SectionCard from "@components/editor/section-card";
-
-const sections = [
-    { title: "Section", header: "Education", enabled: true },
-    { title: "Section", header: "Work Experience", enabled: true },
-    { title: "Section", header: "Volunteer Experience", enabled: true },
-    { title: "Section", header: "Projects", enabled: true },
-    { title: "Section", header: "Hackathon Projects", enabled: false },
-    { title: "Section", header: "Awards", enabled: true },
-];
+import Header from "@components/header";
+import SectionEditor from "@components/editor/section-editor";
+import ResumePreview from "@components/editor/resume-preview";
+import Button from "@components/ui/button";
+import { Plus } from "@components/ui/icons";
+import { useEffect, useState } from "react";
+import { useResumeStore } from "@store/useResumeStore";
 
 export default function Editor() {
-    return (
-        <div className="h-screen flex flex-col bg-light-100 dark:bg-dark-300 text-light-950 dark:text-dark-950">
-            <Header />
+    const resume = useResumeStore((store) => store.resume);
+    const newResume = useResumeStore((store) => store.newResume);
+    const addSection = useResumeStore((store) => store.addSection);
+    const [pageCount, setPageCount] = useState(1);
+    const [page, setPage] = useState(1);
+    const [zoom, setZoom] = useState(1);
+    const [jump, setJump] = useState({ page: 1, id: 0 });
 
-            <div className="flex-1 flex gap-6 p-6 overflow-hidden">
-                <div className="w-1/2 flex flex-col gap-3 overflow-y-auto">
-                    <EditorToolbar />
+    useEffect(() => {
+        if (!resume) newResume();
+    }, [newResume, resume]);
 
-                    <div className="flex flex-col gap-3 pb-4">
-                        <HeaderCard />
-
-                        {sections.map((section, i) => (
-                            <SectionCard
-                                key={i}
-                                title={section.title}
-                                headerValue={section.header}
-                                enabled={section.enabled}
-                            />
-                        ))}
-                    </div>
-                </div>
-
-                <div className="w-1/2 flex flex-col gap-3 overflow-hidden">
-                    <ViewportToolbar />
-
-                    <div className="flex-1 bg-white dark:bg-dark-100 border-2 border-border-light dark:border-border-dark rounded-lg overflow-y-auto flex items-center justify-center">
-                        <p className="text-light-700 dark:text-dark-700 text-lg">
-                            Resume preview will render here
-                        </p>
-                    </div>
-                </div>
+    if (!resume) {
+        return (
+            <div className="flex min-h-screen items-center justify-center">
+                Loading editor…
             </div>
+        );
+    }
+
+    return (
+        <div className="flex h-screen flex-col bg-light-100 text-light-950 dark:bg-dark-300 dark:text-dark-950">
+            <Header />
+            <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-4 lg:flex-row lg:p-6">
+                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+                    <EditorToolbar />
+                    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-4">
+                        {resume.sections.map((section, index) => (
+                            <div key={index}>
+                                <SectionEditor
+                                    section={section}
+                                    path={[index]}
+                                    isRoot
+                                />
+                            </div>
+                        ))}
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            className="gap-1"
+                            onClick={() =>
+                                addSection([], {
+                                    title: "New section",
+                                    type: "full-text",
+                                    toggled: true,
+                                    content: [],
+                                    subsections: [],
+                                })
+                            }>
+                            <Plus className="h-4 w-4" />
+                            Add section
+                        </Button>
+                    </div>
+                </div>
+                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+                    <ViewportToolbar
+                        pageCount={pageCount}
+                        page={page}
+                        zoom={zoom}
+                        onZoomChange={setZoom}
+                        onPageSelect={(target) => {
+                            setPage(target);
+                            setJump((prev) => ({
+                                page: target,
+                                id: prev.id + 1,
+                            }));
+                        }}
+                    />
+                    <div className="min-h-0 flex-1 overflow-hidden rounded-lg border-2 border-border-light dark:border-border-dark">
+                        <ResumePreview
+                            resume={resume}
+                            onPageCount={setPageCount}
+                            zoom={zoom}
+                            jump={jump}
+                            onVisiblePageChange={setPage}
+                        />
+                    </div>
+                </div>
+            </main>
         </div>
     );
 }

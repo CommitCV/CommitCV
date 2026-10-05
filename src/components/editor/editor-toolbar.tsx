@@ -1,40 +1,42 @@
 import Button from "@components/ui/button";
+import { Save } from "@components/ui/icons";
+import { useResumeStore } from "@store/useResumeStore";
 
 export default function EditorToolbar() {
+    const filename = useResumeStore((store) => store.resume?.filename ?? "");
+    const saveState = useResumeStore((store) => store.saveState);
+    const setFilename = useResumeStore((store) => store.setFilename);
+    const save = useResumeStore((store) => store.save);
+
     return (
-        <div className="flex items-center gap-3 bg-light-300 dark:bg-dark-200 border-2 border-border-light dark:border-border-dark rounded-lg px-3 py-1.5">
-            <span className="text-sm font-medium text-light-950 dark:text-dark-950 shrink-0">
-                Resume Name:
-            </span>
-            <div className="flex-1 bg-light-200 dark:bg-dark-100 border border-border-light dark:border-border-dark rounded px-2 py-1 text-sm text-light-950 dark:text-dark-950">
-                alex-reynolds-good-good-final-copy
-            </div>
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border-2 border-border-light bg-light-300 px-3 py-1.5 dark:border-border-dark dark:bg-dark-200">
+            <label className="flex min-w-0 flex-1 items-center gap-2 text-sm font-medium">
+                <span className="shrink-0">Resume name</span>
+                <input
+                    aria-label="Resume filename"
+                    value={filename}
+                    onChange={(event) => setFilename(event.target.value)}
+                    className="min-w-0 flex-1 rounded border border-border-light bg-light-100 px-2 py-1 font-normal outline-none focus:border-accent dark:border-border-dark dark:bg-dark-100"
+                />
+            </label>
             <div className="flex-1" />
             <Button
+                type="button"
                 variant="primary"
                 size="sm"
-                className="gap-1.5">
-                Commit Changes
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line
-                        x1="12"
-                        y1="15"
-                        x2="12"
-                        y2="3"
-                    />
-                </svg>
+                className="gap-1.5"
+                disabled={saveState === "saving"}
+                onClick={() => void save(`update ${filename || "resume"}`)}>
+                <Save className="h-4 w-4" />
+                {saveState === "saving" ? "Saving…" : "Commit Changes"}
             </Button>
+            <span
+                role="status"
+                className="text-xs text-light-700 dark:text-dark-700">
+                {saveState === "dirty" && "Unsaved changes"}
+                {saveState === "clean" && "Saved"}
+                {saveState === "error" && "Save failed"}
+            </span>
         </div>
     );
 }
