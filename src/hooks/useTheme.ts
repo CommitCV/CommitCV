@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useAppStore, type TTheme } from "src/store/useAppStore";
+import { useAppStore, type TTheme } from "@store/useAppStore";
 
 export const useTheme = () => {
     const { theme, setTheme } = useAppStore();

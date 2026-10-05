@@ -9,6 +9,7 @@ export default defineConfig({
         alias: {
             "@components": "/src/components",
             "@hooks": "/src/hooks",
+            "@store": "/src/store",
         },
     },
     plugins: [react(), tailwindcss(), eslint()],

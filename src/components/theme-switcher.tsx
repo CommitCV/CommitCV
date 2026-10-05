@@ -3,51 +3,55 @@ import { useTheme } from "@hooks/useTheme";
 export default function ThemeSwitcher() {
     const { theme, changeTheme } = useTheme();
 
-    const setDarkTheme = () => {
-        changeTheme("dark");
-    };
-
-    const setLightTheme = () => {
-        changeTheme("light");
+    const toggle = () => {
+        changeTheme(theme === "dark" ? "light" : "dark");
     };
 
     return (
-        <>
-            <p>Current Theme: {theme}</p>
-
-            <div className="flex gap-2">
-                <button
-                    type="button"
-                    onClick={setDarkTheme}
-                    className="
-                        inline-flex items-center gap-2
-                        rounded-full px-4 py-2
-                        bg-light-400
-                        dark:bg-dark-50
-                        text-sm font-medium
-                        transition-colors
-                        hover:bg-bg-4
-                    "
-                    aria-label="Set dark theme">
-                    Dark
-                </button>
-
-                <button
-                    type="button"
-                    onClick={setLightTheme}
-                    className="
-                        inline-flex items-center gap-2
-                        rounded-full px-4 py-2
-                        bg-light-400
-                        dark:bg-dark-50
-                        text-sm font-medium
-                        transition-colors
-                        hover:bg-bg-4
-                    "
-                    aria-label="Set light theme">
-                    Light
-                </button>
-            </div>
-        </>
+        <button
+            type="button"
+            onClick={toggle}
+            className="p-2 rounded-full text-light-700 dark:text-dark-700 hover:bg-light-200 dark:hover:bg-dark-100 transition-colors"
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}>
+            {theme === "dark" ? (
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round">
+                    <circle
+                        cx="12"
+                        cy="12"
+                        r="4"
+                    />
+                    <path d="M12 2v2" />
+                    <path d="M12 20v2" />
+                    <path d="m4.93 4.93 1.41 1.41" />
+                    <path d="m17.66 17.66 1.41 1.41" />
+                    <path d="M2 12h2" />
+                    <path d="M20 12h2" />
+                    <path d="m6.34 17.66-1.41 1.41" />
+                    <path d="m19.07 4.93-1.41 1.41" />
+                </svg>
+            ) : (
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round">
+                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                </svg>
+            )}
+        </button>
     );
 }
