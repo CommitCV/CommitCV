@@ -1,0 +1,5 @@
+allowBuilds:
+  esbuild: false
+minimumReleaseAgeExclude:
+  - hono
+  - mdast-util-find-and-replace
