@@ -19,29 +19,37 @@ that you can trust to manage your resume (and hopefully more!).
 Clone the repo and run:
 
 ```bash
-npm i
-npx vite --port 3000
+pnpm install
+pnpm dev
 ```
 
-Then open `localhost:3000` in your browser.
+Then open the local Vite URL in your browser.
 
 ### Production
 
-To build for production and preview the result, run:
+Build and run the production server:
 
+```bash
+pnpm build
+pnpm server
 ```
-npx vite build
-npx vite preview --port 3000
+
+The server serves the built frontend and handles GitHub OAuth and proxy
+requests. Use `.env.example` for local configuration.
+
+## Documentation
+
+Read the [project documentation](docs/index.md), or build it with MkDocs:
+
+```bash
+mkdocs serve
 ```
 
-### Code Linting/Formatting
+## Checks
 
-Linting and formatting is done automatically using ESLint and Prettier. The
-formatting and linting should get done automatically when you use `git commit`
-to commit your code from the CLI.
-
-You can also run them manually using `npm run lint` and `npm run lint:fix` to
-lint, and lint and fix respectively.
-
-For formatting you can run `npx run prettier . --write` to format all files in
-the current directory and lower.
+```bash
+pnpm lint
+pnpm test
+pnpm build
+pnpm test:e2e
+```
