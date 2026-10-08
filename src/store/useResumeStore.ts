@@ -3,7 +3,10 @@ import { persist } from "zustand/middleware";
 import {
     addSection,
     addText,
+    moveNode,
     moveSection,
+    moveSectionTo,
+    moveTextTo,
     removeSection,
     removeText,
     sectionAt,
@@ -12,6 +15,12 @@ import {
 } from "@resume/edit-resume";
 import type { TSectionPath } from "@resume/edit-resume";
 import type { IResume, IResumeText, ISection } from "@resume/resume";
+import {
+    isNoOpMove,
+    resolveDrop,
+    type TDragItem,
+    type TDropTarget,
+} from "@resume/drag-drop";
 import { today } from "@resume/dates";
 import starter from "@resume/starter-resume.json";
 import { GitHubResumeStorage } from "@storage/github-resume-storage";
@@ -82,6 +91,9 @@ interface IResumeStore {
     /** UI-only, never persisted. */
     focusedText: IFocusedText | null;
     textMode: TTextMode;
+    /** The drag in progress and where it would land; UI-only. */
+    dragItem: TDragItem | null;
+    dropTarget: TDropTarget | null;
     /** Undo and redo stacks, oldest first; UI-only, never persisted. */
     past: ISnapshot[];
     future: ISnapshot[];
@@ -107,6 +119,10 @@ interface IResumeStore {
     setExpanded(path: TSectionPath, open: boolean): void;
     setFocusedText(focused: IFocusedText | null): void;
     setTextMode(mode: TTextMode): void;
+    setDragItem(item: TDragItem | null): void;
+    setDropTarget(target: TDropTarget | null): void;
+    /** Applies the current drag at the current drop target, if allowed. */
+    drop(): void;
     save(message?: string): Promise<void>;
 }
 
@@ -120,6 +136,8 @@ export const useResumeStore = create<IResumeStore>()(
             expanded: {},
             focusedText: null,
             textMode: "formatted",
+            dragItem: null,
+            dropTarget: null,
             ...clearedHistory,
 
             undo: () =>
@@ -237,6 +255,61 @@ export const useResumeStore = create<IResumeStore>()(
                 })),
             setFocusedText: (focusedText) => set({ focusedText }),
             setTextMode: (textMode) => set({ textMode, focusedText: null }),
+            setDragItem: (dragItem) => set({ dragItem, dropTarget: null }),
+            setDropTarget: (dropTarget) => set({ dropTarget }),
+            drop: () =>
+                set((s) => {
+                    const cleared = { dragItem: null, dropTarget: null };
+                    const move =
+                        s.resume &&
+                        s.dragItem &&
+                        s.dropTarget &&
+                        resolveDrop(s.resume, s.dragItem, s.dropTarget);
+                    if (!s.resume || !move || isNoOpMove(move)) return cleared;
+                    if (move.kind === "text") {
+                        return {
+                            ...cleared,
+                            ...record(s),
+                            resume: moveTextTo(
+                                s.resume,
+                                move.fromPath,
+                                move.fromIndex,
+                                move.toPath,
+                                move.toIndex,
+                            ),
+                            saveState: "dirty",
+                            focusedText: null,
+                            // Open the receiving section so the text stays in view.
+                            expanded: {
+                                ...s.expanded,
+                                [move.toPath.join(".")]: true,
+                            },
+                        };
+                    }
+                    const expanded = { ...s.expanded };
+                    if (move.toParent.length > 0) {
+                        expanded[move.toParent.join(".")] = true;
+                    }
+                    return {
+                        ...cleared,
+                        ...record(s),
+                        resume: moveSectionTo(
+                            s.resume,
+                            move.from,
+                            move.toParent,
+                            move.toIndex,
+                        ),
+                        saveState: "dirty",
+                        focusedText: null,
+                        expanded: remapExpandedForMove(
+                            s.resume,
+                            expanded,
+                            move.from,
+                            move.toParent,
+                            move.toIndex,
+                        ),
+                    };
+                }),
 
             save: async (message) => {
                 const state = get();
@@ -339,5 +412,36 @@ function remapExpanded(
         path[parent.length] = mapped;
         next[path.join(".")] = open;
     }
+    return next;
+}
+
+/** Carries open state along with sections when one moves elsewhere in the tree. */
+function remapExpandedForMove(
+    resume: IResume,
+    expanded: Record<string, boolean>,
+    from: TSectionPath,
+    toParent: TSectionPath,
+    toIndex: number,
+): Record<string, boolean> {
+    interface IKeyNode {
+        key: string;
+        subsections: IKeyNode[];
+    }
+    const build = (sections: ISection[], prefix: number[]): IKeyNode[] =>
+        sections.map((section, i) => ({
+            key: [...prefix, i].join("."),
+            subsections: build(section.subsections, [...prefix, i]),
+        }));
+    const tree = build(resume.sections, []);
+    moveNode(tree, from, toParent, toIndex);
+
+    const next: Record<string, boolean> = {};
+    const walk = (nodes: IKeyNode[], prefix: number[]) =>
+        nodes.forEach((node, i) => {
+            const path = [...prefix, i];
+            if (node.key in expanded) next[path.join(".")] = expanded[node.key];
+            walk(node.subsections, path);
+        });
+    walk(tree, []);
     return next;
 }

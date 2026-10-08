@@ -3,6 +3,8 @@ import {
     addSection,
     addText,
     moveSection,
+    moveSectionTo,
+    moveTextTo,
     removeSection,
     removeText,
     sectionAt,
@@ -130,6 +132,53 @@ describe("edit-resume", () => {
         expect(next.sections[0].content).toHaveLength(2);
         const removed = removeText(next, [0], 0);
         expect(removed.sections[0].content[0].text).toBe("204-555-0101");
+    });
+
+    it("moveSectionTo nests a top-level section as a sub section", () => {
+        const resume = addSection(makeResume(), [], added);
+        const next = moveSectionTo(resume, [2], [1, 0], 0);
+        expect(next.sections).toHaveLength(2);
+        const nested = sectionAt(next, [1, 0, 0]);
+        expect(nested?.title).toBe("Skills");
+        expect(nested?.type).toBe("sub-full-text");
+    });
+
+    it("moveSectionTo lifts a sub section to the top level", () => {
+        const next = moveSectionTo(makeResume(), [1, 0], [], 3);
+        expect(next.sections[2].type).toBe("four-text-split");
+        expect(next.sections[1].subsections).toEqual([]);
+    });
+
+    it("moveSectionTo reorders within a list using pre-move indexes", () => {
+        const resume = addSection(makeResume(), [], added);
+        const next = moveSectionTo(resume, [1], [], 3);
+        expect(next.sections.map((section) => section.title)).toEqual([
+            "Travis Friesen",
+            "Skills",
+            "Experience",
+        ]);
+    });
+
+    it("moveSectionTo refuses to move a section into itself", () => {
+        expect(() => moveSectionTo(makeResume(), [1], [1, 0], 0)).toThrow();
+    });
+
+    it("moveTextTo moves text within and between sections", () => {
+        const resume = addText(makeResume(), [0], {
+            text: "204-555-0101",
+            flags: [],
+            toggled: true,
+        });
+        const reordered = moveTextTo(resume, [0], 0, [0], 2);
+        expect(reordered.sections[0].content.map((t) => t.text)).toEqual([
+            "204-555-0101",
+            "a@b.c",
+        ]);
+        const across = moveTextTo(resume, [0], 1, [1, 0, 0], 0);
+        expect(across.sections[0].content).toHaveLength(1);
+        expect(sectionAt(across, [1, 0, 0])?.content[0].text).toBe(
+            "204-555-0101",
+        );
     });
 
     it("throws on invalid paths", () => {

@@ -1,4 +1,4 @@
-import type { IResume, IResumeText, ISection } from "./resume";
+import type { IResume, IResumeText, ISection, TSectionType } from "./resume";
 
 /** Indexes through `sections`/`subsections`. `[]` is the top level. */
 export type TSectionPath = number[];
@@ -64,6 +64,75 @@ export function moveSection(
     return next;
 }
 
+/** Nodes with the same shape as sections, so moves can be mirrored on other trees. */
+interface ITreeNode<T> {
+    subsections: T[];
+}
+
+/**
+ * Moves the section at `from` so it lands before the item at `toIndex` in
+ * `toParent`'s list, with indexes taken before the move. Moving a section
+ * into itself or its own subtree throws.
+ */
+export function moveSectionTo(
+    resume: IResume,
+    from: TSectionPath,
+    toParent: TSectionPath,
+    toIndex: number,
+): IResume {
+    const next = clone(resume);
+    const moved = moveNode(next.sections, from, toParent, toIndex);
+    moved.type = typeForDepth(moved.type, toParent.length > 0);
+    return next;
+}
+
+/** Applies `moveSectionTo`'s reordering to any tree shaped like the sections. */
+export function moveNode<T extends ITreeNode<T>>(
+    roots: T[],
+    from: TSectionPath,
+    toParent: TSectionPath,
+    toIndex: number,
+): T {
+    if (isPrefix(from, toParent)) {
+        throw new Error(`cannot move [${from}] into itself`);
+    }
+    const source = listAt(roots, from.slice(0, -1));
+    const target = listAt(roots, toParent);
+    const fromIndex = from[from.length - 1];
+    const node = source?.[fromIndex];
+    if (!source || !target || !node) {
+        throw new Error(`invalid move: [${from}] -> [${toParent}]/${toIndex}`);
+    }
+    // Lists are resolved up front, so leave a hole, insert, then close it.
+    source[fromIndex] = null as unknown as T;
+    target.splice(toIndex, 0, node);
+    source.splice(source.indexOf(null as unknown as T), 1);
+    return node;
+}
+
+/** Moves a text so it lands before `toIndex` in `toPath`'s content (indexes taken before the move). */
+export function moveTextTo(
+    resume: IResume,
+    fromPath: TSectionPath,
+    fromIndex: number,
+    toPath: TSectionPath,
+    toIndex: number,
+): IResume {
+    const next = clone(resume);
+    const source = sectionAt(next, fromPath)?.content;
+    const target = sectionAt(next, toPath)?.content;
+    const text = source?.[fromIndex];
+    if (!source || !target || !text) {
+        throw new Error(
+            `invalid text move: [${fromPath}]/${fromIndex} -> [${toPath}]/${toIndex}`,
+        );
+    }
+    source[fromIndex] = null as unknown as IResumeText;
+    target.splice(toIndex, 0, text);
+    source.splice(source.indexOf(null as unknown as IResumeText), 1);
+    return next;
+}
+
 export function updateText(
     resume: IResume,
     path: TSectionPath,
@@ -103,6 +172,44 @@ export function removeText(
     }
     section.content.splice(index, 1);
     return next;
+}
+
+function nodeAt<T extends ITreeNode<T>>(
+    roots: T[],
+    path: TSectionPath,
+): T | null {
+    let list = roots;
+    let node: T | null = null;
+    for (const i of path) {
+        node = list[i] ?? null;
+        if (!node) return null;
+        list = node.subsections;
+    }
+    return node;
+}
+
+function listAt<T extends ITreeNode<T>>(
+    roots: T[],
+    path: TSectionPath,
+): T[] | null {
+    return path.length === 0
+        ? roots
+        : (nodeAt(roots, path)?.subsections ?? null);
+}
+
+/** Whether `path` is `prefix` itself or lies inside it. */
+export function isPrefix(prefix: TSectionPath, path: TSectionPath): boolean {
+    return (
+        prefix.length <= path.length &&
+        prefix.every((index, depth) => path[depth] === index)
+    );
+}
+
+/** Nested sections use the `sub-` variant of their type; top-level ones don't. */
+function typeForDepth(type: TSectionType, nested: boolean): TSectionType {
+    if (type === "header") return type;
+    const base = type.replace(/^sub-/, "");
+    return (nested ? `sub-${base}` : base) as TSectionType;
 }
 
 function clone(resume: IResume): IResume {

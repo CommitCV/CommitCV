@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { TDragItem, TDropTarget } from "@resume/drag-drop";
 import type { IResume, ISection } from "@resume/resume";
 import type { IResumeEntry, IResumeStorage } from "@storage/resume-storage";
 import starter from "@resume/starter-resume.json";
@@ -166,6 +167,20 @@ describe("useResumeStore", () => {
             expect(state().resume).toEqual(before);
         });
 
+        it("undoes a drop", () => {
+            const before = state().resume;
+            state().setDragItem({ kind: "section", path: [4] });
+            state().setDropTarget({
+                kind: "section",
+                path: [1],
+                position: "before",
+            });
+            state().drop();
+            expect(state().resume?.sections[1]?.title).toBe("Technical Skills");
+            state().undo();
+            expect(state().resume).toEqual(before);
+        });
+
         it("restores which sections were open", () => {
             state().setExpanded([1], true);
             state().removeSection([1]);
@@ -200,6 +215,33 @@ describe("useResumeStore", () => {
         it("records nothing for an out-of-range move", () => {
             state().moveSection([0], -1);
             expect(state().past).toHaveLength(0);
+        });
+
+        it.each<[string, TDragItem, TDropTarget]>([
+            [
+                "text before itself",
+                { kind: "text", path: [1], index: 0 },
+                { kind: "text", path: [1], index: 0, position: "before" },
+            ],
+            [
+                "text after its previous row",
+                { kind: "text", path: [1], index: 1 },
+                { kind: "text", path: [1], index: 0, position: "after" },
+            ],
+            [
+                "a section after its previous sibling",
+                { kind: "section", path: [2] },
+                { kind: "section", path: [1], position: "after" },
+            ],
+        ])("records nothing for a drop of %s", (_name, item, target) => {
+            const before = state().resume;
+            state().setDragItem(item);
+            state().setDropTarget(target);
+            state().drop();
+            expect(state().resume).toBe(before);
+            expect(state().past).toHaveLength(0);
+            expect(state().saveState).toBe("clean");
+            expect(state().dragItem).toBeNull();
         });
 
         it("clears history when another resume loads", () => {

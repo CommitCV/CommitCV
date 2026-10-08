@@ -1,10 +1,16 @@
+import type { TSectionPath } from "@resume/edit-resume";
 import type { TFlag } from "@resume/resume";
 import { useResumeStore } from "@store/useResumeStore";
 import { Bullet, Bars, Trash } from "@components/ui/icons";
 import Button from "@components/ui/button";
+import { useDropZone } from "@hooks/useDropZone";
+import DropLine from "./drop-line";
+import { useDraggable } from "@hooks/useDraggable";
 import FormattedText from "./formatted-text";
 
 interface ContentRowProps {
+    path: TSectionPath;
+    index: number;
     value: string;
     flags: TFlag[];
     onChange: (value: string) => void;
@@ -15,6 +21,8 @@ interface ContentRowProps {
 }
 
 export default function ContentRow({
+    path,
+    index,
     value,
     flags,
     onChange,
@@ -28,9 +36,29 @@ export default function ContentRow({
             start: input.selectionStart ?? 0,
             end: input.selectionEnd ?? 0,
         });
+    const { active, handlers } = useDropZone(
+        (position) => ({
+            kind: "text",
+            path,
+            index,
+            position: position === "after" ? "after" : "before",
+        }),
+        (ratio, item) =>
+            item.kind === "text" ? (ratio < 0.5 ? "before" : "after") : null,
+    );
+
+    const draggable = useDraggable({ kind: "text", path, index });
 
     return (
-        <div className="flex items-start gap-2">
+        <div
+            {...draggable}
+            {...handlers}
+            className="relative flex cursor-grab items-start gap-2 rounded active:cursor-grabbing">
+            {/* Rows sit in a space-y-2 list: 4px to the gap's middle. */}
+            <DropLine
+                position={active}
+                outset={4}
+            />
             <span
                 title={isList ? "List item" : "Text"}
                 className="flex w-6 shrink-0 items-center pt-1.5 text-light-950 dark:text-dark-950">
