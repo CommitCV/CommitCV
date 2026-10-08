@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { IResume } from "@resume/resume";
 import { resumeToTypst } from "@typst/resume-to-typst";
 import { typst } from "@typst/typst-client";
+import { clampZoom, type FitMode } from "@components/editor/zoom";
+import { usePreviewZoom } from "@hooks/usePreviewZoom";
 
 interface ResumePreviewProps {
     resume: IResume;
@@ -10,7 +12,16 @@ interface ResumePreviewProps {
     /** Request to scroll to a page; `id` makes repeat jumps to the same page re-fire. */
     jump?: { page: number; id: number };
     onVisiblePageChange?: (page: number) => void;
+    /** Keeps the zoom fitting a page to the viewport, through resizes. */
+    fitMode?: FitMode | null;
+    onZoomChange?: (zoom: number) => void;
+    /** A zoom the user made by pinching or with keys, which ends any fit mode. */
+    onPinchZoom?: (zoom: number) => void;
 }
+
+/** Matches the `p-6` padding and the 850px page cap below. */
+const PADDING = 24;
+const BASE_WIDTH = 850;
 
 export default function ResumePreview({
     resume,
@@ -18,10 +29,14 @@ export default function ResumePreview({
     zoom = 1,
     jump,
     onVisiblePageChange,
+    fitMode,
+    onZoomChange,
+    onPinchZoom,
 }: ResumePreviewProps) {
     const [pages, setPages] = useState<string[]>([]);
     const [error, setError] = useState("");
     const scrollRef = useRef<HTMLDivElement>(null);
+    usePreviewZoom(scrollRef, zoom, (next) => onPinchZoom?.(next));
 
     useEffect(() => {
         if (!jump) return;
@@ -30,6 +45,32 @@ export default function ResumePreview({
         );
         target?.scrollIntoView({ block: "start" });
     }, [jump]);
+
+    useEffect(() => {
+        const container = scrollRef.current;
+        if (!fitMode || !container || !onZoomChange) return;
+        const applyFit = () => {
+            const firstPage = container.querySelector(
+                "[data-testid='preview-page-1']",
+            );
+            if (!firstPage) return;
+            const { width, height } = firstPage.getBoundingClientRect();
+            const availableWidth = container.clientWidth - PADDING * 2;
+            const availableHeight = container.clientHeight - PADDING * 2;
+            // Zoom 1 renders the page at min(available width, BASE_WIDTH).
+            const baseWidth = Math.min(availableWidth, BASE_WIDTH);
+            const fitWidth =
+                fitMode === "width"
+                    ? availableWidth
+                    : availableHeight * (width / height);
+            onZoomChange(clampZoom(fitWidth / baseWidth));
+        };
+        applyFit();
+        // The border box ignores scrollbars appearing, so re-fitting can't loop.
+        const observer = new ResizeObserver(applyFit);
+        observer.observe(container, { box: "border-box" });
+        return () => observer.disconnect();
+    }, [fitMode, onZoomChange, pages]);
 
     function handleScroll() {
         const container = scrollRef.current;
@@ -85,7 +126,7 @@ export default function ResumePreview({
             ref={scrollRef}
             onScroll={handleScroll}
             data-testid="resume-preview"
-            className="flex h-full items-start overflow-auto bg-slate-100 p-6 dark:bg-dark-50">
+            className="flex h-full touch-pan-x touch-pan-y items-start overflow-auto p-6">
             {pages.length > 0 ? (
                 <div
                     className="mx-auto flex shrink-0 flex-col gap-6"

@@ -1,14 +1,26 @@
 import { useState } from "react";
-import Button from "@components/ui/button";
 import { standaloneTypst } from "@typst/standalone-typst";
 import { resumeToTypst } from "@typst/resume-to-typst";
 import { typst } from "@typst/typst-client";
-import { Download } from "@components/ui/icons";
+import ContextMenu from "@components/ui/context-menu";
+import { MOD_KEY } from "@components/ui/shortcuts";
+import { TOOLBAR_ROW, ToolbarButton } from "@components/ui/toolbar";
+import {
+    ArrowLeft,
+    ArrowRight,
+    ChevronDown,
+    Download,
+    MagnifyingGlass,
+} from "@components/ui/icons";
 import { useResumeStore } from "@store/useResumeStore";
-
-export const MIN_ZOOM = 0.5;
-export const MAX_ZOOM = 2;
-const ZOOM_STEP = 0.25;
+import {
+    MAX_ZOOM,
+    MIN_ZOOM,
+    ZOOM_PRESETS,
+    clampZoom,
+    stepZoom,
+    type FitMode,
+} from "@components/editor/zoom";
 
 interface ViewportToolbarProps {
     pageCount?: number;
@@ -16,7 +28,20 @@ interface ViewportToolbarProps {
     zoom: number;
     onPageSelect: (page: number) => void;
     onZoomChange: (zoom: number) => void;
+    fitMode: FitMode | null;
+    onFitModeChange: (mode: FitMode | null) => void;
 }
+
+type ExportKind = "typ" | "json" | "pdf";
+
+const iconButton =
+    "rounded p-1 text-light-800 transition-opacity hover:opacity-70 disabled:opacity-30 dark:text-dark-800";
+const zoomBox =
+    "h-7 w-14 rounded bg-transparent text-center text-sm text-light-950 outline-none transition-colors hover:bg-light-300 focus:bg-light-50 focus:ring-1 focus:ring-accent dark:text-dark-950 dark:hover:bg-dark-200 dark:focus:bg-dark-100";
+const numberBox =
+    "rounded-md border-2 border-border-light bg-light-100 px-1 py-0.5 text-center text-light-950 dark:border-border-dark dark:bg-dark-200 dark:text-dark-950";
+const exportButton =
+    "inline-flex items-center gap-1.5 whitespace-nowrap border-2 px-2 py-0.5 text-sm font-medium text-white/90 transition-opacity hover:opacity-90 disabled:opacity-60";
 
 export default function ViewportToolbar({
     pageCount = 1,
@@ -24,8 +49,13 @@ export default function ViewportToolbar({
     zoom,
     onPageSelect,
     onZoomChange,
+    fitMode,
+    onFitModeChange,
 }: ViewportToolbarProps) {
     const [pageDraft, setPageDraft] = useState<string | null>(null);
+    const [zoomDraft, setZoomDraft] = useState<string | null>(null);
+    const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null);
+    const [zoomMenuAnchor, setZoomMenuAnchor] = useState<DOMRect | null>(null);
 
     function commitPage() {
         const next = Math.round(Number(pageDraft));
@@ -35,15 +65,17 @@ export default function ViewportToolbar({
         setPageDraft(null);
     }
 
-    function stepZoom(delta: number) {
-        onZoomChange(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom + delta)));
+    function commitZoom() {
+        const percent = parseFloat(zoomDraft ?? "");
+        if (Number.isFinite(percent)) onZoomChange(clampZoom(percent / 100));
+        setZoomDraft(null);
     }
 
     const resume = useResumeStore((store) => store.resume);
     const [exporting, setExporting] = useState("");
     const [exportError, setExportError] = useState("");
 
-    async function downloadFile(kind: "typ" | "json" | "pdf") {
+    async function downloadFile(kind: ExportKind) {
         if (!resume) return;
         setExporting(kind);
         setExportError("");
@@ -83,95 +115,187 @@ export default function ViewportToolbar({
     }
 
     return (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border-2 border-border-light bg-light-300 px-3 py-1.5 dark:border-border-dark dark:bg-dark-200">
-            <label className="flex items-center gap-1.5 text-sm text-light-700 dark:text-dark-700">
-                Page
-                <input
-                    type="text"
-                    inputMode="numeric"
-                    aria-label="Current page"
-                    data-testid="page-input"
-                    className="w-10 rounded border border-border-light bg-transparent px-1 py-0.5 text-center dark:border-border-dark"
-                    value={pageDraft ?? String(page)}
-                    onChange={(event) => setPageDraft(event.target.value)}
-                    onFocus={(event) => event.target.select()}
-                    onBlur={commitPage}
-                    onKeyDown={(event) => {
-                        if (event.key === "Enter") event.currentTarget.blur();
-                        if (event.key === "Escape") {
-                            setPageDraft(null);
-                            event.currentTarget.blur();
-                        }
-                    }}
-                />
-                of {pageCount || "…"}
-            </label>
-            <div className="flex items-center gap-1 text-sm text-light-700 dark:text-dark-700">
-                <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    aria-label="Zoom out"
-                    disabled={zoom <= MIN_ZOOM}
-                    onClick={() => stepZoom(-ZOOM_STEP)}>
-                    −
-                </Button>
-                <button
-                    type="button"
-                    aria-label="Reset zoom"
-                    data-testid="zoom-level"
-                    className="w-12 text-center"
-                    onClick={() => onZoomChange(1)}>
-                    {Math.round(zoom * 100)}%
-                </button>
-                <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    aria-label="Zoom in"
-                    disabled={zoom >= MAX_ZOOM}
-                    onClick={() => stepZoom(ZOOM_STEP)}>
-                    +
-                </Button>
+        // Zoom and page inputs aren't resume edits, so they keep the browser's undo.
+        <div data-native-undo>
+            <div
+                role="toolbar"
+                aria-label="Preview"
+                className={`grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b-2 border-border-light bg-light-300 px-3 py-1.5 text-sm text-light-800 dark:border-border-dark dark:bg-dark-300 dark:text-dark-800 ${TOOLBAR_ROW}`}>
+                <div className="flex items-center gap-1">
+                    <ToolbarButton
+                        label="Zoom options"
+                        hasPopup
+                        pressed={Boolean(zoomMenuAnchor)}
+                        onClick={(event) =>
+                            setZoomMenuAnchor(
+                                event.currentTarget.getBoundingClientRect(),
+                            )
+                        }>
+                        <MagnifyingGlass className="h-3.5 w-3.5" />
+                        <ChevronDown className="h-2.5 w-2.5" />
+                    </ToolbarButton>
+                    <input
+                        type="text"
+                        inputMode="decimal"
+                        aria-label="Zoom level"
+                        title="Zoom level (pinch to zoom the preview)"
+                        data-testid="zoom-level"
+                        className={zoomBox}
+                        value={zoomDraft ?? `${Math.round(zoom * 100)}%`}
+                        onChange={(event) => setZoomDraft(event.target.value)}
+                        onFocus={(event) => event.target.select()}
+                        onBlur={commitZoom}
+                        onKeyDown={(event) => {
+                            if (event.key === "Enter")
+                                event.currentTarget.blur();
+                            if (event.key === "Escape") {
+                                setZoomDraft(null);
+                                event.currentTarget.blur();
+                            }
+                        }}
+                    />
+                </div>
+                <div className="flex items-center gap-1">
+                    <button
+                        type="button"
+                        aria-label="Previous page"
+                        className={iconButton}
+                        disabled={page <= 1}
+                        onClick={() => onPageSelect(page - 1)}>
+                        <ArrowLeft />
+                    </button>
+                    <label className="flex items-center gap-1.5 whitespace-nowrap">
+                        Page
+                        <input
+                            type="text"
+                            inputMode="numeric"
+                            aria-label="Current page"
+                            data-testid="page-input"
+                            className={`w-9 ${numberBox}`}
+                            value={pageDraft ?? String(page)}
+                            onChange={(event) =>
+                                setPageDraft(event.target.value)
+                            }
+                            onFocus={(event) => event.target.select()}
+                            onBlur={commitPage}
+                            onKeyDown={(event) => {
+                                if (event.key === "Enter")
+                                    event.currentTarget.blur();
+                                if (event.key === "Escape") {
+                                    setPageDraft(null);
+                                    event.currentTarget.blur();
+                                }
+                            }}
+                        />
+                        of {pageCount || "…"}
+                    </label>
+                    <button
+                        type="button"
+                        aria-label="Next page"
+                        className={iconButton}
+                        disabled={page >= pageCount}
+                        onClick={() => onPageSelect(page + 1)}>
+                        <ArrowRight />
+                    </button>
+                </div>
+                <div className="flex justify-end">
+                    <button
+                        type="button"
+                        className={`${exportButton} rounded-l-md border-blue-500/70 bg-accent`}
+                        disabled={Boolean(exporting)}
+                        onClick={() => void downloadFile("pdf")}>
+                        {exporting === "pdf" ? "Rendering…" : "Download PDF"}
+                        <Download />
+                    </button>
+                    <button
+                        type="button"
+                        aria-label="More download options"
+                        aria-haspopup="menu"
+                        aria-expanded={Boolean(menuAnchor)}
+                        className={`${exportButton} rounded-r-md border-l-0 border-blue-500/70 bg-accent`}
+                        disabled={Boolean(exporting)}
+                        onClick={(event) =>
+                            setMenuAnchor(
+                                event.currentTarget.getBoundingClientRect(),
+                            )
+                        }>
+                        <ChevronDown />
+                    </button>
+                </div>
             </div>
-            <div className="flex-1" />
             {exportError && (
                 <p
                     role="alert"
-                    className="text-sm text-red-600">
+                    className="px-3 py-1 text-right text-sm text-red-600">
                     {exportError}
                 </p>
             )}
-            <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                className="gap-1.5"
-                disabled={Boolean(exporting)}
-                onClick={() => void downloadFile("typ")}>
-                Export .typ
-                <Download className="h-4 w-4" />
-            </Button>
-            <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                className="gap-1.5"
-                disabled={Boolean(exporting)}
-                onClick={() => void downloadFile("json")}>
-                Export .json
-                <Download className="h-4 w-4" />
-            </Button>
-            <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                className="gap-1.5"
-                disabled={Boolean(exporting)}
-                onClick={() => void downloadFile("pdf")}>
-                {exporting === "pdf" ? "Rendering…" : "Download PDF"}
-                <Download className="h-4 w-4" />
-            </Button>
+            {zoomMenuAnchor && (
+                <ContextMenu
+                    label="Zoom options"
+                    x={zoomMenuAnchor.left}
+                    y={zoomMenuAnchor.bottom + 4}
+                    onClose={() => setZoomMenuAnchor(null)}
+                    items={[
+                        {
+                            label: "Zoom in",
+                            shortcut: `${MOD_KEY}+`,
+                            disabled: zoom >= MAX_ZOOM,
+                            onSelect: () => onZoomChange(stepZoom(zoom, 1)),
+                        },
+                        {
+                            label: "Zoom out",
+                            shortcut: `${MOD_KEY}−`,
+                            disabled: zoom <= MIN_ZOOM,
+                            onSelect: () => onZoomChange(stepZoom(zoom, -1)),
+                        },
+                        {
+                            label: "Reset zoom",
+                            shortcut: `${MOD_KEY}0`,
+                            onSelect: () => onZoomChange(1),
+                        },
+                        {
+                            label: "Fit to width",
+                            checked: fitMode === "width",
+                            onSelect: () => onFitModeChange("width"),
+                            separatorBefore: true,
+                        },
+                        {
+                            label: "Fit to height",
+                            checked: fitMode === "height",
+                            onSelect: () => onFitModeChange("height"),
+                        },
+                        ...ZOOM_PRESETS.map((preset, index) => ({
+                            label: `${preset * 100}%`,
+                            checked: !fitMode && zoom === preset,
+                            onSelect: () => onZoomChange(preset),
+                            separatorBefore: index === 0,
+                        })),
+                    ]}
+                />
+            )}
+            {menuAnchor && (
+                <ContextMenu
+                    label="Download options"
+                    x={menuAnchor.left}
+                    y={menuAnchor.bottom + 4}
+                    onClose={() => setMenuAnchor(null)}
+                    items={[
+                        {
+                            label: "Download PDF",
+                            onSelect: () => void downloadFile("pdf"),
+                        },
+                        {
+                            label: "Export .typ",
+                            onSelect: () => void downloadFile("typ"),
+                        },
+                        {
+                            label: "Export .json",
+                            onSelect: () => void downloadFile("json"),
+                        },
+                    ]}
+                />
+            )}
         </div>
     );
 }

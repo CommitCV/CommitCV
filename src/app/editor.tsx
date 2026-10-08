@@ -1,6 +1,7 @@
 import EditorToolbar from "@components/editor/editor-toolbar";
 import FormatToolbar from "@components/editor/format-toolbar";
 import ViewportToolbar from "@components/editor/viewport-toolbar";
+import type { FitMode } from "@components/editor/zoom";
 import Header from "@components/header";
 import SectionEditor from "@components/editor/section-editor";
 import ResumePreview from "@components/editor/resume-preview";
@@ -14,6 +15,12 @@ export default function Editor() {
     const [page, setPage] = useState(1);
     const [zoom, setZoom] = useState(1);
     const [jump, setJump] = useState({ page: 1, id: 0 });
+    const [fitMode, setFitMode] = useState<FitMode | null>(null);
+
+    function zoomByHand(next: number) {
+        setFitMode(null);
+        setZoom(next);
+    }
 
     useEffect(() => {
         if (!resume) newResume();
@@ -46,12 +53,14 @@ export default function Editor() {
                         ))}
                     </div>
                 </div>
-                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border-2 border-border-light bg-light-50 dark:border-border-dark dark:bg-dark-300">
                     <ViewportToolbar
                         pageCount={pageCount}
                         page={page}
                         zoom={zoom}
-                        onZoomChange={setZoom}
+                        onZoomChange={zoomByHand}
+                        fitMode={fitMode}
+                        onFitModeChange={setFitMode}
                         onPageSelect={(target) => {
                             setPage(target);
                             setJump((prev) => ({
@@ -60,12 +69,15 @@ export default function Editor() {
                             }));
                         }}
                     />
-                    <div className="min-h-0 flex-1 overflow-hidden rounded-lg border-2 border-border-light dark:border-border-dark">
+                    <div className="min-h-0 flex-1 overflow-hidden">
                         <ResumePreview
                             resume={resume}
                             onPageCount={setPageCount}
                             zoom={zoom}
                             jump={jump}
+                            fitMode={fitMode}
+                            onZoomChange={setZoom}
+                            onPinchZoom={zoomByHand}
                             onVisiblePageChange={setPage}
                         />
                     </div>
