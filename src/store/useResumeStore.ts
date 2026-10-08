@@ -12,6 +12,7 @@ import {
 } from "@resume/edit-resume";
 import type { TSectionPath } from "@resume/edit-resume";
 import type { IResume, IResumeText, ISection } from "@resume/resume";
+import { today } from "@resume/dates";
 import starter from "@resume/starter-resume.json";
 import { GitHubResumeStorage } from "@storage/github-resume-storage";
 import { LocalResumeStorage } from "@storage/local-resume-storage";
@@ -223,11 +224,4 @@ function remapExpanded(
         next[path.join(".")] = open;
     }
     return next;
-}
-
-function today(): string {
-    const now = new Date();
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const dd = String(now.getDate()).padStart(2, "0");
-    return `${mm}-${dd}-${String(now.getFullYear() % 100).padStart(2, "0")}`;
 }
