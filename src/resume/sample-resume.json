@@ -43,7 +43,7 @@
             "content": [
                 {
                     "text": "**B.Sc. in Computer Science, Minor in Philosophy**",
-                    "flags": ["bold"],
+                    "flags": [],
                     "toggled": true
                 },
                 {
@@ -66,17 +66,17 @@
             "content": [
                 {
                     "text": "**Languages:** Java, SQL, JavaScript, HTML/CSS, Python, TypeScript",
-                    "flags": ["bold"],
+                    "flags": [],
                     "toggled": true
                 },
                 {
                     "text": "**Developer Tools:** Git, Trello, GitHub Pages, Figma, UNIX, Docker, Ansible, GitHub Actions, Robot Framework",
-                    "flags": ["bold"],
+                    "flags": [],
                     "toggled": true
                 },
                 {
                     "text": "**Libraries:** Discord.js, Pocketbase, Tailwinds, Next.js, Electron, Selenium",
-                    "flags": ["bold"],
+                    "flags": [],
                     "toggled": true
                 }
             ],
@@ -95,7 +95,7 @@
                     "content": [
                         {
                             "text": "**Quality Engineering Intern**",
-                            "flags": ["bold"],
+                            "flags": [],
                             "toggled": true
                         },
                         {

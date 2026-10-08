@@ -33,7 +33,7 @@
             "content": [
                 {
                     "text": "**Bachelor of Science in Software Engineering, Minor in Cybersecurity**",
-                    "flags": ["bold"],
+                    "flags": [],
                     "toggled": true
                 },
                 {
@@ -62,7 +62,7 @@
                     "content": [
                         {
                             "text": "**Software Development Intern**",
-                            "flags": ["bold"],
+                            "flags": [],
                             "toggled": true
                         },
                         {
@@ -112,7 +112,7 @@
                     "content": [
                         {
                             "text": "**EcoTrack** | React, Node.js",
-                            "flags": ["bold"],
+                            "flags": [],
                             "toggled": true
                         },
                         {
@@ -146,12 +146,12 @@
             "content": [
                 {
                     "text": "**Languages:** Python, JavaScript, C++, SQL, Rust, Java, Bash, HTML/CSS",
-                    "flags": ["bold"],
+                    "flags": [],
                     "toggled": true
                 },
                 {
                     "text": "**Tools and Technologies:** Git, Docker, Linux, PostgreSQL, Flask, React, Node.js, Kubernetes",
-                    "flags": ["bold"],
+                    "flags": [],
                     "toggled": true
                 }
             ],

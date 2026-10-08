@@ -1,8 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 
-async function openEditor(page: Page) {
+async function openEditor(page: Page, { raw = false } = {}) {
     await page.goto("/");
     await page.getByRole("button", { name: "Start editing" }).click();
+    // Raw mode shows text fields as plain inputs holding the markup.
+    if (raw) await page.getByRole("button", { name: "Raw" }).click();
 }
 
 test.describe("editor", () => {
@@ -17,16 +19,35 @@ test.describe("editor", () => {
 
         const text = page.getByLabel("Resume text").first();
         await text.fill("A new profile");
-        await page.getByRole("button", { name: "Toggle bold" }).first().click();
-        await expect(
-            page.getByRole("button", { name: "Toggle bold" }).first(),
-        ).toHaveAttribute("aria-pressed", "true");
+        const bold = page
+            .getByRole("toolbar", { name: "Formatting" })
+            .getByLabel("Bold");
+        await bold.click();
+        await expect(bold).toHaveAttribute("aria-pressed", "true");
+    });
+
+    test("formats selected text from the toolbar", async ({ page }) => {
+        await openEditor(page, { raw: true });
+        const toolbar = page.getByRole("toolbar", { name: "Formatting" });
+        await expect(toolbar.getByLabel("Bold")).toBeDisabled();
+
+        const text = page.getByLabel("Resume text").first();
+        await text.fill("say hi now");
+        await text.evaluate((input: HTMLInputElement) =>
+            input.setSelectionRange(4, 6),
+        );
+        await toolbar.getByLabel("Bold").click();
+        await expect(text).toHaveValue("say **hi** now");
+
+        page.once("dialog", (dialog) => dialog.accept("https://a.com"));
+        await toolbar.getByLabel("Insert link").click();
+        await expect(text).toHaveValue("say **[hi](https://a.com)** now");
     });
 
     test("keeps inline formatting when editing part of a line", async ({
         page,
     }) => {
-        await openEditor(page);
+        await openEditor(page, { raw: true });
         const text = page.getByLabel("Resume text").first();
         await text.fill("Built **X** in [site](https://a.com) and Y");
         await text.press("End");
@@ -81,15 +102,17 @@ test.describe("editor", () => {
             name: "Section heading",
             exact: true,
         });
-        await expect(detailedHeading).toBeHidden();
-        await newSection
-            .getByRole("button", { name: "New section", exact: true })
-            .click();
         await expect(detailedHeading).toBeVisible();
-        await newSection
-            .getByRole("button", { name: "New section", exact: true })
-            .click();
-        await expect(detailedHeading).toBeHidden();
+        const toggle = newSection.getByRole("button", {
+            name: "New section",
+            exact: true,
+        });
+        // New sections open ready to fill in.
+        await expect(toggle).toHaveAttribute("aria-expanded", "true");
+        await toggle.click();
+        await expect(toggle).toHaveAttribute("aria-expanded", "false");
+        await toggle.click();
+        await expect(toggle).toHaveAttribute("aria-expanded", "true");
     });
 
     test("deletes a nested section", async ({ page }) => {
@@ -107,5 +130,45 @@ test.describe("editor", () => {
         await expect(
             page.getByRole("button", { name: "Remove nested section" }),
         ).toHaveCount(0);
+    });
+
+    test("undoes and redoes typing with shortcuts", async ({ page }) => {
+        await openEditor(page, { raw: true });
+        const undo = page.getByRole("button", { name: "Undo" });
+        const redo = page.getByRole("button", { name: "Redo" });
+        await expect(undo).toBeDisabled();
+        await expect(redo).toBeDisabled();
+
+        const text = page.getByLabel("Resume text").first();
+        const original = await text.inputValue();
+        await text.fill("typed text");
+        await expect(undo).toBeEnabled();
+
+        await text.press("ControlOrMeta+z");
+        await expect(text).toHaveValue(original);
+        await expect(redo).toBeEnabled();
+        await text.press("ControlOrMeta+Shift+z");
+        await expect(text).toHaveValue("typed text");
+    });
+
+    test("undoes a section removal from the toolbar", async ({ page }) => {
+        await openEditor(page);
+        const experience = page.getByRole("button", {
+            name: "Experience",
+            exact: true,
+        });
+        await experience.click();
+        await page
+            .getByRole("button", { name: "Remove nested section" })
+            .first()
+            .click();
+        await expect(
+            page.getByRole("button", { name: "Remove nested section" }),
+        ).toHaveCount(0);
+
+        await page.getByRole("button", { name: "Undo" }).click();
+        await expect(
+            page.getByRole("button", { name: "Remove nested section" }).first(),
+        ).toBeVisible();
     });
 });

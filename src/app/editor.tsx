@@ -1,17 +1,15 @@
 import EditorToolbar from "@components/editor/editor-toolbar";
+import FormatToolbar from "@components/editor/format-toolbar";
 import ViewportToolbar from "@components/editor/viewport-toolbar";
 import Header from "@components/header";
 import SectionEditor from "@components/editor/section-editor";
 import ResumePreview from "@components/editor/resume-preview";
-import Button from "@components/ui/button";
-import { Plus } from "@components/ui/icons";
 import { useEffect, useState } from "react";
 import { useResumeStore } from "@store/useResumeStore";
 
 export default function Editor() {
     const resume = useResumeStore((store) => store.resume);
     const newResume = useResumeStore((store) => store.newResume);
-    const addSection = useResumeStore((store) => store.addSection);
     const [pageCount, setPageCount] = useState(1);
     const [page, setPage] = useState(1);
     const [zoom, setZoom] = useState(1);
@@ -30,12 +28,13 @@ export default function Editor() {
     }
 
     return (
-        <div className="flex h-screen flex-col bg-light-100 text-light-950 dark:bg-dark-300 dark:text-dark-950">
+        <div className="flex h-screen flex-col bg-light-100 text-light-950 dark:bg-dark-100 dark:text-dark-950">
             <Header />
             <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-4 lg:flex-row lg:p-6">
-                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border-2 border-border-light bg-light-50 dark:border-border-dark dark:bg-dark-300">
                     <EditorToolbar />
-                    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-4">
+                    <FormatToolbar />
+                    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
                         {resume.sections.map((section, index) => (
                             <div key={index}>
                                 <SectionEditor
@@ -45,23 +44,6 @@ export default function Editor() {
                                 />
                             </div>
                         ))}
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            className="gap-1"
-                            onClick={() =>
-                                addSection([], {
-                                    title: "New section",
-                                    type: "full-text",
-                                    toggled: true,
-                                    content: [],
-                                    subsections: [],
-                                })
-                            }>
-                            <Plus className="h-4 w-4" />
-                            Add section
-                        </Button>
                     </div>
                 </div>
                 <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">

@@ -29,10 +29,12 @@ export default function SectionEditor({
     const addSection = useResumeStore((store) => store.addSection);
     const removeSection = useResumeStore((store) => store.removeSection);
     const moveSection = useResumeStore((store) => store.moveSection);
+    const setFocusedText = useResumeStore((store) => store.setFocusedText);
 
     return (
         <article
             data-testid={`section-editor-${path.join("-")}`}
+            data-section-path={path.join(".")}
             className="overflow-hidden rounded-lg border border-border-light bg-light-200 dark:border-border-dark dark:bg-dark-100">
             <div className="flex items-center gap-2 border-b border-border-light px-3 py-2 dark:border-border-dark">
                 <button
@@ -144,13 +146,16 @@ export default function SectionEditor({
                                 onChange={(value) =>
                                     updateText(path, index, { text: value })
                                 }
-                                onToggleFlags={(flags, value) =>
-                                    updateText(path, index, {
-                                        flags,
-                                        text: value,
-                                    })
-                                }
                                 onRemove={() => removeText(path, index)}
+                                onSelectionChange={(selection) =>
+                                    setFocusedText(
+                                        selection && {
+                                            path,
+                                            index,
+                                            ...selection,
+                                        },
+                                    )
+                                }
                             />
                         ))}
                     </div>

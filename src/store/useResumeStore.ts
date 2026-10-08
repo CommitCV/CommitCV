@@ -24,6 +24,17 @@ export type TResumeSource =
 
 export type TSaveState = "clean" | "dirty" | "saving" | "error";
 
+/** Whether text fields show styled text or the raw markup. */
+export type TTextMode = "formatted" | "raw";
+
+/** The text field the format toolbar acts on, with its selection. */
+export interface IFocusedText {
+    path: TSectionPath;
+    index: number;
+    start: number;
+    end: number;
+}
+
 const githubStorages = new Map<string, GitHubResumeStorage>();
 
 // Storage seam: production uses the real adapters; tests swap them out.
@@ -68,6 +79,9 @@ interface IResumeStore {
     saveError: string | null;
     /** Open sections by dotted path (`"2.0"`); UI-only, never persisted. */
     expanded: Record<string, boolean>;
+    /** UI-only, never persisted. */
+    focusedText: IFocusedText | null;
+    textMode: TTextMode;
     /** Undo and redo stacks, oldest first; UI-only, never persisted. */
     past: ISnapshot[];
     future: ISnapshot[];
@@ -91,6 +105,8 @@ interface IResumeStore {
     addText(path: TSectionPath, text: IResumeText): void;
     removeText(path: TSectionPath, index: number): void;
     setExpanded(path: TSectionPath, open: boolean): void;
+    setFocusedText(focused: IFocusedText | null): void;
+    setTextMode(mode: TTextMode): void;
     save(message?: string): Promise<void>;
 }
 
@@ -102,6 +118,8 @@ export const useResumeStore = create<IResumeStore>()(
             saveState: "clean",
             saveError: null,
             expanded: {},
+            focusedText: null,
+            textMode: "formatted",
             ...clearedHistory,
 
             undo: () =>
@@ -114,6 +132,7 @@ export const useResumeStore = create<IResumeStore>()(
                         future: [snapshot(s), ...s.future],
                         historyKey: null,
                         saveState: "dirty",
+                        focusedText: null,
                     };
                 }),
             redo: () =>
@@ -126,6 +145,7 @@ export const useResumeStore = create<IResumeStore>()(
                         future: s.future.slice(1),
                         historyKey: null,
                         saveState: "dirty",
+                        focusedText: null,
                     };
                 }),
 
@@ -215,6 +235,8 @@ export const useResumeStore = create<IResumeStore>()(
                 set((s) => ({
                     expanded: { ...s.expanded, [path.join(".")]: open },
                 })),
+            setFocusedText: (focusedText) => set({ focusedText }),
+            setTextMode: (textMode) => set({ textMode, focusedText: null }),
 
             save: async (message) => {
                 const state = get();
@@ -240,9 +262,10 @@ export const useResumeStore = create<IResumeStore>()(
         }),
         {
             name: "commitcv:draft",
-            partialize: ({ resume, source, saveState }) => ({
+            partialize: ({ resume, source, saveState, textMode }) => ({
                 resume,
                 source,
+                textMode,
                 saveState: saveState === "saving" ? "dirty" : saveState,
             }),
         },

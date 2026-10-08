@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import Button from "@components/ui/button";
 import { Save } from "@components/ui/icons";
+import { TOOLBAR_ROW } from "@components/ui/toolbar";
 import { useResumeStore } from "@store/useResumeStore";
 
 export default function EditorToolbar() {
@@ -39,7 +40,8 @@ export default function EditorToolbar() {
     }, [undo, redo]);
 
     return (
-        <div className="flex flex-wrap items-center gap-3 rounded-lg border-2 border-border-light bg-light-300 px-3 py-1.5 dark:border-border-dark dark:bg-dark-200">
+        <div
+            className={`flex flex-wrap items-center gap-3 border-b-2 border-border-light bg-light-300 px-3 py-1.5 dark:border-border-dark dark:bg-dark-300 ${TOOLBAR_ROW}`}>
             <label className="flex min-w-0 flex-1 items-center gap-2 text-sm font-medium">
                 <span className="shrink-0">Resume name</span>
                 <input
@@ -49,7 +51,6 @@ export default function EditorToolbar() {
                     className="min-w-0 flex-1 rounded border border-border-light bg-light-100 px-2 py-1 font-normal outline-none focus:border-accent dark:border-border-dark dark:bg-dark-100"
                 />
             </label>
-            <div className="flex-1" />
             <Button
                 type="button"
                 variant="primary"
