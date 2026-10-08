@@ -15,6 +15,11 @@ export default defineConfig({
             "@storage": "/src/storage",
         },
     },
+    // The compile worker is created with `type: "module"`, so it is
+    // bundled as an ES module worker too.
+    worker: {
+        format: "es",
+    },
     plugins: [react(), tailwindcss(), eslint()],
     test: {
         environment: "node",

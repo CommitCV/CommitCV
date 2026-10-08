@@ -2,7 +2,7 @@ import { useState } from "react";
 import Button from "@components/ui/button";
 import { standaloneTypst } from "@typst/standalone-typst";
 import { resumeToTypst } from "@typst/resume-to-typst";
-import { typst } from "@typst/typst-compiler";
+import { typst } from "@typst/typst-client";
 import { Download } from "@components/ui/icons";
 import { useResumeStore } from "@store/useResumeStore";
 

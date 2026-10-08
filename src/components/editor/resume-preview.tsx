@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { IResume } from "@resume/resume";
 import { resumeToTypst } from "@typst/resume-to-typst";
-import { typst } from "@typst/typst-compiler";
+import { typst } from "@typst/typst-client";
 
 interface ResumePreviewProps {
     resume: IResume;

@@ -28,9 +28,10 @@ const TEMPLATE_FILES: Record<string, string> = {
 const encoder = new TextEncoder();
 
 /**
- * Browser-side Typst compiler. Fonts, templates, and the Font Awesome
- * icon set are all served from this app (nothing loads from a CDN),
- * matching the local-first, private-by-default product promise.
+ * Typst compiler for the compile worker. Fonts, templates, and the Font
+ * Awesome icon set are all served from this app (nothing loads from a
+ * CDN), matching the local-first, private-by-default product promise.
+ * The main thread talks to it through the `TypstClient` proxy.
  */
 export class TypstCompiler {
     private compiler: TypstCompilerService | null = null;
@@ -45,7 +46,6 @@ export class TypstCompiler {
         return this.ready;
     }
 
-    // ponytail: compiles on the main thread; move to a Worker if typing lags
     async renderSvg(source: string): Promise<string> {
         await this.init();
         const artifact = await this.compile(source, 0);
@@ -128,6 +128,3 @@ function describeDiagnostics(result: unknown): string {
     }
     return "Typst compilation failed";
 }
-
-/** Shared instance; the WASM compiler is too heavy to load twice. */
-export const typst = new TypstCompiler();
