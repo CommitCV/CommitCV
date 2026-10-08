@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Button from "@components/ui/button";
 import { Save } from "@components/ui/icons";
 import { useResumeStore } from "@store/useResumeStore";
@@ -7,6 +8,35 @@ export default function EditorToolbar() {
     const saveState = useResumeStore((store) => store.saveState);
     const setFilename = useResumeStore((store) => store.setFilename);
     const save = useResumeStore((store) => store.save);
+    const undo = useResumeStore((store) => store.undo);
+    const redo = useResumeStore((store) => store.redo);
+
+    // Mod+Z / Mod+Shift+Z / Ctrl+Y. The browser's own undo is blocked so it
+    // can't drift from the store, except where fields opt back into it.
+    useEffect(() => {
+        function onKeyDown(event: KeyboardEvent) {
+            if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+            if (event.isComposing) return;
+            const key = event.key.toLowerCase();
+            const isUndo = key === "z" && !event.shiftKey;
+            const isRedo =
+                (key === "z" && event.shiftKey) ||
+                (key === "y" && event.ctrlKey && !event.shiftKey);
+            if (!isUndo && !isRedo) return;
+            const target = event.target;
+            if (
+                target instanceof Element &&
+                target.closest("[data-native-undo]")
+            ) {
+                return;
+            }
+            event.preventDefault();
+            if (isUndo) undo();
+            else redo();
+        }
+        document.addEventListener("keydown", onKeyDown);
+        return () => document.removeEventListener("keydown", onKeyDown);
+    }, [undo, redo]);
 
     return (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border-2 border-border-light bg-light-300 px-3 py-1.5 dark:border-border-dark dark:bg-dark-200">

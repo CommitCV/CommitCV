@@ -45,6 +45,22 @@ export function storageFor(source: TResumeSource): IResumeStorage {
         : resumeStorages.github(source.repo);
 }
 
+interface ISnapshot {
+    resume: IResume;
+    expanded: Record<string, boolean>;
+}
+
+const HISTORY_LIMIT = 100;
+/** Edits to the same field closer together than this undo as one step. */
+const MERGE_MS = 1000;
+
+const clearedHistory = {
+    past: [],
+    future: [],
+    historyKey: null,
+    historyAt: 0,
+} satisfies Partial<IResumeStore>;
+
 interface IResumeStore {
     resume: IResume | null;
     source: TResumeSource | null;
@@ -52,6 +68,14 @@ interface IResumeStore {
     saveError: string | null;
     /** Open sections by dotted path (`"2.0"`); UI-only, never persisted. */
     expanded: Record<string, boolean>;
+    /** Undo and redo stacks, oldest first; UI-only, never persisted. */
+    past: ISnapshot[];
+    future: ISnapshot[];
+    /** The last edit's merge key and time, so typing undoes as one step. */
+    historyKey: string | null;
+    historyAt: number;
+    undo(): void;
+    redo(): void;
     load(resume: IResume, source: TResumeSource | null): void;
     newResume(): void;
     setFilename(filename: string): void;
@@ -78,6 +102,32 @@ export const useResumeStore = create<IResumeStore>()(
             saveState: "clean",
             saveError: null,
             expanded: {},
+            ...clearedHistory,
+
+            undo: () =>
+                set((s) => {
+                    const previous = s.past.at(-1);
+                    if (!previous || !s.resume) return {};
+                    return {
+                        ...previous,
+                        past: s.past.slice(0, -1),
+                        future: [snapshot(s), ...s.future],
+                        historyKey: null,
+                        saveState: "dirty",
+                    };
+                }),
+            redo: () =>
+                set((s) => {
+                    const next = s.future[0];
+                    if (!next || !s.resume) return {};
+                    return {
+                        ...next,
+                        past: [...s.past, snapshot(s)],
+                        future: s.future.slice(1),
+                        historyKey: null,
+                        saveState: "dirty",
+                    };
+                }),
 
             load: (resume, source) =>
                 set({
@@ -86,6 +136,7 @@ export const useResumeStore = create<IResumeStore>()(
                     saveState: "clean",
                     saveError: null,
                     expanded: {},
+                    ...clearedHistory,
                 }),
 
             newResume: () =>
@@ -98,20 +149,18 @@ export const useResumeStore = create<IResumeStore>()(
                     saveState: "dirty",
                     saveError: null,
                     expanded: {},
+                    ...clearedHistory,
                 }),
 
             setFilename: (filename) =>
-                set((s) =>
-                    s.resume
-                        ? {
-                              resume: { ...s.resume, filename },
-                              saveState: "dirty",
-                          }
-                        : {},
-                ),
+                edit(set, (r) => ({ ...r, filename }), "filename"),
 
             updateSection: (path, patch) =>
-                edit(set, (r) => updateSection(r, path, patch)),
+                edit(
+                    set,
+                    (r) => updateSection(r, path, patch),
+                    onlyKey(patch, "title") && `title:${path.join(".")}`,
+                ),
             addSection: (parentPath, section) =>
                 edit(set, (r) => addSection(r, parentPath, section)),
             removeSection: (path) =>
@@ -120,6 +169,7 @@ export const useResumeStore = create<IResumeStore>()(
                     const resume = removeSection(s.resume, path);
                     const removed = path[path.length - 1];
                     return {
+                        ...record(s),
                         resume,
                         saveState: "dirty",
                         expanded: remapExpanded(
@@ -142,18 +192,22 @@ export const useResumeStore = create<IResumeStore>()(
                             ? s.resume.sections
                             : sectionAt(s.resume, parent)?.subsections;
                     const moved = to >= 0 && to < (siblings?.length ?? 0);
+                    if (!moved) return {};
                     return {
+                        ...record(s),
                         resume,
                         saveState: "dirty",
-                        expanded: moved
-                            ? remapExpanded(s.expanded, parent, (i) =>
-                                  i === from ? to : i === to ? from : i,
-                              )
-                            : s.expanded,
+                        expanded: remapExpanded(s.expanded, parent, (i) =>
+                            i === from ? to : i === to ? from : i,
+                        ),
                     };
                 }),
             updateText: (path, index, patch) =>
-                edit(set, (r) => updateText(r, path, index, patch)),
+                edit(
+                    set,
+                    (r) => updateText(r, path, index, patch),
+                    onlyKey(patch, "text") && `text:${path.join(".")}:${index}`,
+                ),
             addText: (path, text) => edit(set, (r) => addText(r, path, text)),
             removeText: (path, index) =>
                 edit(set, (r) => removeText(r, path, index)),
@@ -198,8 +252,47 @@ export const useResumeStore = create<IResumeStore>()(
 function edit(
     set: (fn: (s: IResumeStore) => Partial<IResumeStore>) => void,
     fn: (resume: IResume) => IResume,
+    mergeKey?: string | false,
 ): void {
-    set((s) => (s.resume ? { resume: fn(s.resume), saveState: "dirty" } : {}));
+    set((s) =>
+        s.resume
+            ? {
+                  ...record(s, mergeKey || undefined),
+                  resume: fn(s.resume),
+                  saveState: "dirty",
+              }
+            : {},
+    );
+}
+
+function snapshot(s: IResumeStore): ISnapshot {
+    return { resume: s.resume!, expanded: s.expanded };
+}
+
+/**
+ * The history update for an edit about to replace `s.resume`. Edits that
+ * share a merge key within `MERGE_MS` of each other fold into one step.
+ */
+function record(s: IResumeStore, mergeKey?: string): Partial<IResumeStore> {
+    const now = Date.now();
+    const merge =
+        mergeKey !== undefined &&
+        mergeKey === s.historyKey &&
+        now - s.historyAt < MERGE_MS;
+    return {
+        past:
+            merge || !s.resume
+                ? s.past
+                : [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
+        future: [],
+        historyKey: mergeKey ?? null,
+        historyAt: now,
+    };
+}
+
+function onlyKey(patch: object, key: string): boolean {
+    const keys = Object.keys(patch);
+    return keys.length === 1 && keys[0] === key;
 }
 
 /** Re-keys open-state entries under `parent` when sibling indexes shift. */

@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import type { IResume } from "@resume/resume";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { IResume, ISection } from "@resume/resume";
 import type { IResumeEntry, IResumeStorage } from "@storage/resume-storage";
 import starter from "@resume/starter-resume.json";
 import { resumeStorages, useResumeStore } from "./useResumeStore";
@@ -96,6 +96,121 @@ describe("useResumeStore", () => {
         ).toBe("changed");
     });
 
+    describe("undo and redo", () => {
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        const state = () => useResumeStore.getState();
+        const firstText = () =>
+            state().resume?.sections[2]?.subsections[0]?.subsections[0]
+                ?.content[0]?.text;
+
+        it("undoes and redoes a text edit", () => {
+            const original = firstText();
+            state().updateText([2, 0, 0], 0, { text: "changed" });
+            state().undo();
+            expect(firstText()).toBe(original);
+            expect(state().saveState).toBe("dirty");
+            state().redo();
+            expect(firstText()).toBe("changed");
+        });
+
+        it("folds quick typing in one field into one step", () => {
+            vi.useFakeTimers();
+            const original = firstText();
+            state().updateText([2, 0, 0], 0, { text: "a" });
+            vi.advanceTimersByTime(500);
+            state().updateText([2, 0, 0], 0, { text: "ab" });
+            vi.advanceTimersByTime(1500);
+            state().updateText([2, 0, 0], 0, { text: "abc" });
+
+            state().undo();
+            expect(firstText()).toBe("ab");
+            state().undo();
+            expect(firstText()).toBe(original);
+            expect(state().past).toHaveLength(0);
+        });
+
+        it("keeps separate fields and flag changes as their own steps", () => {
+            state().setFilename("one");
+            state().updateText([2, 0, 0], 0, { text: "x" });
+            state().updateText([2, 0, 0], 0, { flags: ["bold"] });
+            state().updateText([2, 0, 0], 0, { flags: [] });
+            expect(state().past).toHaveLength(4);
+        });
+
+        it.each([
+            ["addSection", () => state().addSection([], makeSection())],
+            ["removeSection", () => state().removeSection([1])],
+            ["moveSection", () => state().moveSection([1], 1)],
+            [
+                "addText",
+                () =>
+                    state().addText([1], {
+                        text: "new",
+                        flags: [],
+                        toggled: true,
+                    }),
+            ],
+            ["removeText", () => state().removeText([1], 0)],
+            [
+                "updateSection toggle",
+                () => state().updateSection([1], { toggled: false }),
+            ],
+        ])("undoes %s", (_name, action) => {
+            const before = state().resume;
+            action();
+            expect(state().resume).not.toEqual(before);
+            state().undo();
+            expect(state().resume).toEqual(before);
+        });
+
+        it("restores which sections were open", () => {
+            state().setExpanded([1], true);
+            state().removeSection([1]);
+            expect(state().expanded).toEqual({});
+            state().undo();
+            expect(state().expanded).toEqual({ "1": true });
+        });
+
+        it("drops the redo stack after a new edit", () => {
+            state().setFilename("one");
+            state().undo();
+            expect(state().future).toHaveLength(1);
+            state().removeSection([1]);
+            expect(state().future).toHaveLength(0);
+        });
+
+        it("caps the history at 100 steps", () => {
+            for (let i = 0; i < 120; i++) {
+                state().updateSection([1], { toggled: i % 2 === 0 });
+            }
+            expect(state().past).toHaveLength(100);
+        });
+
+        it("does nothing with empty stacks", () => {
+            const before = state().resume;
+            state().undo();
+            state().redo();
+            expect(state().resume).toBe(before);
+            expect(state().saveState).toBe("clean");
+        });
+
+        it("records nothing for an out-of-range move", () => {
+            state().moveSection([0], -1);
+            expect(state().past).toHaveLength(0);
+        });
+
+        it("clears history when another resume loads", () => {
+            state().setFilename("one");
+            state().undo();
+            state().load(makeResume(), { kind: "local", id: "r2" });
+            expect(state().past).toHaveLength(0);
+            expect(state().future).toHaveLength(0);
+        });
+    });
+
     describe("section expansion", () => {
         it("moves a section's open state, and its children's, with it", () => {
             const store = useResumeStore.getState();
@@ -146,4 +261,14 @@ describe("useResumeStore", () => {
 
 function makeResume(): IResume {
     return structuredClone(starter) as unknown as IResume;
+}
+
+function makeSection(): ISection {
+    return {
+        title: "New",
+        type: "full-text",
+        toggled: true,
+        content: [],
+        subsections: [],
+    };
 }
