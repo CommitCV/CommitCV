@@ -6,3 +6,4 @@ test-results
 Dockerfile
 .env.example
 .DS_Store
+pnpm-lock.yaml
