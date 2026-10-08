@@ -17,6 +17,7 @@ pnpm test:e2e
 pnpm test:e2e:smoke
 ```
 
-Unit tests cover parsing, editing, Typst emission, storage adapters, and the
-server proxy. E2E tests use keyboard and pointer interactions, and focus on
+Unit tests cover parsing, legacy import, editing, text formatting, drag and
+drop, undo history, Typst emission, the compile worker client, storage
+adapters, and the server proxy. E2E tests use keyboard and pointer interactions, and focus on
 behaviors that unit tests cannot observe.
