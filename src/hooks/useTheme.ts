@@ -1,19 +1,17 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useAppStore, type TTheme } from "@store/useAppStore";
 
 export const useTheme = () => {
-    const [theme, setTheme] = useState(
-        () => localStorage.getItem("theme") || "light",
-    );
+    const { theme, setTheme } = useAppStore();
 
     useEffect(() => {
         const root = window.document.documentElement;
 
         root.classList.remove("light", "dark");
         root.classList.add(theme);
-        localStorage.setItem("theme", theme);
     }, [theme]);
 
-    const changeTheme = (newTheme: string) => {
+    const changeTheme = (newTheme: TTheme) => {
         setTheme(newTheme);
     };
 

@@ -1,3 +1,9 @@
 # Ignore artifacts:
 build
 coverage
+dist
+test-results
+Dockerfile
+.env.example
+.DS_Store
+pnpm-lock.yaml

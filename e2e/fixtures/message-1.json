@@ -1,0 +1,146 @@
+{
+    "filename": "Resume1",
+    "date": "08-08-25",
+    "schema_version": 1,
+    "sections": [
+        {
+            "title": "Travis Friesen",
+            "type": "header",
+            "toggled": true,
+            "content": [
+                {
+                    "text": "[travis@travisfriesen.ca](mailto:travis@travisfriesen.ca]",
+                    "flags": ["link"],
+                    "toggled": true
+                },
+                {
+                    "text": "204-807-7793",
+                    "flags": [],
+                    "toggled": true
+                },
+                {
+                    "text": "[travisfriesen.ca](https://travisfriesen.ca)",
+                    "flags": ["link"],
+                    "toggled": true
+                },
+                {
+                    "text": "$fa-linkedin$[/travisfriesen](https://linkedin.com/in/travisfriesen)",
+                    "flags": ["link", "icon"],
+                    "toggled": true
+                },
+                {
+                    "text": "$fa-square-github$[/travisfriesen](https://github.com/travisfriesen)",
+                    "flags": ["link", "icon"],
+                    "toggled": true
+                }
+            ],
+            "subsections": []
+        },
+        {
+            "title": "Education",
+            "type": "four-text-split",
+            "toggled": true,
+            "content": [
+                {
+                    "text": "**B.Sc. in Computer Science, Minor in Philosophy**",
+                    "flags": ["bold"],
+                    "toggled": true
+                },
+                {
+                    "text": "Sept. 2023 - Present",
+                    "flags": [],
+                    "toggled": true
+                },
+                {
+                    "text": "*University of Manitoba - Winnipeg, MB*",
+                    "flags": ["italics"],
+                    "toggled": true
+                }
+            ],
+            "subsections": []
+        },
+        {
+            "title": "Skills",
+            "type": "full-text",
+            "toggled": true,
+            "content": [
+                {
+                    "text": "**Languages:** Java, SQL, JavaScript, HTML/CSS, Python, TypeScript",
+                    "flags": ["bold"],
+                    "toggled": true
+                },
+                {
+                    "text": "**Developer Tools:** Git, Trello, GitHub Pages, Figma, UNIX, Docker, Ansible, GitHub Actions, Robot Framework",
+                    "flags": ["bold"],
+                    "toggled": true
+                },
+                {
+                    "text": "**Libraries:** Discord.js, Pocketbase, Tailwinds, Next.js, Electron, Selenium",
+                    "flags": ["bold"],
+                    "toggled": true
+                }
+            ],
+            "subsections": []
+        },
+        {
+            "title": "Experience",
+            "type": "full-text",
+            "toggled": true,
+            "content": [],
+            "subsections": [
+                {
+                    "title": "",
+                    "type": "sub-four-text-split",
+                    "toggled": true,
+                    "content": [
+                        {
+                            "text": "**Quality Engineering Intern**",
+                            "flags": ["bold"],
+                            "toggled": true
+                        },
+                        {
+                            "text": "May 2025 - Aug. 2025",
+                            "flags": [],
+                            "toggled": true
+                        },
+                        {
+                            "text": "*Royal Bank of Canada - Toronto, ON*",
+                            "flags": ["italics"],
+                            "toggled": true
+                        }
+                    ],
+                    "subsections": [
+                        {
+                            "title": "",
+                            "type": "sub-full-text",
+                            "toggled": true,
+                            "content": [
+                                {
+                                    "text": "Migrated over 30+ APIs from Jenkins to GitHub Actions with Ansible, improving pipeline maintainability and consistency",
+                                    "flags": ["bullet"],
+                                    "toggled": true
+                                },
+                                {
+                                    "text": "Developed and implemented a custom Robot Framework library to extract, validate PDF form data, and handle form variations using regex based comparisons",
+                                    "flags": ["bullet"],
+                                    "toggled": true
+                                },
+                                {
+                                    "text": "Stabilized automated tests in Robot Framework using better keywords and python libraries",
+                                    "flags": ["bullet"],
+                                    "toggled": true
+                                },
+                                {
+                                    "text": "Adapted existing GitHub Actions workflows to ensure seamless deployments during API migration",
+                                    "flags": ["bullet"],
+                                    "toggled": true
+                                }
+                            ],
+                            "subsections": []
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
