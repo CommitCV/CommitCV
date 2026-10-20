@@ -4,11 +4,19 @@ import type { IResumeEntry, IResumeStorage } from "./resume-storage";
 
 const DB_NAME = "commitcv";
 const STORE = "resumes";
+const THUMBNAILS = "thumbnails";
+const DB_VERSION = 2;
 
 interface IRecord {
     id: string;
     resume: IResume;
     updatedAt: number;
+}
+
+/** A cached first-page preview, valid while `hash` matches the resume. */
+export interface IThumbnail {
+    hash: string;
+    blob: Blob;
 }
 
 function request<T>(req: IDBRequest<T>): Promise<T> {
@@ -72,9 +80,25 @@ export class IdbResumeStorage implements IResumeStorage {
     async remove(id: string): Promise<void> {
         await this.ready();
         const db = await this.open();
-        const tx = db.transaction(STORE, "readwrite");
+        const tx = db.transaction([STORE, THUMBNAILS], "readwrite");
         tx.objectStore(STORE).delete(id);
+        tx.objectStore(THUMBNAILS).delete(id);
         await transactionDone(tx);
+    }
+
+    async saveThumbnail(id: string, hash: string, blob: Blob): Promise<void> {
+        const db = await this.open();
+        const tx = db.transaction(THUMBNAILS, "readwrite");
+        tx.objectStore(THUMBNAILS).put({ id, hash, blob });
+        await transactionDone(tx);
+    }
+
+    async loadThumbnail(id: string): Promise<IThumbnail | undefined> {
+        const db = await this.open();
+        const record = await request<IThumbnail | undefined>(
+            db.transaction(THUMBNAILS).objectStore(THUMBNAILS).get(id),
+        );
+        return record && { hash: record.hash, blob: record.blob };
     }
 
     private ready(): Promise<void> {
@@ -109,9 +133,15 @@ export class IdbResumeStorage implements IResumeStorage {
 
     private open(): Promise<IDBDatabase> {
         const db = (this.db ??= new Promise<IDBDatabase>((resolve, reject) => {
-            const req = (this.factory ?? indexedDB).open(DB_NAME, 1);
-            req.onupgradeneeded = () =>
-                req.result.createObjectStore(STORE, { keyPath: "id" });
+            const req = (this.factory ?? indexedDB).open(DB_NAME, DB_VERSION);
+            // v1 databases already have `resumes`; only add what's missing.
+            req.onupgradeneeded = () => {
+                for (const name of [STORE, THUMBNAILS]) {
+                    if (!req.result.objectStoreNames.contains(name)) {
+                        req.result.createObjectStore(name, { keyPath: "id" });
+                    }
+                }
+            };
             req.onsuccess = () => resolve(req.result);
             req.onerror = () => reject(req.error);
         }).catch((error) => {

@@ -155,4 +155,41 @@ describe("IdbResumeStorage", () => {
         await expect(storage.list()).rejects.toThrow(/blocked/);
         expect(await storage.list()).toEqual([]);
     });
+
+    it("stores thumbnails and deletes them with the resume", async () => {
+        const storage = new IdbResumeStorage(new IDBFactory());
+        await storage.save("a", makeResume("one", "first"));
+        expect(await storage.loadThumbnail("a")).toBeUndefined();
+
+        await storage.saveThumbnail("a", "h1", new Blob(["png"]));
+        const thumb = await storage.loadThumbnail("a");
+        expect(thumb?.hash).toBe("h1");
+        expect(thumb?.blob.size).toBe(3);
+
+        await storage.remove("a");
+        expect(await storage.loadThumbnail("a")).toBeUndefined();
+    });
+
+    it("upgrades a v1 database, keeping its resumes", async () => {
+        const factory = new IDBFactory();
+        await new Promise<void>((resolve, reject) => {
+            const req = factory.open("commitcv", 1);
+            req.onupgradeneeded = () =>
+                req.result.createObjectStore("resumes", { keyPath: "id" }).put({
+                    id: "old",
+                    resume: makeResume("old", "x"),
+                    updatedAt: 5,
+                });
+            req.onsuccess = () => {
+                req.result.close();
+                resolve();
+            };
+            req.onerror = () => reject(req.error);
+        });
+
+        const storage = new IdbResumeStorage(factory);
+        expect((await storage.load("old")).filename).toBe("old");
+        await storage.saveThumbnail("old", "h", new Blob(["x"]));
+        expect((await storage.loadThumbnail("old"))?.hash).toBe("h");
+    });
 });
