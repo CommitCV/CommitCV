@@ -19,11 +19,11 @@ export default function Header() {
                 </NavLink>
 
                 <div className="flex items-center gap-4">
-                    <a
-                        href="/"
+                    <NavLink
+                        to="/library"
                         className="hidden rounded-md border border-border-light px-3 py-1.5 text-sm font-semibold text-light-950 hover:bg-light-200 dark:border-border-dark dark:text-dark-950 dark:hover:bg-dark-100 sm:inline-flex">
                         Resume Library
-                    </a>
+                    </NavLink>
                     {login === null ? (
                         <a
                             href="/api/auth/login"
