@@ -13,6 +13,7 @@ export function syncLabel(
     now: number,
 ): string {
     if (sync.phase === "syncing") return "Syncing…";
+    if (sync.phase === "diverged") return "Sync paused";
     if (sync.phase === "retrying") return "Sync failed — retrying";
     if (saveState === "saving") return "Saving…";
     if (saveState === "error") return "Save failed";

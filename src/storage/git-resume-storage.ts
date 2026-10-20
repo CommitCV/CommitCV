@@ -36,8 +36,16 @@ export type TConflictChoice = "mine" | "remote";
 
 /** What the editor needs beyond `IResumeStorage`: session autosave and commit. */
 export interface IGitStorage extends IResumeStorage {
-    /** Autosave: commit to the session branch and push it. */
-    saveSession(id: string, resume: IResume): Promise<void>;
+    /**
+     * Autosave: commit to the session branch and push it. Throws
+     * `SessionDivergedError` if the remote branch moved; only `force`
+     * (the user's "keep mine") overwrites it.
+     */
+    saveSession(
+        id: string,
+        resume: IResume,
+        opts?: { force?: boolean },
+    ): Promise<void>;
     /** Squash the session onto the default branch (see `commit`). */
     commit(id: string, resume: IResume, opts?: ICommitOptions): Promise<void>;
     /**

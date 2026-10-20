@@ -15,6 +15,9 @@ describe("syncLabel", () => {
         expect(syncLabel("dirty", { ...idle, phase: "retrying" }, 0)).toBe(
             "Sync failed — retrying",
         );
+        expect(syncLabel("dirty", { ...idle, phase: "diverged" }, 0)).toBe(
+            "Sync paused",
+        );
         expect(
             syncLabel("clean", { phase: "idle", autosavedAt: 1000 }, 31_000),
         ).toBe("Autosaved 30s ago");

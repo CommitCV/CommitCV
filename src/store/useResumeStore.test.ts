@@ -8,6 +8,7 @@ import {
     ConflictError,
     UnauthorizedError,
 } from "@storage/github-resume-storage";
+import { SessionDivergedError } from "@storage/git-resume-storage";
 
 class FakeStorage implements IResumeStorage {
     saved: { id: string; resume: IResume; message?: string }[] = [];
@@ -82,9 +83,21 @@ describe("useResumeStore", () => {
             commits: { force?: boolean }[] = [];
             error: Error | null = null;
             remote: IResume | null = makeResume();
-            async saveSession(_id: string, resume: IResume) {
+            forced: boolean[] = [];
+            async saveSession(
+                _id: string,
+                resume: IResume,
+                o: { force?: boolean } = {},
+            ) {
                 if (this.error) throw this.error;
+                this.forced.push(!!o.force);
                 this.sessions.push(resume);
+            }
+            async findSessions() {
+                return [{ local: {} }];
+            }
+            async resolveSession() {
+                return this.remote;
             }
             async commit(
                 _id: string,
@@ -153,6 +166,40 @@ describe("useResumeStore", () => {
             expect(git.commits).toEqual([{ force: true }]);
             expect(useResumeStore.getState().sync.phase).toBe("idle");
             expect(useResumeStore.getState().saveState).toBe("clean");
+        });
+
+        it("pauses autosave when the session moved elsewhere", async () => {
+            git.error = new SessionDivergedError();
+            expect(await useResumeStore.getState().autosave()).toBe("skip");
+            expect(useResumeStore.getState().sync.phase).toBe("diverged");
+            expect(useResumeStore.getState().saveState).toBe("dirty");
+            git.error = null;
+            expect(await useResumeStore.getState().autosave()).toBe("skip");
+            expect(git.sessions).toHaveLength(0);
+        });
+
+        it("keep my version force-pushes only on that choice", async () => {
+            git.error = new SessionDivergedError();
+            await useResumeStore.getState().autosave();
+            git.error = null;
+            await useResumeStore.getState().resolveDivergence("mine");
+            expect(git.forced).toEqual([true]);
+            const state = useResumeStore.getState();
+            expect(state.sync.phase).toBe("idle");
+            expect(state.saveState).toBe("clean");
+            expect(state.resume?.filename).toBe("edited");
+        });
+
+        it("use remote version loads the session as pushed", async () => {
+            git.error = new SessionDivergedError();
+            await useResumeStore.getState().autosave();
+            git.error = null;
+            git.remote = { ...makeResume(), filename: "theirs" };
+            await useResumeStore.getState().resolveDivergence("remote");
+            const state = useResumeStore.getState();
+            expect(state.resume?.filename).toBe("theirs");
+            expect(state.sync.phase).toBe("idle");
+            expect(git.forced).toEqual([]);
         });
 
         it("take remote loads the default branch version", async () => {
