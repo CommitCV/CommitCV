@@ -8,6 +8,7 @@ describe("syncLabel", () => {
         expect(syncLabel("dirty", idle, 0)).toBe("Unsaved changes");
         expect(syncLabel("clean", idle, 0)).toBe("Saved");
         expect(syncLabel("error", idle, 0)).toBe("Save failed");
+        expect(syncLabel("saving", idle, 0)).toBe("Saving…");
         expect(syncLabel("dirty", { ...idle, phase: "syncing" }, 0)).toBe(
             "Syncing…",
         );

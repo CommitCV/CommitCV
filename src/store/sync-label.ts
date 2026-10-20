@@ -14,6 +14,7 @@ export function syncLabel(
 ): string {
     if (sync.phase === "syncing") return "Syncing…";
     if (sync.phase === "retrying") return "Sync failed — retrying";
+    if (saveState === "saving") return "Saving…";
     if (saveState === "error") return "Save failed";
     if (saveState === "dirty") return "Unsaved changes";
     if (sync.autosavedAt !== null) {
