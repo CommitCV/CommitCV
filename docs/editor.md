@@ -79,6 +79,15 @@ page is hidden or the editor is left, so there is no save button or status.
 A new resume joins the library on its first edit, not when it is opened. If a
 local save fails, the toolbar shows "Couldn't save locally" and the next edit
 retries. A draft loaded from GitHub keeps its repository and path, and only
-those remote resumes show Commit Changes and the saved/unsaved status. Download PDF is the main export; the
+those remote resumes show Commit Changes and the saved/unsaved status.
+
+Resumes from a connected git repository autosave to a session branch every
+30 to 60 seconds while they have unsaved changes (see [Git client](git-sync.md)).
+The status reads "Unsaved changes", "Syncing…", "Autosaved 30s ago", "Sync
+failed — retrying" (the edit stays local and retries with backoff) or, when
+the token no longer works, "Sync stopped" with a Reconnect link to `/connect`.
+Commit Changes squashes the session into one commit on the default branch.
+If the repository's version of the file changed in the same place meanwhile,
+a prompt offers Keep mine or Take remote. Download PDF is the main export; the
 menu beside it also exports JSON or standalone Typst. No export sends resume
 content to a rendering service.

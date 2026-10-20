@@ -47,7 +47,7 @@ connection. A saved connection's repo lists its root `.json` files; opening
 one loads it into the editor, and a new resume can be created and committed
 straight into the repo. The library page lists every connected repo.
 
-Tokens are stored only in IndexedDB (`connections` store, database version 3,
+Tokens are stored only in IndexedDB (`connections` store, database version 4,
 shared opener in `src/storage/db.ts`). They never go in localStorage, the
 persisted draft or the resume source, which is
 `{ kind: "git", connectionId, path }`. Removing a connection deletes its token.
@@ -62,12 +62,57 @@ Create a token with permission to read and write repository contents:
 ## Storage adapter
 
 `GitResumeStorage` (`src/storage/git-resume-storage.ts`) implements
-`IResumeStorage` over `GitClient`. Each call fetches first and drops unpushed
-local commits. `save` commits to the default branch and pushes (`targetBranch()`
-is the seam for session branches), `remove` commits a deletion. A save throws
-`ConflictError` if the file changed remotely since it was read or last saved,
-and `UnauthorizedError` on 401/403. Entries have no dates: a shallow clone
-cannot say when a file last changed.
+`IResumeStorage` over `GitClient`. Each call fetches first, drops unpushed
+local commits on the default branch and runs one at a time. `remove` commits a
+deletion to the default branch. Entries have no dates: a shallow clone cannot
+say when a file last changed. 401/403 become `UnauthorizedError`.
+
+## Sessions and autosave
+
+Editing a git-backed resume happens on a session branch
+`commitcv/<file-slug>-<shortid>`, one per file, so the default branch only
+sees deliberate commits and history stays clean.
+
+- **Autosave** (`src/store/git-autosave.ts`, started by the editor page):
+  while the document is dirty, `saveSession` runs about 30s after the last
+  change, never starting closer than 60s to the previous push, and at the
+  latest 60s after the first unsaved change. It also flushes when the page is
+  hidden or the editor is left. The first autosave creates the branch from
+  the default head; each one commits the file (author the user, committer the
+  bot, message and body from `generateCommitMessage`/`generateCommitBody`
+  against the previous session content) and force-pushes the branch.
+- **Failures**: the commit stays local and the next attempt only pushes. Retries
+  back off 60s, 120s, then 240s (cap). An auth failure stops retrying until
+  another document is loaded and the toolbar links to `/connect`.
+- **Commit Changes** (`commit`, also what `save` does): exactly one commit on
+  the default branch whose parent is the current default head, built with
+  plumbing (`GitClient.squashToDefault`, no rebase). The message is
+  `generateCommitMessage(defaultContent, final)` with the matching body. Then
+  the session branch is deleted remotely and locally and the session cleared.
+  Nothing to commit (content equals the default branch) just ends the session.
+- **Session state** is stored in IndexedDB (`sessions` store, see
+  `src/git/sessions.ts`): connection, path, branch, base sha (the default
+  head when the file was loaded), latest local and pushed shas, start time.
+  Resuming a session after a reload is not wired up yet.
+
+## When the default branch moved
+
+The base is the file at the session's base sha, "ours" is the default head and
+"theirs" is the session content.
+
+1. Default unchanged for the file: squash as is (other files may have moved;
+   the commit is built on the new head, so they are kept).
+2. Otherwise `mergeResume` (`src/resume/merge-resume.ts`) merges top-level
+   fields one by one and sections as whole units by index. Edits to different
+   sections merge.
+3. If both sides touched the same field or section, or the section list
+   changed shape while the other side edited it, or the base is unavailable,
+   `commit` throws `ConflictError`. The session is kept and the toolbar asks:
+   **Keep mine** commits the local content over the new head (`force`),
+   **Take remote** discards the session and loads the default branch version.
+
+A push rejected because the default branch moved after the fetch also surfaces
+as a conflict; Keep mine then retries on the fresh head.
 
 ## Template repository
 
