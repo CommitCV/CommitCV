@@ -7,6 +7,9 @@ import { useResumeStore } from "@store/useResumeStore";
 export default function EditorToolbar() {
     const filename = useResumeStore((store) => store.resume?.filename ?? "");
     const saveState = useResumeStore((store) => store.saveState);
+    const isLocal = useResumeStore(
+        (store) => !store.source || store.source.kind === "local",
+    );
     const setFilename = useResumeStore((store) => store.setFilename);
     const save = useResumeStore((store) => store.save);
     const undo = useResumeStore((store) => store.undo);
@@ -51,23 +54,37 @@ export default function EditorToolbar() {
                     className="min-w-0 flex-1 rounded border border-border-light bg-light-100 px-2 py-1 font-normal outline-none focus:border-accent dark:border-border-dark dark:bg-dark-100"
                 />
             </label>
-            <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                className="gap-1.5"
-                disabled={saveState === "saving"}
-                onClick={() => void save(`update ${filename || "resume"}`)}>
-                <Save className="h-4 w-4" />
-                {saveState === "saving" ? "Saving…" : "Commit Changes"}
-            </Button>
-            <span
-                role="status"
-                className="text-xs text-light-700 dark:text-dark-700">
-                {saveState === "dirty" && "Unsaved changes"}
-                {saveState === "clean" && "Saved"}
-                {saveState === "error" && "Save failed"}
-            </span>
+            {isLocal ? (
+                saveState === "error" && (
+                    <span
+                        role="status"
+                        className="text-xs text-red-600 dark:text-red-400">
+                        Couldn&apos;t save locally
+                    </span>
+                )
+            ) : (
+                <>
+                    <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        className="gap-1.5"
+                        disabled={saveState === "saving"}
+                        onClick={() =>
+                            void save(`update ${filename || "resume"}`)
+                        }>
+                        <Save className="h-4 w-4" />
+                        {saveState === "saving" ? "Saving…" : "Commit Changes"}
+                    </Button>
+                    <span
+                        role="status"
+                        className="text-xs text-light-700 dark:text-dark-700">
+                        {saveState === "dirty" && "Unsaved changes"}
+                        {saveState === "clean" && "Saved"}
+                        {saveState === "error" && "Save failed"}
+                    </span>
+                </>
+            )}
         </div>
     );
 }
