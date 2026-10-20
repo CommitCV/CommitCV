@@ -18,6 +18,12 @@ not expose either yet.
 The header shows **Sign out** while a GitHub session is active. It clears the
 token cookie on the server.
 
+**Deprecated:** the `/api/auth/*` and `/api/github/*` routes (and the
+`gh_token` cookie) are legacy and will be removed. New sign-ins use
+`/api/oauth/*`, which hands the token to the browser once instead of keeping
+it in a server cookie; see [Sign in with a git host](git-sync.md#sign-in-with-a-git-host).
+The same `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` serve both.
+
 Configure OAuth with `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and
 `PUBLIC_URL`. Keep the client secret on the server.
 
