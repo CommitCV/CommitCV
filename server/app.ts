@@ -3,6 +3,8 @@ import { Hono } from "hono";
 import { readFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { gitProxy } from "./git-proxy.ts";
+import type { GitProxyOptions } from "./git-proxy.ts";
 import { githubApi } from "./github.ts";
 import type { ServerEnv } from "./github.ts";
 
@@ -12,6 +14,7 @@ export interface CreateAppOptions {
     env?: Partial<ServerEnv>;
     distDir?: string;
     fetchFn?: typeof fetch;
+    gitProxy?: Partial<GitProxyOptions>;
 }
 
 /**
@@ -33,6 +36,17 @@ export function createApp(options: CreateAppOptions = {}): Hono {
 
     const app = new Hono();
     app.route("/api", githubApi(env));
+    app.route(
+        "/api/git-proxy",
+        gitProxy({
+            publicUrl: env.publicUrl,
+            allowedHosts: (process.env.GIT_PROXY_ALLOWED_HOSTS ?? "")
+                .split(",")
+                .filter((h) => h.trim()),
+            disabled: process.env.GIT_PROXY_DISABLED === "1",
+            ...options.gitProxy,
+        }),
+    );
 
     const distDir = options.distDir ?? join(here, "..", "dist");
     const root = relative(process.cwd(), distDir) || ".";
