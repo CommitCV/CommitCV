@@ -4,11 +4,14 @@ export interface IResumeEntry {
     id: string;
     filename: string;
     date: string;
+    /** When it was last saved (ms since epoch), if the store records it. */
+    updatedAt?: number;
 }
 
 /**
- * A place resumes are stored. Implementations: browser localStorage
- * and a GitHub repository via the server proxy.
+ * A place resumes are stored. Implementations: browser IndexedDB
+ * (migrating the old localStorage entries) and a GitHub repository
+ * via the server proxy.
  */
 export interface IResumeStorage {
     list(): Promise<IResumeEntry[]>;
