@@ -87,6 +87,18 @@ describe("useResumeStore", () => {
         expect(local.saved[0]?.id).toBe(source.id);
     });
 
+    it("stays dirty when an edit lands while saving", async () => {
+        const saving = useResumeStore.getState().save();
+        useResumeStore.getState().setFilename("during save");
+        await saving;
+        expect(useResumeStore.getState().saveState).toBe("dirty");
+    });
+
+    it("leaves a new resume clean until it is edited", () => {
+        useResumeStore.getState().newResume();
+        expect(useResumeStore.getState().saveState).toBe("clean");
+    });
+
     it("edits nested text without mutating the previous resume", () => {
         useResumeStore.getState().updateText([2, 0, 0], 0, { text: "changed" });
         const state = useResumeStore.getState();
