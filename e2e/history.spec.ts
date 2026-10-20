@@ -75,7 +75,10 @@ test.describe("history", () => {
         await expect(panel(page).getByTestId("history-summary")).toContainText(
             "experience",
         );
-        await expect(panel(page).getByTestId("preview-page-1")).toBeVisible();
+        // The first typst render is slow when the suite runs in parallel.
+        await expect(panel(page).getByTestId("preview-page-1")).toBeVisible({
+            timeout: 20_000,
+        });
     });
 
     test("restore replaces the document as an unsaved edit that undo reverts", async ({
