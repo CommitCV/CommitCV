@@ -279,7 +279,11 @@ export class GitResumeStorage implements IGitStorage {
                 // Only an explicit "keep mine" may overwrite the remote branch.
                 await client.push({ branch, force });
             } catch (err) {
-                if (err instanceof GitConflictError) {
+                // By name too: the e2e fake cannot throw the real class.
+                if (
+                    err instanceof GitConflictError ||
+                    (err as Error)?.name === "GitConflictError"
+                ) {
                     throw new SessionDivergedError();
                 }
                 throw err;
