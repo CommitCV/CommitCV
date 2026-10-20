@@ -10,6 +10,11 @@ Resumes saved by earlier versions in `localStorage` under the `commitcv:resume:`
 prefix are moved into IndexedDB the first time the library is read, and removed
 from `localStorage` once copied. An entry that can't be read stays where it is.
 
+Local resumes are saved automatically a second after each change, and again
+when the page is hidden or the editor is left; the commit UI is only for remote
+sources. An unedited new resume is never written. The editor draft still covers
+a reload that interrupts a pending save.
+
 Loading a selected entry validates it and reports an error if it is corrupt.
 
 To remove local data, delete the saved resume from the library or clear the
@@ -17,7 +22,7 @@ site's storage in the browser. No server is needed for this workflow.
 
 ## Keeping the library
 
-When a local resume is saved, CommitCV asks the browser for persistent storage
+When a local resume is saved (including by autosave), CommitCV asks the browser for persistent storage
 (`navigator.storage.persist()`). A persisted origin is not evicted when disk
 space runs low. Chrome decides this from signals such as the site being
 installed or bookmarked, and Firefox may show a prompt; Safari behaves
