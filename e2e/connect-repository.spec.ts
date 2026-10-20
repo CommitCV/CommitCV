@@ -1,75 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
-
-const TOKEN = "ghp_e2e_secret_token";
-
-// A real git host is unreachable here (the proxy only allows public https),
-// so the GitClient boundary is faked in the page through the dev-only
-// `window.__commitcvGitFactory` seam.
-async function fakeGit(page: Page) {
-    await page.addInitScript(() => {
-        const files: Record<string, string> = {
-            "remote.json": JSON.stringify({
-                filename: "remote-resume",
-                date: "01-01-26",
-                schema_version: 1,
-                sections: [],
-            }),
-        };
-        const commits: { path: string; message: string }[] = [];
-        Object.assign(window, { __fake: { files, commits } });
-        const fail = (name: string, message: string) =>
-            Object.assign(new Error(message), { name });
-        window.__commitcvGitFactory = (c) => ({
-            async cloneOrOpen() {
-                if (c.token === "bad-token") {
-                    throw fail("GitAuthError", "Authentication failed.");
-                }
-                if (c.token.startsWith("net-")) {
-                    throw fail("GitNetworkError", `Network error: ${c.token}`);
-                }
-                return { defaultBranch: "main", headSha: "abc" };
-            },
-            async readFile(_branch: string, path: string) {
-                return files[path] ?? null;
-            },
-            async listFiles() {
-                return Object.keys(files)
-                    .filter((f) => f.endsWith(".json"))
-                    .sort();
-            },
-            async commitFile(o: {
-                path: string;
-                content: string;
-                message: string;
-            }) {
-                files[o.path] = o.content;
-                commits.push({ path: o.path, message: o.message });
-                return "sha";
-            },
-            async removeFile(o: { path: string; message: string }) {
-                delete files[o.path];
-                commits.push({ path: o.path, message: o.message });
-                return "sha";
-            },
-            async push() {},
-            async resetToRemote() {},
-        });
-    });
-}
+import { connect, fakeGit, TOKEN } from "./fixtures/fake-git";
 
 async function fill(page: Page, token = TOKEN) {
     await page.getByLabel("Repository URL").fill("https://github.com/acme/cv");
     await page.getByLabel("Access token").fill(token);
     await page.getByLabel("Author name").fill("Ada");
     await page.getByLabel("Author email").fill("ada@example.com");
-}
-
-async function connect(page: Page) {
-    await fakeGit(page);
-    await page.goto("/connect");
-    await fill(page);
-    await page.getByRole("button", { name: "Connect", exact: true }).click();
-    await expect(page.getByTestId("connection")).toContainText("acme/cv");
 }
 
 test.describe("connect a repository", () => {
