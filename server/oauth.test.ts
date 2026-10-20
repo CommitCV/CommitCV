@@ -365,9 +365,6 @@ describe("handoff", () => {
             refreshToken: REFRESH,
             user: { name: "Ada L", login: "ada", email: "a@x.io" },
         });
-        expect(typeof (await app.request(h.path, h.init)).status).toBe(
-            "number",
-        );
         const again = await app.request(h.path, h.init);
         expect(again.status).toBe(410);
     });
