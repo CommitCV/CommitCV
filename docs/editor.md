@@ -88,6 +88,17 @@ failed — retrying" (the edit stays local and retries with backoff) or, when
 the token no longer works, "Sync stopped" with a Reconnect link to `/connect`.
 Commit Changes squashes the session into one commit on the default branch.
 If the repository's version of the file changed in the same place meanwhile,
-a prompt offers Keep mine or Take remote. Download PDF is the main export; the
+a prompt offers Keep mine or Take remote.
+
+Opening a repository file that still has an unsquashed session (from an
+earlier visit or another device) shows a dialog first: Continue session,
+Squash it now, Discard session or Cancel. Only one session per file is ever
+active, so the committed version cannot be edited until the session is dealt
+with. Continue offers any unsaved local edits next to the session as saved.
+If another device pushed the session in the meantime, autosave pauses
+("Sync paused") and a prompt offers Use remote version or Keep my version
+(overwrite remote); nothing is overwritten without that choice. The library
+and connect page mark such files "Unsaved session" (see
+[Git client](git-sync.md#resuming-a-session)). Download PDF is the main export; the
 menu beside it also exports JSON or standalone Typst. No export sends resume
 content to a rendering service.

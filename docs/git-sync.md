@@ -80,7 +80,9 @@ sees deliberate commits and history stays clean.
   hidden or the editor is left. The first autosave creates the branch from
   the default head; each one commits the file (author the user, committer the
   bot, message and body from `generateCommitMessage`/`generateCommitBody`
-  against the previous session content) and force-pushes the branch.
+  against the previous session content) and pushes the branch as a normal
+  fast-forward. If the remote branch has commits this browser lacks, the push
+  is rejected and `saveSession` throws `SessionDivergedError` (see below).
 - **Failures**: the commit stays local and the next attempt only pushes. Retries
   back off 60s, 120s, then 240s (cap). An auth failure stops retrying until
   another document is loaded and the toolbar links to `/connect`.
@@ -92,8 +94,50 @@ sees deliberate commits and history stays clean.
   Nothing to commit (content equals the default branch) just ends the session.
 - **Session state** is stored in IndexedDB (`sessions` store, see
   `src/git/sessions.ts`): connection, path, branch, base sha (the default
-  head when the file was loaded), latest local and pushed shas, start time.
-  Resuming a session after a reload is not wired up yet.
+  head when the file was loaded), latest local and pushed shas, start time,
+  and `lastContent`, the document of a local commit that is not pushed yet.
+
+## Resuming a session
+
+A session outlives the tab: closing the browser or switching devices leaves
+`commitcv/<slug>-<id>` on the remote.
+
+- **Detect** (`findSessions(path)`, `listSessions()`): list remote branches
+  under `commitcv/`, keep those whose name carries the file's slug (ids have
+  no dash, so `a.json` and `a-1.json` stay apart), and read each with
+  `GitClient.sessionCommits`, which fetches the branch and the default branch
+  and returns the commits not in default history plus the base they branch
+  from. A branch counts only if it is ahead of default and changes that file.
+  Each result is `{ path, branch, headSha, baseSha, lastCommit, aheadBy,
+local? }`, newest activity first; `local` is this browser's record. A local
+  record whose first push failed is reported too; a record whose branch is
+  gone from the remote (squashed or discarded elsewhere) is dropped.
+- **Open flow** (`src/store/open-git-resume.ts`, dialog in
+  `src/components/session/`, used by one hook for the connect page and the
+  library): a file with a session is not loaded. A dialog offers **Continue
+  session**, **Squash it now** (confirm; commits the session, or the unsaved
+  local edits when there are some), **Discard session** (confirm; deletes the
+  remote and local branch and the record, then opens the default version) or
+  Cancel. There is no read-only "open the committed version": while a session
+  exists it must be continued, squashed or discarded, so a file never has more
+  than one active session. If several exist (two devices), each is listed.
+- **Continue** (`inspectSession` then `resolveSession`): if this browser has
+  `lastContent` newer than the remote head it asks "Use my unsaved local
+  edits" or "Use session as saved". Taking the saved version resets the local
+  branch to the remote one; afterwards the session record points at the
+  remote head (`lastPushedSha` = head) and autosave fast-forwards the same
+  branch. On a device with no record one is created from the remote branch.
+- **Divergence**: if the remote head differs from our `lastPushedSha` (another
+  device pushed), or an autosave push is rejected, the editor pauses autosave
+  ("Sync paused") and asks "This session was updated elsewhere": **Use remote
+  version** adopts their head, **Keep my version (overwrite remote)** is the
+  only path that force-pushes (`saveSession(..., { force: true })`).
+- **Stale sessions**: if the default branch moved, Continue still works and
+  squash uses the merge and conflict path above; a conflict opens the session
+  in the editor with the usual Keep mine / Take remote prompt.
+- **Badges**: the library and connect file lists call `listSessions()` lazily
+  per connection after the file list shows, and add "Unsaved session" with the
+  last activity age. A failure only shows a note, never blocks the list.
 
 ## When the default branch moved
 
