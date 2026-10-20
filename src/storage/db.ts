@@ -2,7 +2,8 @@ export const DB_NAME = "commitcv";
 export const RESUMES = "resumes";
 export const THUMBNAILS = "thumbnails";
 export const CONNECTIONS = "connections";
-const DB_VERSION = 3;
+export const SESSIONS = "sessions";
+const DB_VERSION = 4;
 
 /** One opener for the shared database so every store upgrades together. */
 export function openDb(factory?: IDBFactory): Promise<IDBDatabase> {
@@ -10,7 +11,7 @@ export function openDb(factory?: IDBFactory): Promise<IDBDatabase> {
         const req = (factory ?? indexedDB).open(DB_NAME, DB_VERSION);
         // Older databases already have some stores; only add what's missing.
         req.onupgradeneeded = () => {
-            for (const name of [RESUMES, THUMBNAILS, CONNECTIONS]) {
+            for (const name of [RESUMES, THUMBNAILS, CONNECTIONS, SESSIONS]) {
                 if (!req.result.objectStoreNames.contains(name)) {
                     req.result.createObjectStore(name, { keyPath: "id" });
                 }
