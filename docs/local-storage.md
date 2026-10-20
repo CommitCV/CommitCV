@@ -14,3 +14,15 @@ Loading a selected entry validates it and reports an error if it is corrupt.
 
 To remove local data, delete the saved resume from the library or clear the
 site's storage in the browser. No server is needed for this workflow.
+
+## Keeping the library
+
+When a local resume is saved, CommitCV asks the browser for persistent storage
+(`navigator.storage.persist()`). A persisted origin is not evicted when disk
+space runs low. Chrome decides this from signals such as the site being
+installed or bookmarked, and Firefox may show a prompt; Safari behaves
+differently, so the request can be refused.
+
+Persistence only guards against automatic eviction. Clearing site data from the
+browser's settings can still remove the library, so download backups of
+resumes you care about, or connect a git repository.
