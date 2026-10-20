@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import type { ISessionInfo } from "@storage/git-resume-storage";
 import type { IResumeEntry } from "@storage/resume-storage";
-import { resumeStorages, useResumeStore } from "@store/useResumeStore";
+import { resumeStorages } from "@store/useResumeStore";
 
 const message = (reason: unknown, fallback: string) =>
     reason instanceof Error ? reason.message : fallback;
@@ -44,8 +45,46 @@ export function useRemoteEntries(connectionId: string) {
     return { entries: current.entries, error: current.error, reload };
 }
 
-/** Loads a repo file into the editor store; the caller navigates. */
-export async function openRemote(connectionId: string, path: string) {
-    const resume = await resumeStorages.git(connectionId).load(path);
-    useResumeStore.getState().load(resume, { kind: "git", connectionId, path });
+/**
+ * Files with an unsquashed session (newest session per path), found lazily
+ * once `enabled`; a failure only means no badges and is reported as `error`.
+ */
+export function useRemoteSessions(connectionId: string, enabled: boolean) {
+    const [state, setState] = useState<{
+        id: string;
+        sessions?: Record<string, ISessionInfo>;
+        error: boolean;
+        at: number;
+    }>({ id: connectionId, error: false, at: 0 });
+
+    useEffect(() => {
+        if (!enabled) return;
+        let active = true;
+        const storage = resumeStorages.git(connectionId);
+        if (!("listSessions" in storage)) return;
+        storage.listSessions().then(
+            (all) => {
+                if (!active) return;
+                const sessions: Record<string, ISessionInfo> = {};
+                // Sorted newest first, so the first one per path wins.
+                for (const info of all) sessions[info.path] ??= info;
+                setState({
+                    id: connectionId,
+                    sessions,
+                    error: false,
+                    at: Date.now(),
+                });
+            },
+            () =>
+                active &&
+                setState({ id: connectionId, error: true, at: Date.now() }),
+        );
+        return () => {
+            active = false;
+        };
+    }, [connectionId, enabled]);
+
+    return state.id === connectionId
+        ? state
+        : { sessions: undefined, error: false, at: 0 };
 }
