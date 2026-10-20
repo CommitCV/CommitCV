@@ -183,15 +183,49 @@ export class GitClient {
         message: string;
         body?: string;
     }): Promise<string> {
-        const { branch, path, content, message, body } = opts;
+        const blob = await git.writeBlob({
+            ...this.base,
+            blob: new TextEncoder().encode(opts.content),
+        });
+        return this.commitChange({ ...opts, blob });
+    }
+
+    /** Commits the deletion of `path`; a no-op change if it does not exist. */
+    async removeFile(opts: {
+        branch: string;
+        path: string;
+        message: string;
+        body?: string;
+    }): Promise<string> {
+        return this.commitChange({ ...opts, blob: null });
+    }
+
+    /** Points the local branch at the fetched remote one, dropping local commits. */
+    async resetToRemote(branch: string): Promise<void> {
+        const value = await git.resolveRef({
+            ...this.base,
+            ref: `refs/remotes/${REMOTE}/${branch}`,
+        });
+        await git.writeRef({
+            ...this.base,
+            ref: `refs/heads/${branch}`,
+            value,
+            force: true,
+        });
+    }
+
+    private async commitChange(opts: {
+        branch: string;
+        path: string;
+        blob: string | null;
+        message: string;
+        body?: string;
+    }): Promise<string> {
+        const { branch, path, blob, message, body } = opts;
         const parent =
             (await this.tryResolve(branch)) ??
             (await this.resolve(await this.defaultBranch()));
         const { commit } = await git.readCommit({ ...this.base, oid: parent });
-        const blob = await git.writeBlob({
-            ...this.base,
-            blob: new TextEncoder().encode(content),
-        });
         const tree = await this.setPath(
             commit.tree,
             path.split("/").filter(Boolean),
@@ -209,31 +243,43 @@ export class GitClient {
         });
     }
 
+    /** `blob` null removes the entry (and any directory left empty). */
     private async setPath(
         treeOid: string | null,
         segs: string[],
-        blob: string,
+        blob: string | null,
     ): Promise<string> {
         const entries = treeOid
             ? (await git.readTree({ ...this.base, oid: treeOid })).tree
             : [];
         const [name, ...rest] = segs;
         const old = entries.find((e) => e.path === name);
-        const next = rest.length
-            ? {
-                  mode: "040000",
-                  path: name,
-                  type: "tree" as const,
-                  oid: await this.setPath(
-                      old?.type === "tree" ? old.oid : null,
-                      rest,
-                      blob,
-                  ),
-              }
-            : { mode: "100644", path: name, type: "blob" as const, oid: blob };
+        const others = entries.filter((e) => e.path !== name);
+        let next;
+        if (rest.length) {
+            const oid = await this.setPath(
+                old?.type === "tree" ? old.oid : null,
+                rest,
+                blob,
+            );
+            const empty =
+                (await git.readTree({ ...this.base, oid })).tree.length === 0;
+            next = empty
+                ? null
+                : { mode: "040000", path: name, type: "tree" as const, oid };
+        } else {
+            next = blob
+                ? {
+                      mode: "100644",
+                      path: name,
+                      type: "blob" as const,
+                      oid: blob,
+                  }
+                : null;
+        }
         return git.writeTree({
             ...this.base,
-            tree: [...entries.filter((e) => e.path !== name), next],
+            tree: next ? [...others, next] : others,
         });
     }
 
