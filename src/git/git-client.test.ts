@@ -255,6 +255,34 @@ describe.skipIf(!hasGit)("GitClient against a local bare repo", () => {
         ]);
     });
 
+    it("lists session commits ahead of the default branch and deletes a fetched-only branch", async () => {
+        const one = newClient(http);
+        await one.cloneOrOpen(URL_);
+        for (const content of ["1", "2"]) {
+            await one.commitFile({
+                branch: "commitcv/a-1",
+                path: "a.json",
+                content,
+                message: `set ${content}`,
+            });
+        }
+        await one.push({ branch: "commitcv/a-1" });
+        const base = gitIn(bare, "rev-parse", "main").trim();
+
+        const two = newClient(http);
+        await two.cloneOrOpen(URL_);
+        const found = await two.sessionCommits("commitcv/a-1");
+        expect(found.commits.map((c) => c.message)).toEqual(["set 2", "set 1"]);
+        expect(found.baseSha).toBe(base);
+        expect(found.headSha).toBe(
+            gitIn(bare, "rev-parse", "commitcv/a-1").trim(),
+        );
+        expect((await two.sessionCommits("main")).commits).toEqual([]);
+
+        await two.deleteRemoteBranch("commitcv/a-1");
+        expect(await two.listRemoteBranches("commitcv/")).toEqual([]);
+    });
+
     it("maps a non-fast-forward push to GitConflictError", async () => {
         const one = newClient(http);
         const two = newClient(http);

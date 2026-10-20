@@ -16,6 +16,8 @@ export interface ISession {
     /** Latest session commit known to be on the remote. */
     lastPushedSha: string | null;
     startedAt: number;
+    /** The document of the latest local commit while it is not pushed yet. */
+    lastContent?: string;
 }
 
 export interface ISessionStore {
