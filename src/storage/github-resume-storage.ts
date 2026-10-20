@@ -3,15 +3,17 @@ import { parseResume } from "@resume/parse-resume";
 import type { IResumeEntry, IResumeStorage } from "./resume-storage";
 
 export class ConflictError extends Error {
-    constructor() {
-        super("This file changed on GitHub. Reload it before saving.");
+    constructor(
+        message = "This file changed on GitHub. Reload it before saving.",
+    ) {
+        super(message);
         this.name = "ConflictError";
     }
 }
 
 export class UnauthorizedError extends Error {
-    constructor() {
-        super("GitHub sign-in expired. Sign in again.");
+    constructor(message = "GitHub sign-in expired. Sign in again.") {
+        super(message);
         this.name = "UnauthorizedError";
     }
 }
