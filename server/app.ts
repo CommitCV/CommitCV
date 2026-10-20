@@ -7,6 +7,10 @@ import { gitProxy } from "./git-proxy.ts";
 import type { GitProxyOptions } from "./git-proxy.ts";
 import { githubApi } from "./github.ts";
 import type { ServerEnv } from "./github.ts";
+import { oauthApi } from "./oauth.ts";
+import type { OAuthOptions } from "./oauth.ts";
+import { loadOAuthApps } from "./oauth-providers.ts";
+import { randomBytes } from "node:crypto";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -24,6 +28,7 @@ export interface CreateAppOptions {
     distDir?: string;
     fetchFn?: typeof fetch;
     gitProxy?: Partial<GitProxyOptions>;
+    oauth?: Partial<OAuthOptions>;
 }
 
 /**
@@ -45,6 +50,26 @@ export function createApp(options: CreateAppOptions = {}): Hono {
 
     const app = new Hono();
     app.route("/api", githubApi(env));
+    // Production without SESSION_SECRET offers no sign-in at all; dev
+    // falls back to a per-process key.
+    const sessionSecret =
+        process.env.SESSION_SECRET ||
+        (process.env.NODE_ENV === "production"
+            ? ""
+            : randomBytes(32).toString("hex"));
+    app.route(
+        "/api/oauth",
+        oauthApi({
+            publicUrl: env.publicUrl,
+            fetchFn: env.fetchFn,
+            sessionSecret,
+            apps: loadOAuthApps(process.env, {
+                clientId: env.githubClientId,
+                clientSecret: env.githubClientSecret,
+            }),
+            ...options.oauth,
+        }),
+    );
     app.route(
         "/api/git-proxy",
         gitProxy({
