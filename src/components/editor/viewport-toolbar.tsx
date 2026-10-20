@@ -2,6 +2,7 @@ import { useState } from "react";
 import { standaloneTypst } from "@typst/standalone-typst";
 import { resumeToTypst } from "@typst/resume-to-typst";
 import { typst } from "@typst/typst-client";
+import { saveBlob, saveJson } from "@components/save-blob";
 import ContextMenu from "@components/ui/context-menu";
 import { MOD_KEY } from "@components/ui/shortcuts";
 import { TOOLBAR_ROW, ToolbarButton } from "@components/ui/toolbar";
@@ -86,12 +87,7 @@ export default function ViewportToolbar({
         setExportError("");
         try {
             if (kind === "json") {
-                saveBlob(
-                    `${resume.filename || "resume"}.json`,
-                    new Blob([JSON.stringify(resume, null, 4)], {
-                        type: "application/json",
-                    }),
-                );
+                saveJson(`${resume.filename || "resume"}.json`, resume);
                 trackResumeExported();
             } else if (kind === "typ") {
                 saveBlob(
@@ -307,13 +303,4 @@ export default function ViewportToolbar({
             )}
         </div>
     );
-}
-
-function saveBlob(filename: string, blob: Blob): void {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(url);
 }
