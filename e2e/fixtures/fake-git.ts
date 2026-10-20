@@ -27,6 +27,14 @@ export interface IFakeGit {
     }): string;
     /** Simulates another device pushing a new commit to a session branch. */
     moveSession(branch: string, path: string, content: string): void;
+    /**
+     * Gives `path` a default-branch history, oldest first; the last version
+     * becomes the file's content. History starts shallow (10 commits).
+     */
+    seedHistory(
+        path: string,
+        versions: { content: string; message: string; minutesAgo: number }[],
+    ): void;
     /** A file on the remote copy of a session branch. */
     remoteFile(branch: string, path: string): string | null;
 }
@@ -61,6 +69,10 @@ export async function fakeGit(page: Page) {
             main: Record<string, string>;
             snapshots: Record<string, Record<string, string>>;
             commits: { path: string; message: string }[];
+            /** Every default-branch commit, oldest first (for `log`). */
+            log: { sha: string; path: string; message: string; date: number }[];
+            /** How many of the newest log commits are fetched. */
+            visible: number;
             sessionCommits: { branch: string; path: string; message: string }[];
             pushes: string[];
             /** This browser's branches, the server's, and fetched copies. */
@@ -86,6 +98,8 @@ export async function fakeGit(page: Page) {
                 main,
                 snapshots: { m0: clone(main) },
                 commits: [],
+                log: [],
+                visible: 10,
                 sessionCommits: [],
                 pushes: [],
                 local: {},
@@ -110,9 +124,10 @@ export async function fakeGit(page: Page) {
                 /* ignore */
             }
         };
-        const advance = () => {
+        const advance = (path = "", message = "", date = Date.now()) => {
             S.head = `m${++S.n}`;
             S.snapshots[S.head] = clone(S.main);
+            if (path) S.log.push({ sha: S.head, path, message, date });
         };
         const filesOf = (ref: string) =>
             ref === "main"
@@ -157,9 +172,27 @@ export async function fakeGit(page: Page) {
                 return S.pushes;
             },
             failPush: false,
+            seedHistory(
+                path: string,
+                versions: {
+                    content: string;
+                    message: string;
+                    minutesAgo: number;
+                }[],
+            ) {
+                for (const v of versions) {
+                    S.main[path] = v.content;
+                    advance(
+                        path,
+                        v.message,
+                        Date.now() - v.minutesAgo * 60_000,
+                    );
+                }
+                save();
+            },
             moveDefault(path: string, content: string) {
                 S.main[path] = content;
-                advance();
+                advance(path, "update elsewhere");
                 save();
             },
             seedSession(o: {
@@ -222,7 +255,7 @@ export async function fakeGit(page: Page) {
                 if (o.branch === "main") {
                     S.main[o.path] = o.content;
                     S.commits.push({ path: o.path, message: o.message });
-                    advance();
+                    advance(o.path, o.message);
                     save();
                     return S.head;
                 }
@@ -248,6 +281,25 @@ export async function fakeGit(page: Page) {
                 save();
                 return sha;
             },
+            async isShallow() {
+                return S.visible < S.log.length;
+            },
+            async deepen(n: number) {
+                S.visible += n;
+                save();
+            },
+            async log(_ref: string, path: string) {
+                return S.log
+                    .slice(-S.visible)
+                    .filter((c) => c.path === path)
+                    .reverse()
+                    .map((c) => ({
+                        sha: c.sha,
+                        message: c.message,
+                        author: { name: "Ada", email: "ada@example.com" },
+                        date: new Date(c.date),
+                    }));
+            },
             async removeFile(o: { path: string; message: string }) {
                 delete S.main[o.path];
                 S.commits.push({ path: o.path, message: o.message });
@@ -259,11 +311,12 @@ export async function fakeGit(page: Page) {
                 sessionBranch: string;
                 path: string;
                 message: string;
+                body?: string;
                 content?: string;
             }) {
                 S.main[o.path] = o.content ?? filesOf(o.sessionBranch)![o.path];
                 S.commits.push({ path: o.path, message: o.message });
-                advance();
+                advance(o.path, o.message);
                 save();
                 return S.head;
             },
