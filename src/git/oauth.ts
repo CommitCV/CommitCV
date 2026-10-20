@@ -80,7 +80,7 @@ export async function fetchProviders(): Promise<ProviderOption[]> {
             await fetch("/api/oauth/providers"),
             "",
         );
-        return data.providers;
+        return Array.isArray(data.providers) ? data.providers : [];
     } catch {
         return [];
     }
