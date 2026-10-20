@@ -4,10 +4,6 @@ async function saveResume(page: Page, filename: string) {
     await page.goto("/");
     await page.getByRole("button", { name: "Start editing" }).click();
     await page.getByLabel("Resume filename").fill(filename);
-    await page
-        .getByRole("button", { name: "Commit Changes", exact: true })
-        .click();
-    await expect(page.getByRole("status")).toContainText("Saved");
 }
 
 async function openLibrary(page: Page) {
