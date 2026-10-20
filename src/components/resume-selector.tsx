@@ -5,9 +5,7 @@ import Card from "@components/ui/card";
 import ResumeLibrary from "./resume-library";
 import RepositoryPicker from "./repository-picker";
 import { Upload } from "@components/ui/icons";
-import { today } from "@resume/dates";
-import { isLegacyResume, migrateLegacyResume } from "@resume/legacy-resume";
-import { parseResume } from "@resume/parse-resume";
+import { importResumeFile } from "@resume/import-resume-file";
 import { useResumeStore } from "@store/useResumeStore";
 import { trackResumeCreated, trackResumeImported } from "@analytics/tracker";
 
@@ -19,14 +17,7 @@ export default function ResumeSelector() {
 
     async function uploadResume(file: File) {
         try {
-            const json: unknown = JSON.parse(await file.text());
-            const resume = isLegacyResume(json)
-                ? migrateLegacyResume(json, {
-                      filename: file.name.replace(/\.json$/i, ""),
-                      date: today(),
-                  })
-                : parseResume(json);
-            load(resume, null);
+            load(await importResumeFile(file), null);
             trackResumeImported();
             navigate("/editor");
         } catch (reason) {
