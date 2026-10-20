@@ -24,6 +24,7 @@ import {
 import { today } from "@resume/dates";
 import starter from "@resume/starter-resume.json";
 import { GitHubResumeStorage } from "@storage/github-resume-storage";
+import { IdbResumeStorage } from "@storage/idb-resume-storage";
 import { LocalResumeStorage } from "@storage/local-resume-storage";
 import type { IResumeStorage } from "@storage/resume-storage";
 
@@ -48,7 +49,10 @@ const githubStorages = new Map<string, GitHubResumeStorage>();
 
 // Storage seam: production uses the real adapters; tests swap them out.
 export const resumeStorages = {
-    local: new LocalResumeStorage() as IResumeStorage,
+    local: new IdbResumeStorage(
+        undefined,
+        new LocalResumeStorage(),
+    ) as IResumeStorage,
     github(repo: string): IResumeStorage {
         let storage = githubStorages.get(repo);
         if (!storage) {
