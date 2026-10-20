@@ -201,7 +201,7 @@ export class GitClient {
     }
 
     /** Points the local branch at the fetched remote one, dropping local commits. */
-    async resetToRemote(branch: string): Promise<void> {
+    async resetToRemote(branch: string): Promise<string> {
         const value = await git.resolveRef({
             ...this.base,
             ref: `refs/remotes/${REMOTE}/${branch}`,
@@ -212,6 +212,50 @@ export class GitClient {
             value,
             force: true,
         });
+        return value;
+    }
+
+    /**
+     * One commit on the default branch that sets `path` to the session
+     * branch's version (or `content`, e.g. a merge result) on top of the
+     * current default head. No rebase: the session's own commits are not
+     * replayed, so history gets a single commit per manual save. Local only;
+     * the caller pushes.
+     */
+    async squashToDefault(opts: {
+        sessionBranch: string;
+        path: string;
+        message: string;
+        body?: string;
+        content?: string;
+    }): Promise<string> {
+        const { sessionBranch, path, message, body, content } = opts;
+        let blob: string;
+        if (content !== undefined) {
+            blob = await git.writeBlob({
+                ...this.base,
+                blob: new TextEncoder().encode(content),
+            });
+        } else {
+            const head = await this.resolve(sessionBranch);
+            ({ oid: blob } = await git.readBlob({
+                ...this.base,
+                oid: head,
+                filepath: path,
+            }));
+        }
+        return this.commitChange({
+            branch: await this.defaultBranch(),
+            path,
+            blob,
+            message,
+            body,
+        });
+    }
+
+    /** Drops a local branch (not the remote one); fine if it is already gone. */
+    async deleteLocalBranch(branch: string): Promise<void> {
+        await git.deleteBranch({ ...this.base, ref: branch }).catch(() => {});
     }
 
     private async commitChange(opts: {
