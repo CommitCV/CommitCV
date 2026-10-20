@@ -13,6 +13,8 @@ export interface IConnection {
     label: string;
     token: string;
     author: GitIdentity;
+    /** Set for OAuth sign-ins that issue expiring tokens. */
+    oauth?: { host: string; refreshToken?: string; expiresAt?: number };
 }
 
 export type TNewConnection = Omit<IConnection, "id">;
@@ -56,6 +58,13 @@ export class ConnectionStore {
         tx.objectStore(CONNECTIONS).put(saved);
         await transactionDone(tx);
         return saved;
+    }
+
+    async update(connection: IConnection): Promise<void> {
+        const db = await this.open();
+        const tx = db.transaction(CONNECTIONS, "readwrite");
+        tx.objectStore(CONNECTIONS).put(connection);
+        await transactionDone(tx);
     }
 
     async remove(id: string): Promise<void> {

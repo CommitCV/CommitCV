@@ -25,6 +25,7 @@ import { today } from "@resume/dates";
 import starter from "@resume/starter-resume.json";
 import { connections } from "../git/connections";
 import { openConnection } from "../git/open-connection";
+import { freshConnection } from "../git/oauth";
 import { sessions } from "../git/sessions";
 import {
     GitResumeStorage,
@@ -106,7 +107,7 @@ export const resumeStorages = {
                             "This repository connection was removed.",
                         );
                     }
-                    return openConnection(connection);
+                    return openConnection(await freshConnection(connection));
                 },
                 { connectionId, sessions },
             );

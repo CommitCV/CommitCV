@@ -34,7 +34,7 @@ function setup(
 ) {
     const calls: Call[] = [];
     const fetchFn = vi.fn(
-        async (input: RequestInfo | URL, init?: RequestInit) => {
+        async (input: string | URL | Request, init?: RequestInit) => {
             const url = String(input);
             calls.push({ url, init });
             if (url.includes("/oauth/token") || url.includes("access_token")) {
@@ -141,7 +141,7 @@ describe("oauth providers + login", () => {
             oauth: { apps, sessionSecret: "" },
         });
         const res = await app.request("/api/oauth/providers");
-        expect((await res.json()).providers).toEqual([]);
+        expect(await res.json()).toEqual({ providers: [] });
         const l = await app.request(
             "/api/oauth/login?provider=gitlab&host=gitlab.com",
         );
