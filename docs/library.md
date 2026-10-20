@@ -24,3 +24,8 @@ clearing site data or cache deletes it. Dismissal is remembered in
 automatic cleanup, offers to request that when it is not, and shows how much
 storage is used. Protection does not stop manual clearing of site data, so
 download files you care about.
+
+## Version history
+
+Local resumes keep no history. Connect a git repository to get a per-file
+history with restore (see [Editor](editor.md#version-history)).
