@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "@components/header";
 import Footer from "@components/footer";
 import BackupNotice from "@components/library/backup-notice";
+import RemoteResumes from "@components/library/remote-resumes";
 import ResumeCard from "@components/library/resume-card";
 import { saveJson } from "@components/save-blob";
 import Button from "@components/ui/button";
@@ -179,6 +180,8 @@ export default function Library() {
                         ))}
                     </ul>
                 )}
+
+                <RemoteResumes />
             </main>
             <Footer />
         </div>

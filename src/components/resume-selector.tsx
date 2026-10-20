@@ -1,10 +1,9 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import Button from "@components/ui/button";
 import Card from "@components/ui/card";
 import ResumeLibrary from "./resume-library";
-import RepositoryPicker from "./repository-picker";
-import { Upload } from "@components/ui/icons";
+import { Github, Upload } from "@components/ui/icons";
 import { importResumeFile } from "@resume/import-resume-file";
 import { useResumeStore } from "@store/useResumeStore";
 import { trackResumeCreated, trackResumeImported } from "@analytics/tracker";
@@ -118,7 +117,22 @@ export default function ResumeSelector() {
                 )}
                 <div className="mt-6 grid gap-4 md:grid-cols-2">
                     <ResumeLibrary compact />
-                    <RepositoryPicker />
+                    <section className="rounded-lg border border-border-light p-4 dark:border-border-dark">
+                        <div className="mb-3 flex items-center gap-2">
+                            <Github className="h-5 w-5" />
+                            <h2 className="text-lg font-semibold">
+                                Git repository
+                            </h2>
+                        </div>
+                        <p className="mb-3 text-sm text-light-700 dark:text-dark-700">
+                            Keep your resumes in any https git repository.
+                        </p>
+                        <Link
+                            to="/connect"
+                            className="inline-flex rounded bg-accent px-3 py-1.5 text-sm font-semibold text-light-50 hover:opacity-90 dark:text-dark-50">
+                            Connect a repository
+                        </Link>
+                    </section>
                 </div>
             </Card>
         </div>
