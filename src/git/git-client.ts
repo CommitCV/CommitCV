@@ -458,7 +458,12 @@ export class GitClient {
 
     /** Whether history is cut off (a `deepen` may reveal more commits). */
     async isShallow(): Promise<boolean> {
-        const text = await this.d.fs.promises
+        const { promises } = this.d.fs as unknown as {
+            promises: {
+                readFile(path: string, enc: "utf8"): Promise<string>;
+            };
+        };
+        const text = await promises
             .readFile(`${this.dir}/.git/shallow`, "utf8")
             .catch(() => "");
         return String(text).trim() !== "";
