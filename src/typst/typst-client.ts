@@ -15,6 +15,7 @@ interface IJob {
     id: number;
     kind: "svg" | "pdf";
     source: string;
+    background: boolean;
     resolve: (result: string | Uint8Array) => void;
     reject: (error: Error) => void;
 }
@@ -31,8 +32,15 @@ export class TypstClient {
     private queue: IJob[] = [];
     private nextId = 1;
 
-    renderSvg(source: string): Promise<string> {
-        return this.run("svg", source) as Promise<string>;
+    /**
+     * `background` jobs (thumbnails) neither replace nor get replaced by
+     * previews, and wait behind any foreground job.
+     */
+    renderSvg(
+        source: string,
+        options: { background?: boolean } = {},
+    ): Promise<string> {
+        return this.run("svg", source, options.background) as Promise<string>;
     }
 
     renderPdf(source: string): Promise<Uint8Array> {
@@ -42,11 +50,13 @@ export class TypstClient {
     private run(
         kind: "svg" | "pdf",
         source: string,
+        background = false,
     ): Promise<string | Uint8Array> {
         const job = {
             id: this.nextId++,
             kind,
             source,
+            background,
         } as IJob;
         const promise = new Promise<string | Uint8Array>((resolve, reject) => {
             job.resolve = resolve;
@@ -54,14 +64,20 @@ export class TypstClient {
         });
         // Latest wins: a newer preview replaces an older queued one. PDF
         // requests are kept; a user is waiting on each of them.
-        if (kind === "svg") {
+        if (kind === "svg" && !background) {
             this.queue = this.queue.filter((queued) => {
-                if (queued.kind !== "svg") return true;
+                if (queued.kind !== "svg" || queued.background) return true;
                 queued.reject(new Error("replaced by a newer render"));
                 return false;
             });
         }
-        this.queue.push(job);
+        if (background) {
+            this.queue.push(job);
+        } else {
+            const firstBackground = this.queue.findIndex((q) => q.background);
+            if (firstBackground === -1) this.queue.push(job);
+            else this.queue.splice(firstBackground, 0, job);
+        }
         this.pump();
         return promise;
     }
