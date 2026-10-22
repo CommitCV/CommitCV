@@ -90,8 +90,8 @@ export default function ContentRow({
                 type="button"
                 aria-label="Remove text"
                 variant="ghost"
-                size="sm"
-                className="h-7 px-1.5 hover:text-red-600 dark:hover:text-red-500"
+                size="icon"
+                className="hover:text-red-600 dark:hover:text-red-500"
                 onClick={onRemove}>
                 <Trash className="h-4 w-4" />
             </Button>
