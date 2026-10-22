@@ -6,6 +6,12 @@ than `localStorage`, which matters once thumbnails and history are stored. The
 editor draft uses a separate `localStorage` key so an unsaved session can be
 restored without appearing in the saved library.
 
+Each resume is stored gzipped (`CompressionStream`), about a third of its JSON
+size, with its filename, date and last-saved time kept beside it so the library
+lists without decompressing anything. Records saved uncompressed by earlier
+builds still load and are compressed the next time they are saved. Saves and
+removals run in order, and a read waits for any that are in flight.
+
 Resumes saved by earlier versions in `localStorage` under the `commitcv:resume:`
 prefix are moved into IndexedDB the first time the library is read, and removed
 from `localStorage` once copied. An entry that can't be read stays where it is.
@@ -39,7 +45,9 @@ Each local resume has a small first-page preview in a second IndexedDB store,
 a SHA-256 hash of the resume's content, so it is only re-rendered when the
 content changes. Generation runs in the background after a save, when the
 browser is idle, and is queued behind the live preview so typing never waits on
-it. A failed render is skipped and retried on the next save. Deleting a resume
+it. Previews are WebP at quality 0.8 (about a third the size of PNG), or JPEG in
+a browser that can't encode WebP. Existing PNG previews stay until the resume
+changes. A failed render is skipped and retried on the next save. Deleting a resume
 deletes its thumbnail.
 
 The [library page](library.md) shows these previews, the storage protection
