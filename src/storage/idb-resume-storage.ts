@@ -7,12 +7,21 @@ import {
     THUMBNAILS,
     transactionDone,
 } from "./db";
+import { compressJson, decompressJson } from "./compress";
 import type { IResumeEntry, IResumeStorage } from "./resume-storage";
 
+/**
+ * What's stored. `filename` and `date` sit beside the gzipped resume so
+ * listing never decompresses. Records written before compression hold
+ * the resume itself in `resume` and are read as-is until next saved.
+ */
 interface IRecord {
     id: string;
-    resume: IResume;
+    filename: string;
+    date: string;
     updatedAt: number;
+    data?: Uint8Array<ArrayBuffer>;
+    resume?: IResume;
 }
 
 /** A cached first-page preview, valid while `hash` matches the resume. */
@@ -33,6 +42,10 @@ export class IdbResumeStorage implements IResumeStorage {
     private readonly legacy?: IResumeStorage;
     private db?: Promise<IDBDatabase>;
     private migrated?: Promise<void>;
+    // Saves compress before writing, so they run one at a time in call
+    // order, and a read started right after an unawaited save (autosave
+    // on leaving the editor) waits for the queue to drain.
+    private queue: Promise<unknown> = Promise.resolve();
 
     // The factory defaults to the global at first use, so importing
     // this module is safe where IndexedDB doesn't exist (node tests).
@@ -42,35 +55,42 @@ export class IdbResumeStorage implements IResumeStorage {
     }
 
     async list(): Promise<IResumeEntry[]> {
-        await this.ready();
+        await this.settled();
         const records = await this.all();
-        return records.map(({ id, resume, updatedAt }) => ({
+        return records.map(({ id, filename, date, resume, updatedAt }) => ({
             id,
-            filename: resume.filename,
-            date: resume.date,
+            filename: filename ?? resume?.filename ?? "",
+            date: date ?? resume?.date ?? "",
             updatedAt,
         }));
     }
 
     async load(id: string): Promise<IResume> {
-        await this.ready();
+        await this.settled();
         const record = await this.get(id);
         if (!record) throw new Error(`no saved resume "${id}"`);
-        return parseResume(record.resume);
+        const resume = record.data
+            ? await decompressJson(record.data)
+            : record.resume;
+        return parseResume(resume);
     }
 
-    async save(id: string, resume: IResume): Promise<void> {
-        await this.ready();
-        await this.put({ id, resume, updatedAt: Date.now() });
+    save(id: string, resume: IResume): Promise<void> {
+        return this.enqueue(async () => {
+            await this.ready();
+            await this.put(id, resume);
+        });
     }
 
-    async remove(id: string): Promise<void> {
-        await this.ready();
-        const db = await this.open();
-        const tx = db.transaction([STORE, THUMBNAILS], "readwrite");
-        tx.objectStore(STORE).delete(id);
-        tx.objectStore(THUMBNAILS).delete(id);
-        await transactionDone(tx);
+    remove(id: string): Promise<void> {
+        return this.enqueue(async () => {
+            await this.ready();
+            const db = await this.open();
+            const tx = db.transaction([STORE, THUMBNAILS], "readwrite");
+            tx.objectStore(STORE).delete(id);
+            tx.objectStore(THUMBNAILS).delete(id);
+            await transactionDone(tx);
+        });
     }
 
     async saveThumbnail(id: string, hash: string, blob: Blob): Promise<void> {
@@ -88,12 +108,24 @@ export class IdbResumeStorage implements IResumeStorage {
         return record && { hash: record.hash, blob: record.blob };
     }
 
-    private ready(): Promise<void> {
+    private enqueue(job: () => Promise<void>): Promise<void> {
+        const run = this.queue.then(job);
+        this.queue = run.catch(() => undefined);
+        return run;
+    }
+
+    private async ready(): Promise<void> {
         this.migrated ??= this.migrate().catch((error) => {
             this.migrated = undefined;
             throw error;
         });
-        return this.migrated;
+        await this.migrated;
+    }
+
+    /** `ready`, plus every save and remove already requested. */
+    private async settled(): Promise<void> {
+        await this.ready();
+        await this.queue;
     }
 
     // Moves each legacy resume over, then deletes it. An id that already
@@ -105,11 +137,7 @@ export class IdbResumeStorage implements IResumeStorage {
             try {
                 if (!(await this.get(entry.id))) {
                     const resume = await this.legacy.load(entry.id);
-                    await this.put({
-                        id: entry.id,
-                        resume,
-                        updatedAt: Date.now(),
-                    });
+                    await this.put(entry.id, resume);
                 }
                 await this.legacy.remove(entry.id);
             } catch {
@@ -138,7 +166,14 @@ export class IdbResumeStorage implements IResumeStorage {
         return request(db.transaction(STORE).objectStore(STORE).get(id));
     }
 
-    private async put(record: IRecord): Promise<void> {
+    private async put(id: string, resume: IResume): Promise<void> {
+        const record: IRecord = {
+            id,
+            filename: resume.filename,
+            date: resume.date,
+            updatedAt: Date.now(),
+            data: await compressJson(resume),
+        };
         const db = await this.open();
         const tx = db.transaction(STORE, "readwrite");
         tx.objectStore(STORE).put(record);
