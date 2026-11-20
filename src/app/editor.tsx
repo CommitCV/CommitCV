@@ -7,6 +7,7 @@ import SectionEditor from "@components/editor/section-editor";
 import ResumePreview from "@components/editor/resume-preview";
 import { useEffect, useState } from "react";
 import { useResumeStore } from "@store/useResumeStore";
+import { trackResumeCreated } from "@analytics/tracker";
 
 export default function Editor() {
     const resume = useResumeStore((store) => store.resume);
@@ -23,7 +24,10 @@ export default function Editor() {
     }
 
     useEffect(() => {
-        if (!resume) newResume();
+        if (!resume) {
+            newResume();
+            trackResumeCreated();
+        }
     }, [newResume, resume]);
 
     if (!resume) {

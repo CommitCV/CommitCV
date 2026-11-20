@@ -33,7 +33,8 @@
             "@store/*": ["src/store/*"],
             "@resume/*": ["src/resume/*"],
             "@typst/*": ["src/typst/*"],
-            "@storage/*": ["src/storage/*"]
+            "@storage/*": ["src/storage/*"],
+            "@analytics/*": ["src/analytics/*"]
         }
     },
     "include": ["src"]

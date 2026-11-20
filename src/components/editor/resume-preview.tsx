@@ -4,6 +4,7 @@ import { resumeToTypst } from "@typst/resume-to-typst";
 import { typst } from "@typst/typst-client";
 import { clampZoom, type FitMode } from "@components/editor/zoom";
 import { usePreviewZoom } from "@hooks/usePreviewZoom";
+import { trackCompileError } from "@analytics/tracker";
 
 interface ResumePreviewProps {
     resume: IResume;
@@ -106,6 +107,7 @@ export default function ResumePreview({
                     if (active) {
                         setPages([]);
                         onPageCount?.(0);
+                        trackCompileError(reason);
                         setError(
                             reason instanceof Error
                                 ? reason.message
