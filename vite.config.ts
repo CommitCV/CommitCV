@@ -13,8 +13,10 @@ export default defineConfig({
             "@resume": "/src/resume",
             "@typst": "/src/typst",
             "@storage": "/src/storage",
+            "@analytics": "/src/analytics",
         },
     },
+    envPrefix: ["VITE_", "UMAMI_"],
     // The compile worker is created with `type: "module"`, so it is
     // bundled as an ES module worker too.
     worker: {
