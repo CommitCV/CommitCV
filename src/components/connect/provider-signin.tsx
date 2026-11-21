@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faBitbucket,
+    faCodeberg,
     faGithub,
     faGitlab,
 } from "@fortawesome/free-brands-svg-icons";
@@ -29,8 +30,13 @@ const select =
 
 function ProviderButton({ option }: { option: ProviderOption }) {
     const [host, setHost] = useState(option.hosts[0]);
-    const name = PROVIDER_NAMES[option.provider] ?? option.provider;
-    const icon = ICONS[option.provider as keyof typeof ICONS];
+    const codeberg = host === "codeberg.org";
+    const name = codeberg
+        ? "Codeberg"
+        : (PROVIDER_NAMES[option.provider] ?? option.provider);
+    const icon = codeberg
+        ? faCodeberg
+        : ICONS[option.provider as keyof typeof ICONS];
     return (
         <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -58,7 +64,9 @@ function ProviderButton({ option }: { option: ProviderOption }) {
                     ))}
                 </select>
             ) : (
-                !/^(github|gitlab)\.com$|^bitbucket\.org$/.test(host) && (
+                !/^(github|gitlab)\.com$|^(bitbucket|codeberg)\.org$/.test(
+                    host,
+                ) && (
                     <span className="text-sm text-light-700 dark:text-dark-700">
                         {host}
                     </span>

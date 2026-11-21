@@ -76,7 +76,7 @@ test.describe("sign in with a git host", () => {
             page.getByRole("button", { name: "Sign in with GitHub" }),
         ).toBeVisible();
         await expect(
-            page.getByRole("button", { name: "Sign in with Forgejo" }),
+            page.getByRole("button", { name: "Sign in with Codeberg" }),
         ).toBeVisible();
         await expect(
             page.getByRole("button", { name: "Sign in with GitLab" }),
@@ -85,7 +85,7 @@ test.describe("sign in with a git host", () => {
             page.getByRole("button", { name: "Sign in with Bitbucket" }),
         ).toHaveCount(0);
 
-        const instance = page.getByLabel("Forgejo instance");
+        const instance = page.getByLabel("Codeberg instance");
         await expect(instance.locator("option")).toHaveText([
             "codeberg.org",
             "git.example.org",

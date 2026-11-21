@@ -3,7 +3,7 @@
 ## Happy paths
 
 - [providers]: only providers the server reports as configured get a "Sign in with <Provider>" button; sign-in is hidden when none are
-- [instances]: a provider with several instances (Forgejo, Gitea, GitLab) shows an instance chooser and the chosen host is sent to `/api/oauth/login`
+- [instances]: a provider with several instances (Forgejo, Gitea, GitLab; codeberg.org shows as "Codeberg" with its logo) shows an instance chooser and the chosen host is sent to `/api/oauth/login`
 - [return]: returning with `?signed_in=` takes the one-time handoff, cleans the URL, prefills the author name and lists repos
 - [search]: the repo search filters the list; "Use" tests and saves the connection
 - [secrets]: the token ends up only in the IndexedDB connection record, never in the URL, page text or localStorage
