@@ -102,11 +102,18 @@ refuses to offer sign-in without it.
 
 | Provider  | Env                                                                       | Scopes                                                                             |
 | --------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| GitHub    | `GITHUB_CLIENT_ID/SECRET` (or `OAUTH_GITHUB_*`)                           | `repo read:user`                                                                   |
+| GitHub    | `GITHUB_CLIENT_ID/SECRET` (or `OAUTH_GITHUB_*`)                           | GitHub App: Contents read/write, Metadata read; the user picks repos               |
 | GitLab    | `OAUTH_GITLAB_CLIENT_ID/SECRET`, `OAUTH_GITLAB_INSTANCES` for self-hosted | `read_api read_user read_repository write_repository`                              |
 | Bitbucket | `OAUTH_BITBUCKET_CLIENT_ID/SECRET`                                        | Set on the OAuth consumer: Account read, Repositories write. Needs a callback URL. |
 | Gitea     | `OAUTH_GITEA_INSTANCES`                                                   | `write:repository read:user`                                                       |
 | Forgejo   | `OAUTH_FORGEJO_INSTANCES` (Codeberg is Forgejo)                           | `write:repository read:user`                                                       |
+
+**GitHub is a GitHub App**, not an OAuth App, so access is limited to the
+repositories the user installs it on. Register it with callback URL
+`PUBLIC_URL/api/oauth/callback`, leave device flow off, and set
+`GITHUB_APP_SLUG` (the name in `github.com/apps/<slug>`) so the picker can
+link to "Choose which repositories CommitCV can access". User tokens expire
+after 8 hours and are renewed through the refresh token.
 
 `OAUTH_<PROVIDER>_INSTANCES` is JSON mapping a host to its app, for example
 `{"codeberg.org":{"clientId":"...","clientSecret":"..."}}`.

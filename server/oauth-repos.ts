@@ -55,8 +55,67 @@ const NAME = /^[A-Za-z0-9_.-]{1,100}$/;
 export function oauthRepos(options: {
     apps: OAuthApp[];
     fetchFn: typeof fetch;
+    /** GitHub App slug; enables the "choose repositories" install link. */
+    githubAppSlug?: string;
 }): Hono {
-    const { apps, fetchFn } = options;
+    const { apps, fetchFn, githubAppSlug } = options;
+    const installUrl = githubAppSlug
+        ? `https://github.com/apps/${githubAppSlug}/installations/new`
+        : undefined;
+    type Headers = Record<string, string>;
+    type Listed = unknown[] | "rejected" | "error";
+
+    async function listPlain(url: string, headers: Headers): Promise<Listed> {
+        const response = await fetchFn(url, { headers });
+        if (response.status === 401 || response.status === 403) {
+            return "rejected";
+        }
+        if (!response.ok) return "error";
+        const json = (await response.json().catch(() => [])) as unknown;
+        return Array.isArray(json)
+            ? json
+            : ((json as { values?: unknown[] })?.values ?? []);
+    }
+
+    /**
+     * A GitHub App's user token only reaches repos the app is installed on,
+     * so list those per installation instead of `/user/repos`.
+     */
+    async function listInstalled(
+        base: string,
+        headers: Headers,
+    ): Promise<Listed> {
+        const response = await fetchFn(
+            `${base}/user/installations?per_page=100`,
+            { headers },
+        );
+        if (response.status === 401 || response.status === 403) {
+            return "rejected";
+        }
+        if (!response.ok) return "error";
+        const data = (await response.json().catch(() => ({}))) as {
+            installations?: { id?: unknown }[];
+        };
+        const ids = (data.installations ?? [])
+            .map((i) => i.id)
+            .filter((id): id is number => Number.isInteger(id))
+            .slice(0, 20);
+        const pages = await Promise.all(
+            ids.map(async (id) => {
+                const r = await fetchFn(
+                    `${base}/user/installations/${id}/repositories?per_page=100`,
+                    { headers },
+                );
+                if (!r.ok) return [];
+                const j = (await r.json().catch(() => ({}))) as {
+                    repositories?: unknown[];
+                };
+                return j.repositories ?? [];
+            }),
+        );
+        return pages.flat();
+    }
+
     const app = new Hono();
 
     app.get("/repos", async (c) => {
@@ -66,28 +125,27 @@ export function oauthRepos(options: {
         if (!a) return c.json({ error: "provider not configured" }, 404);
         const token = bearer(c.req.header("authorization"));
         if (!token) return c.json({ error: "token required" }, 401);
-        let response: Response;
+        const headers = {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+        };
+        const base = SPECS[a.provider].apiBase(a.host);
+        let list: unknown[];
         try {
-            response = await fetchFn(
-                `${SPECS[a.provider].apiBase(a.host)}${LIST_PATH[a.provider]}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        Accept: "application/json",
-                    },
-                },
-            );
+            const result =
+                a.provider === "github"
+                    ? await listInstalled(base, headers)
+                    : await listPlain(base + LIST_PATH[a.provider], headers);
+            if (result === "rejected") {
+                return c.json({ error: "token rejected" }, 401);
+            }
+            if (result === "error") {
+                return c.json({ error: "provider error" }, 502);
+            }
+            list = result;
         } catch {
             return c.json({ error: "could not reach the provider" }, 502);
         }
-        if (response.status === 401 || response.status === 403) {
-            return c.json({ error: "token rejected" }, 401);
-        }
-        if (!response.ok) return c.json({ error: "provider error" }, 502);
-        const json = (await response.json().catch(() => [])) as unknown;
-        const list = Array.isArray(json)
-            ? json
-            : ((json as { values?: unknown[] })?.values ?? []);
         const q = (c.req.query("q") ?? "").trim().toLowerCase();
         const repos = list
             .map((r) => toRepo(a.provider, a.host, r))
@@ -95,7 +153,10 @@ export function oauthRepos(options: {
             .filter((r) => !q || r.fullName.toLowerCase().includes(q))
             .slice(0, 100);
         c.header("Cache-Control", "no-store");
-        return c.json({ repos });
+        return c.json({
+            repos,
+            ...(a.provider === "github" && installUrl && { installUrl }),
+        });
     });
 
     app.post("/github/generate-from-template", async (c) => {

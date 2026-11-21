@@ -106,19 +106,18 @@ const bearer = (token: string) => ({ Authorization: `Bearer ${token}` });
 export async function listRepos(
     handoff: Pick<Handoff, "provider" | "host" | "accessToken">,
     q: string,
-): Promise<RepoSummary[]> {
+): Promise<{ repos: RepoSummary[]; installUrl?: string }> {
     const params = new URLSearchParams({
         provider: handoff.provider,
         host: handoff.host,
         q,
     });
-    const data = await json<{ repos: RepoSummary[] }>(
+    return json<{ repos: RepoSummary[]; installUrl?: string }>(
         await fetch(`/api/oauth/repos?${params}`, {
             headers: bearer(handoff.accessToken),
         }),
         "Could not list repositories.",
     );
-    return data.repos;
 }
 
 export async function generateFromTemplate(

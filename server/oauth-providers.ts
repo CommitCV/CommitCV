@@ -29,8 +29,8 @@ export interface ProviderSpec {
 
 /**
  * Scopes are the minimum to list repos and push contents:
- * github `repo` (no narrower scope covers private contents) + `read:user`;
- * gitlab read_api (list projects) + read/write_repository + read_user;
+ * github is a GitHub App (Contents: read/write, set on the app, and the
+ * user picks the repos);  * gitlab read_api (list projects) + read/write_repository + read_user;
  * gitea/forgejo write:repository + read:user; bitbucket scopes are set on
  * the OAuth consumer (Account: read, Repositories: write), not per request.
  */
@@ -41,7 +41,7 @@ export const SPECS: Record<OAuthProviderId, ProviderSpec> = {
         authorizePath: "https://github.com/login/oauth/authorize",
         tokenPath: "https://github.com/login/oauth/access_token",
         apiBase: () => "https://api.github.com",
-        scope: "repo read:user",
+        // A GitHub App ignores scopes; access is the per-repo installation.
         pkce: true,
     },
     gitlab: {

@@ -565,6 +565,71 @@ describe("repos", () => {
     });
 });
 
+describe("github app repos", () => {
+    const fetchFn = vi.fn(async (input: string | URL | Request) => {
+        const url = String(input);
+        if (url.includes("/user/installations?")) {
+            return Response.json({ installations: [{ id: 7 }, { id: 8 }] });
+        }
+        if (url.includes("/user/installations/7/repositories")) {
+            return Response.json({
+                repositories: [
+                    {
+                        full_name: "ada/cv",
+                        default_branch: "main",
+                        private: true,
+                    },
+                ],
+            });
+        }
+        if (url.includes("/user/installations/8/repositories")) {
+            return Response.json({
+                repositories: [
+                    {
+                        full_name: "org/resumes",
+                        default_branch: "main",
+                        private: true,
+                    },
+                ],
+            });
+        }
+        return new Response("unexpected", { status: 500 });
+    });
+    const request = (slug?: string) =>
+        createApp({
+            distDir: "./server/test-dist",
+            fetchFn,
+            oauth: { apps, sessionSecret: "s", githubAppSlug: slug },
+        }).request("/api/oauth/repos?provider=github&host=github.com", {
+            headers: { authorization: "Bearer abc" },
+        });
+
+    it("lists only repos from the app's installations, not /user/repos", async () => {
+        const res = await request("commitcv");
+        const body = (await res.json()) as {
+            repos: { fullName: string }[];
+            installUrl?: string;
+        };
+        expect(body.repos.map((r) => r.fullName)).toEqual([
+            "ada/cv",
+            "org/resumes",
+        ]);
+        expect(body.installUrl).toBe(
+            "https://github.com/apps/commitcv/installations/new",
+        );
+        expect(
+            fetchFn.mock.calls.some(([u]) => String(u).includes("/user/repos")),
+        ).toBe(false);
+    });
+
+    it("omits the install link without a slug", async () => {
+        const body = (await (await request()).json()) as {
+            installUrl?: string;
+        };
+        expect(body.installUrl).toBeUndefined();
+    });
+});
+
 describe("generate from template", () => {
     const gen = (
         app: ReturnType<typeof setup>["app"],
