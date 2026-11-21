@@ -4,6 +4,8 @@ import { connections, type IConnection } from "../../git/connections";
 import {
     connectionFromHandoff,
     listRepos,
+    newRepoUrl,
+    PROVIDER_NAMES,
     type Handoff,
     type RepoSummary,
 } from "../../git/oauth";
@@ -178,19 +180,36 @@ export default function RepoPicker({ handoff, onConnected }: RepoPickerProps) {
                     Connect URL
                 </Button>
             </div>
-            {template && (
-                <p className="text-sm">
-                    No repository yet?{" "}
-                    <a
-                        href={`${TEMPLATE_REPO_URL}/generate`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-accent underline">
-                        Create one from the CommitCV template
-                    </a>
-                    , add it to the app, then come back and sign in again.
-                </p>
-            )}
+            <p className="text-sm">
+                No repository yet?{" "}
+                <a
+                    href={newRepoUrl(handoff.provider, handoff.host)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-accent underline">
+                    Create one on{" "}
+                    {handoff.host === "codeberg.org"
+                        ? "Codeberg"
+                        : (PROVIDER_NAMES[handoff.provider] ?? handoff.host)}
+                </a>
+                {template && (
+                    <>
+                        {" "}
+                        or{" "}
+                        <a
+                            href={`${TEMPLATE_REPO_URL}/generate`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-accent underline">
+                            start from the CommitCV template
+                        </a>
+                    </>
+                )}
+                . Make it private and add a README so it has a branch
+                {handoff.provider === "github" &&
+                    ", add it to the CommitCV app"}
+                , then come back and sign in again.
+            </p>
             {busy && <p className="text-sm">Working…</p>}
             {error && (
                 <p

@@ -250,6 +250,10 @@ as a conflict; Keep mine then retries on the fresh head.
 
 ## Template repository
 
+The repo picker also links every provider's own new-repository page (GitHub,
+GitLab, Bitbucket, Codeberg and self-hosted instances), for users with no
+repo yet.
+
 Set `VITE_TEMPLATE_REPO_URL` (build time, see `.env.example`) to offer "Create
 from the CommitCV template" on `/connect`. It only links to the template for
 fork or use-template instructions and exists for attribution. Unset, the
