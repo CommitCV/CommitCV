@@ -97,4 +97,4 @@ If any part of these Terms is found to be unenforceable, the rest remains in eff
 
 ## 17. Contact
 
-Questions about these Terms: **admin@commitcv.com**
+Questions about these Terms: **contact@commitcv.com**

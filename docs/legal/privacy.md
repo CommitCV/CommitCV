@@ -14,7 +14,7 @@ This policy explains what information CommitCV collects when you use the officia
 
 ## 1. Who we are
 
-CommitCV is operated by a group of maintainers ("CommitCV", "we", "us"). You can reach us at **admin@commitcv.com**.
+CommitCV is operated by a group of maintainers ("CommitCV", "we", "us"). You can reach us at **contact@commitcv.com**.
 
 CommitCV is open-source software. This policy applies only to the official instance at commitcv.com. It does not apply to forks, self-hosted copies, or other websites built from our code, which are run by other people and are not under our control.
 
@@ -138,7 +138,7 @@ Anonymous, aggregate statistics (for example, "resumes created this month") may 
 
 Because your resume lives only in your browser, you are in control of it: you can edit, export or delete it at any time, and clearing your browser's site data removes it entirely.
 
-We hold very little information that can be linked to you. If you believe we hold personal information about you and want to access, correct or delete it, email **admin@commitcv.com** and we will respond within a reasonable time. We may need some details from you (such as the approximate date of your visit) to find anything, since we do not keep accounts.
+We hold very little information that can be linked to you. If you believe we hold personal information about you and want to access, correct or delete it, email **privacy@commitcv.com** and we will respond within a reasonable time. We may need some details from you (such as the approximate date of your visit) to find anything, since we do not keep accounts.
 
 Our practices are intended to align with Canadian privacy law, including the Personal Information Protection and Electronic Documents Act (PIPEDA). If you are in the European Economic Area, the United Kingdom or California, you may have additional rights under laws such as the GDPR or CCPA. We do not sell personal information, and the limited analytics we collect are based on our legitimate interest in running and improving a free service. Contact us to exercise any rights you have.
 
@@ -152,7 +152,7 @@ Our server and analytics are operated from Canada. If you use the Service from e
 
 ## 13. Children
 
-The Service is not directed at young children, and we do not knowingly collect personal information from children. Since we do not receive resume content or run accounts, we hold nothing that identifies a child. If you believe a child has provided information to us, contact admin@commitcv.com.
+The Service is not directed at young children, and we do not knowingly collect personal information from children. Since we do not receive resume content or run accounts, we hold nothing that identifies a child. If you believe a child has provided information to us, contact contact@commitcv.com.
 
 ## 14. Future changes to the Service
 
@@ -164,4 +164,4 @@ We record every change to this policy, with its date, in the [legal changelog](l
 
 ## 16. Contact
 
-Questions or requests about privacy: **admin@commitcv.com**
+For questions reach out to **contact@commitcv.com** and for privacy concerns reach out to **privacy@commitcv.com**
