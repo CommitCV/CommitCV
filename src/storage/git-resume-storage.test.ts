@@ -5,6 +5,7 @@ import type { IResume } from "@resume/resume";
 import { GitClient } from "../git/git-client";
 import { bareRepoHttp, gitIn, hasGit, makeBareRepo } from "../git/test-remote";
 import { MemorySessionStore } from "../git/sessions";
+import { APP_COAUTHOR } from "../git/identity";
 import { ConflictError, UnauthorizedError } from "./github-resume-storage";
 import {
     GitResumeStorage,
@@ -150,7 +151,7 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
             expect(
                 gitIn(bare, "log", "-1", "--format=%an|%cn|%s|%b", branch()),
             ).toBe(
-                'Ada|CommitCV|update alpha: edit 1 entry|- alpha: edited "a2" (line 1)\n\n',
+                `Ada|CommitCV|update alpha: edit 1 entry|- alpha: edited "a2" (line 1)\n\nCo-authored-by: ${APP_COAUTHOR.name} <${APP_COAUTHOR.email}>\n\n`,
             );
             const [row] = await sessions.list("c1");
             expect(row).toMatchObject({

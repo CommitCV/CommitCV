@@ -62,7 +62,7 @@ describe("detectProvider", () => {
 describe("authFor", () => {
     const url = "https://git.example.com/me/cv";
     it.each([
-        ["github", { username: "T", password: "x-oauth-basic" }],
+        ["github", { username: "x-access-token", password: "T" }],
         ["gitlab", { username: "oauth2", password: "T" }],
         ["bitbucket", { username: "x-token-auth", password: "T" }],
         ["gitea", { username: "T", password: "x-oauth-basic" }],

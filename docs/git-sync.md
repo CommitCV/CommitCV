@@ -138,7 +138,8 @@ path must be a same-origin relative path.
 Two small routes exist because provider APIs send no CORS headers. Both take
 the token in the `Authorization` header, only talk to configured hosts and
 store nothing: `GET /api/oauth/repos?provider&host&q` and, for GitHub,
-`POST /api/oauth/github/generate-from-template` (creates a private repo).
+`POST /api/oauth/github/generate-from-template` (kept, but the UI no longer
+calls it: a GitHub App token cannot create repos).
 
 GitLab, Bitbucket, Gitea and Forgejo issue expiring tokens. The connection
 then also keeps `oauth: { host, refreshToken, expiresAt }` (IndexedDB only).
@@ -252,6 +253,7 @@ as a conflict; Keep mine then retries on the fresh head.
 Set `VITE_TEMPLATE_REPO_URL` (build time, see `.env.example`) to offer "Create
 from the CommitCV template" on `/connect`. It only links to the template for
 fork or use-template instructions and exists for attribution. Unset, the
-option is hidden. After signing in with GitHub it instead offers **Create my
-repo from the CommitCV template**, which generates a private repository
-through GitHub's template API.
+option is hidden. After signing in with GitHub the repo picker links to the
+template's `/generate` page (GitHub's "Use this template"). The user creates
+the repo there, adds it to the CommitCV app's installation, then signs in
+again to pick it. The official template is `https://github.com/CommitCV/resume`.

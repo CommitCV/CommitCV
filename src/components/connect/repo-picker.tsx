@@ -3,7 +3,6 @@ import Button from "@components/ui/button";
 import { connections, type IConnection } from "../../git/connections";
 import {
     connectionFromHandoff,
-    generateFromTemplate,
     listRepos,
     type Handoff,
     type RepoSummary,
@@ -80,22 +79,6 @@ export default function RepoPicker({ handoff, onConnected }: RepoPickerProps) {
             const result = await testConnection(draft);
             if (!result.ok) throw new Error(result.error);
             onConnected(await connections.add(draft));
-        } catch (reason) {
-            setError(reason instanceof Error ? reason.message : String(reason));
-            setBusy(false);
-        }
-    }
-
-    async function createFromTemplate() {
-        if (!template) return;
-        setBusy(true);
-        try {
-            const made = await generateFromTemplate(
-                handoff.accessToken,
-                template,
-                "my-resumes",
-            );
-            await connect(made.cloneUrl);
         } catch (reason) {
             setError(reason instanceof Error ? reason.message : String(reason));
             setBusy(false);
@@ -196,13 +179,17 @@ export default function RepoPicker({ handoff, onConnected }: RepoPickerProps) {
                 </Button>
             </div>
             {template && (
-                <Button
-                    type="button"
-                    variant="secondary"
-                    disabled={!ready}
-                    onClick={() => void createFromTemplate()}>
-                    Create my repo from the CommitCV template
-                </Button>
+                <p className="text-sm">
+                    No repository yet?{" "}
+                    <a
+                        href={`${TEMPLATE_REPO_URL}/generate`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-accent underline">
+                        Create one from the CommitCV template
+                    </a>
+                    , add it to the app, then come back and sign in again.
+                </p>
             )}
             {busy && <p className="text-sm">Working…</p>}
             {error && (

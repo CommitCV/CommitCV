@@ -1,6 +1,11 @@
 import git from "isomorphic-git";
 import type { FsClient, HttpClient } from "isomorphic-git";
-import { COMMITTER, type GitIdentity } from "./identity";
+import {
+    COMMITTER,
+    withCoAuthor,
+    withoutCoAuthor,
+    type GitIdentity,
+} from "./identity";
 import { mapGitError } from "./errors";
 import type { GitCredentials } from "./remote-config";
 
@@ -281,7 +286,7 @@ export class GitClient {
             ref: `refs/heads/${branch}`,
             parent: [parent],
             tree,
-            message: body ? `${message}\n\n${body}` : message,
+            message: withCoAuthor(body ? `${message}\n\n${body}` : message),
             author: { ...this.d.author, timestamp: ts, timezoneOffset: 0 },
             committer: { ...COMMITTER, timestamp: ts, timezoneOffset: 0 },
         });
@@ -427,7 +432,7 @@ export class GitClient {
             }
             commits.push({
                 sha: oid,
-                message: c.message.trimEnd(),
+                message: withoutCoAuthor(c.message),
                 author: { name: c.author.name, email: c.author.email },
                 committer: {
                     name: c.committer.name,
@@ -531,7 +536,7 @@ export class GitClient {
         // git.log counts depth before the path filter, so cap here too.
         return commits.slice(0, depth).map(({ oid: sha, commit: c }) => ({
             sha,
-            message: c.message.trimEnd(),
+            message: withoutCoAuthor(c.message),
             author: { name: c.author.name, email: c.author.email },
             committer: { name: c.committer.name, email: c.committer.email },
             date: new Date(c.author.timestamp * 1000),

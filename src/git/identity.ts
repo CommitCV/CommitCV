@@ -20,3 +20,32 @@ export function authorFor(profile?: Partial<GitIdentity>): GitIdentity {
         email: profile?.email?.trim() || FALLBACK_AUTHOR.email,
     };
 }
+
+const APP_ID = import.meta.env.VITE_GITHUB_APP_ID;
+const APP_SLUG = import.meta.env.VITE_GITHUB_APP_SLUG;
+
+/**
+ * Credited on every commit as a `Co-authored-by` trailer. With the GitHub
+ * App's id and slug set, it uses the app's noreply address, which GitHub
+ * links to the app's avatar and profile.
+ */
+export const APP_COAUTHOR: GitIdentity =
+    APP_ID && APP_SLUG
+        ? {
+              name: `${APP_SLUG}[bot]`,
+              email: `${APP_ID}+${APP_SLUG}[bot]@users.noreply.github.com`,
+          }
+        : COMMITTER;
+
+const TRAILER = `Co-authored-by: ${APP_COAUTHOR.name} <${APP_COAUTHOR.email}>`;
+
+export function withCoAuthor(message: string): string {
+    return `${message}\n\n${TRAILER}`;
+}
+
+/** The trailer is for the host; history and session views don't show it. */
+export function withoutCoAuthor(message: string): string {
+    return message.trimEnd().endsWith(TRAILER)
+        ? message.trimEnd().slice(0, -TRAILER.length).trimEnd()
+        : message.trimEnd();
+}

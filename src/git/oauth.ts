@@ -120,21 +120,6 @@ export async function listRepos(
     );
 }
 
-export async function generateFromTemplate(
-    token: string,
-    template: string,
-    name: string,
-): Promise<RepoSummary> {
-    return json<RepoSummary>(
-        await fetch("/api/oauth/github/generate-from-template", {
-            method: "POST",
-            headers: { ...bearer(token), "Content-Type": "application/json" },
-            body: JSON.stringify({ template, name }),
-        }),
-        "Could not create the repository.",
-    );
-}
-
 const SKEW_MS = 60_000;
 
 /**
