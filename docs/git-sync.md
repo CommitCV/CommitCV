@@ -111,7 +111,7 @@ refuses to offer sign-in without it.
 **GitHub is a GitHub App**, not an OAuth App, so access is limited to the
 repositories the user installs it on. Register it with callback URL
 `PUBLIC_URL/api/oauth/callback`, leave device flow off, and set
-`GITHUB_APP_SLUG` (the name in `github.com/apps/<slug>`) so the picker can
+`VITE_GITHUB_APP_SLUG` (the name in `github.com/apps/<slug>`) so the picker can
 link to "Choose which repositories CommitCV can access". User tokens expire
 after 8 hours and are renewed through the refresh token.
 

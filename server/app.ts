@@ -68,7 +68,7 @@ export function createApp(options: CreateAppOptions = {}): Hono {
             publicUrl: env.publicUrl,
             fetchFn: env.fetchFn,
             sessionSecret,
-            githubAppSlug: process.env.GITHUB_APP_SLUG,
+            githubAppSlug: process.env.VITE_GITHUB_APP_SLUG,
             apps: loadOAuthApps(process.env, {
                 clientId: env.githubClientId,
                 clientSecret: env.githubClientSecret,
