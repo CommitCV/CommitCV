@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { trackGit } from "../../analytics";
+import { trackGitFor } from "../../git/track";
 import type { ISessionInfo } from "@storage/git-resume-storage";
 import {
     continueSession,
@@ -33,7 +35,13 @@ export function useOpenGitResume(): {
 
     async function open(connectionId: string, path: string) {
         const result = await openGitResume(connectionId, path);
-        if (result.kind === "opened") return navigate("/editor");
+        if (result.kind === "opened") {
+            void trackGitFor(connectionId, "git resume opened", {});
+            return navigate("/editor");
+        }
+        trackGit("git session prompt shown", {
+            sessions: result.sessions.length === 1 ? "one" : "many",
+        });
         setPrompt({
             connectionId,
             path,
@@ -51,11 +59,16 @@ export function useOpenGitResume(): {
         setPrompt((p) => p && { ...p, ...next });
     const { connectionId, path } = prompt;
     // Runs a step; success opens the editor, failure stays in the dialog.
-    async function step(run: () => Promise<boolean | void>) {
+    async function step(
+        choice: "continue" | "squash" | "discard",
+        run: () => Promise<boolean | void>,
+    ) {
         patch({ busy: true, error: "" });
         try {
             const done = await run();
             if (done === false) return patch({ busy: false });
+            trackGit("git session prompt resolved", { choice });
+            void trackGitFor(connectionId, "git resume opened", {});
             setPrompt(null);
             navigate("/editor");
         } catch (reason) {
@@ -79,13 +92,18 @@ export function useOpenGitResume(): {
                 busy={prompt.busy}
                 error={prompt.error}
                 now={prompt.openedAt}
-                onCancel={() => setPrompt(null)}
+                onCancel={() => {
+                    trackGit("git session prompt resolved", {
+                        choice: "cancel",
+                    });
+                    setPrompt(null);
+                }}
                 onBack={() => patch({ view: { kind: "list" }, error: "" })}
                 onAskConfirm={(action, info) =>
                     patch({ view: { kind: "confirm", action, info } })
                 }
                 onContinue={(info) =>
-                    void step(async () => {
+                    void step("continue", async () => {
                         const next = await continueSession(
                             connectionId,
                             path,
@@ -105,17 +123,19 @@ export function useOpenGitResume(): {
                     })
                 }
                 onChoose={(info, choice) =>
-                    void step(() =>
+                    void step("continue", () =>
                         finishContinue(connectionId, path, info, choice),
                     )
                 }
                 onSquash={(info) =>
-                    void step(async () => {
+                    void step("squash", async () => {
                         await squashSession(connectionId, path, info);
                     })
                 }
                 onDiscard={(info) =>
-                    void step(() => discardSession(connectionId, path, info))
+                    void step("discard", () =>
+                        discardSession(connectionId, path, info),
+                    )
                 }
             />
         ),

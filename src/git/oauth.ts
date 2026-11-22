@@ -1,5 +1,7 @@
+import { trackGit } from "../analytics";
 import { connections, type IConnection } from "./connections";
 import type { GitProvider } from "./remote-config";
+import { whereOf } from "./track";
 
 export interface ProviderOption {
     provider: GitProvider;
@@ -179,8 +181,16 @@ export async function freshConnection(
             },
         };
         await connections.update(updated);
+        trackGit("git token refresh", {
+            ...whereOf(connection),
+            outcome: "ok",
+        });
         return updated;
     } catch {
+        trackGit("git token refresh", {
+            ...whereOf(connection),
+            outcome: "failed",
+        });
         return connection;
     }
 }

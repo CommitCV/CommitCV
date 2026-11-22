@@ -1,4 +1,6 @@
 export class GitError extends Error {
+    /** HTTP status of the failed request, when there was one. */
+    statusCode?: number;
     constructor(message: string) {
         super(message);
         this.name = "GitError";
@@ -53,8 +55,12 @@ export function mapGitError(err: unknown, secrets: string[]): GitError {
         secrets.filter(Boolean).reduce((a, t) => a.split(t).join("***"), s);
     const message = scrub(e?.message ?? String(err));
     const status = e?.data?.statusCode;
+    const withStatus = <T extends GitError>(error: T): T => {
+        if (typeof status === "number") error.statusCode = status;
+        return error;
+    };
     if (e?.code === "HttpError" && (status === 401 || status === 403)) {
-        return new GitAuthError();
+        return withStatus(new GitAuthError());
     }
     if (e?.code === "PushRejectedError") return new GitConflictError();
     if (
@@ -64,7 +70,9 @@ export function mapGitError(err: unknown, secrets: string[]): GitError {
             message,
         )
     ) {
-        return new GitNetworkError(scrub(`Network error: ${message}`));
+        return withStatus(
+            new GitNetworkError(scrub(`Network error: ${message}`)),
+        );
     }
-    return new GitError(message);
+    return withStatus(new GitError(message));
 }

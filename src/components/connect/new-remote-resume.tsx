@@ -5,6 +5,7 @@ import type { IResume } from "@resume/resume";
 import { today } from "@resume/dates";
 import Button from "@components/ui/button";
 import { useResumeStore } from "@store/useResumeStore";
+import { trackGitFor } from "../../git/track";
 
 const slug = (name: string) =>
     name
@@ -52,6 +53,7 @@ export default function NewRemoteResume({
             setError(saveError ?? "Unable to save to the repository.");
             return;
         }
+        void trackGitFor(connectionId, "git template created", {});
         navigate("/editor");
     }
 

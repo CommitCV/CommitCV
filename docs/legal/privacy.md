@@ -51,6 +51,8 @@ To understand how CommitCV is used and to fix problems, we collect anonymous eve
 - A resume was deleted
 - A resume was imported or exported
 
+**Git connection and sync events (coarse categories only):** when you connect a git host or sync a resume with it, we count steps such as connect started, sign-in returned, repository list loaded, connected or failed, resume opened, version committed or restored, history opened, and whether a conflict or sign-in prompt appeared and how it was resolved. Each event may carry only fixed categories: the provider (GitHub, GitLab, Bitbucket, Codeberg, Forgejo, Gitea or other), whether the host is public or self-hosted, the sign-in method, a coarse error class (such as auth, network or conflict) and a commit time range. Never the repository, owner, URL, host name, file name, commit message, token or error text. Any value outside these categories is dropped before sending. Autosaves are not tracked.
+
 **Technical context:**
 
 - Pages viewed
@@ -72,7 +74,7 @@ To understand how CommitCV is used and to fix problems, we collect anonymous eve
 
 We do not store full IP addresses in our analytics data, and we do not use analytics to build profiles of individual people.
 
-**How analytics are collected:** we use [Umami](https://umami.is), an open-source analytics tool that we host ourselves on our own server. Analytics data is never sent to a third-party analytics provider. Umami does not store your full IP address. The IP address is used only to work out your approximate country and to tell visits apart, and is then discarded. Our own code sends the usage events listed above (for example, "a resume was created") to Umami, and these events contain only the event name, never anything from your resume.
+**How analytics are collected:** we use [Umami](https://umami.is), an open-source analytics tool that we host ourselves on our own server. Analytics data is never sent to a third-party analytics provider. Umami does not store your full IP address. The IP address is used only to work out your approximate country and to tell visits apart, and is then discarded. Our own code sends the usage events listed above (for example, "a resume was created") to Umami, and the usage events contain only the event name, never anything from your resume, and git events carry only the categories above.
 
 **Unique visitor counting:** to count unique visitors, our analytics tool creates an anonymous identifier on our server from technical details of your visit. This identifier is not stored in your browser, is not linked to your name, email or resume content, and cannot be used to identify you.
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Button from "@components/ui/button";
+import { trackGit } from "../../analytics";
 import { connections, type IConnection } from "../../git/connections";
 import {
     connectionFromHandoff,
@@ -12,6 +13,7 @@ import {
 import { parseRepoUrl } from "../../git/remote-config";
 import { testConnection } from "../../git/test-connection";
 import { templateOffer } from "../../git/template";
+import { whereOfHost } from "../../git/track";
 
 const input =
     "mt-1 w-full rounded border border-border-light bg-light-100 px-2 py-1.5 font-normal outline-none focus:border-accent dark:border-border-dark dark:bg-dark-200";
@@ -44,18 +46,28 @@ export default function RepoPicker({
         let active = true;
         const timer = setTimeout(() => {
             listRepos(handoff, query).then(
-                (list) =>
-                    active &&
-                    (setRepos(list.repos),
-                    setInstallUrl(list.installUrl),
-                    setError("")),
-                (reason: unknown) =>
-                    active &&
+                (list) => {
+                    trackGit("git repo listed", {
+                        ...whereOfHost(handoff.host, handoff.provider),
+                        outcome: list.repos.length ? "found" : "empty",
+                    });
+                    if (!active) return;
+                    setRepos(list.repos);
+                    setInstallUrl(list.installUrl);
+                    setError("");
+                },
+                (reason: unknown) => {
+                    trackGit("git repo listed", {
+                        ...whereOfHost(handoff.host, handoff.provider),
+                        outcome: "failed",
+                    });
+                    if (!active) return;
                     setError(
                         reason instanceof Error
                             ? reason.message
                             : "Could not list repositories.",
-                    ),
+                    );
+                },
             );
         }, 200);
         return () => {
@@ -76,8 +88,20 @@ export default function RepoPicker({
                 email: email.trim(),
             });
             const result = await testConnection(draft);
-            if (!result.ok) throw new Error(result.error);
-            onConnected(await connections.add(draft));
+            if (!result.ok) {
+                trackGit("git connect failed", {
+                    ...whereOfHost(handoff.host, handoff.provider),
+                    method: "oauth",
+                    error_class: result.errorClass,
+                });
+                throw new Error(result.error);
+            }
+            const saved = await connections.add(draft);
+            trackGit("git connected", {
+                ...whereOfHost(handoff.host, handoff.provider),
+                method: "oauth",
+            });
+            onConnected(saved);
         } catch (reason) {
             setError(reason instanceof Error ? reason.message : String(reason));
             setBusy(false);

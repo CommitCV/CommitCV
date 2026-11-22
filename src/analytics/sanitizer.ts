@@ -1,5 +1,6 @@
 import {
     AnalyticsEvents,
+    GIT_EVENT_SCHEMA,
     type TAnalyticsEvent,
     type TEventPayload,
 } from "./types.ts";
@@ -60,6 +61,28 @@ export function sanitizeEventData(
                 value >= 0
             ) {
                 cleaned[key] = Math.round(value);
+            }
+        }
+        return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+    }
+
+    // Git events are fail-closed: only the event's own enum values pass, and
+    // an event without a schema sends nothing. No generic fallback.
+    if (eventName.startsWith("git ")) {
+        const schema = (
+            GIT_EVENT_SCHEMA as Record<
+                string,
+                Record<string, readonly string[]>
+            >
+        )[eventName];
+        if (!schema) return undefined;
+        const cleaned: Record<string, string> = {};
+        for (const [key, value] of Object.entries(data)) {
+            const allowed = Object.hasOwn(schema, key)
+                ? schema[key]
+                : undefined;
+            if (typeof value === "string" && allowed?.includes(value)) {
+                cleaned[key] = value;
             }
         }
         return Object.keys(cleaned).length > 0 ? cleaned : undefined;

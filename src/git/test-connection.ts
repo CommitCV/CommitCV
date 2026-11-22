@@ -1,3 +1,5 @@
+import { classifyGitError } from "../analytics";
+import type { TGitErrorClass } from "../analytics";
 import { GitAuthError, GitNetworkError } from "./errors";
 import type { IConnection } from "./connections";
 import { openConnection } from "./open-connection";
@@ -20,13 +22,19 @@ export function describeConnectError(err: unknown, token: string): string {
 /** Shallow-clones the repo to prove the URL and token work. */
 export async function testConnection(
     draft: Omit<IConnection, "id">,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<
+    { ok: true } | { ok: false; error: string; errorClass: TGitErrorClass }
+> {
     try {
         parseRepoUrl(draft.url);
         const { client, url } = await openConnection(draft);
         await client.cloneOrOpen(url);
         return { ok: true };
     } catch (err) {
-        return { ok: false, error: describeConnectError(err, draft.token) };
+        return {
+            ok: false,
+            error: describeConnectError(err, draft.token),
+            errorClass: classifyGitError(err),
+        };
     }
 }

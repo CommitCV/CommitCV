@@ -128,3 +128,59 @@ describe("sanitizePagePath", () => {
         expect(sanitizePagePath("/about")).toBe("/about");
     });
 });
+
+describe("git event allowlist", () => {
+    it("keeps only schema properties with allowed values", () => {
+        expect(
+            sanitizeEventData("git connected", {
+                provider: "github",
+                host_kind: "public",
+                method: "oauth",
+            }),
+        ).toEqual({ provider: "github", host_kind: "public", method: "oauth" });
+    });
+
+    it("strips repo names, URLs, hosts, paths and unknown properties", () => {
+        const result = sanitizeEventData("git connected", {
+            provider: "github",
+            repo: "ada/secret-cv",
+            url: "https://github.com/ada/secret-cv",
+            host: "git.corp.example",
+            path: "resumes/ada.json",
+            sha: "0123456789abcdef",
+            message: "update my resume",
+        });
+        expect(result).toEqual({ provider: "github" });
+    });
+
+    it("drops values outside the enum, even harmless-looking ones", () => {
+        const result = sanitizeEventData("git connect failed", {
+            provider: "git.corp.example",
+            host_kind: "public",
+            error_class: "Error: token ghp_abc was rejected",
+            method: 42,
+        });
+        expect(result).toEqual({ host_kind: "public" });
+    });
+
+    it("sends nothing for an unknown git event (fail closed)", () => {
+        expect(
+            sanitizeEventData("git something new", {
+                provider: "github",
+                repo: "ada/cv",
+            }),
+        ).toBeUndefined();
+    });
+
+    it("sends nothing when every property is rejected", () => {
+        expect(
+            sanitizeEventData("git history opened", { repo: "ada/cv" }),
+        ).toBeUndefined();
+    });
+
+    it("does not apply the generic fallback to git events", () => {
+        expect(
+            sanitizeEventData("git commit completed", { count: 3, ok: true }),
+        ).toBeUndefined();
+    });
+});

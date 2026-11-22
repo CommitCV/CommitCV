@@ -56,3 +56,128 @@ export type TEventPayload =
     | IJavaScriptErrorData
     | IPerformanceData
     | Record<string, string | number | boolean>;
+
+export type TGitProvider =
+    | "github"
+    | "gitlab"
+    | "bitbucket"
+    | "codeberg"
+    | "forgejo"
+    | "gitea"
+    | "other";
+export type TGitHostKind = "public" | "self_hosted";
+export type TGitMethod = "oauth" | "token";
+export type TGitErrorClass =
+    | "auth"
+    | "not_found"
+    | "conflict"
+    | "network"
+    | "rate_limited"
+    | "proxy"
+    | "server"
+    | "unknown";
+export type TGitDuration = "lt1s" | "1to5s" | "5to30s" | "gt30s";
+
+interface IGitWhere {
+    provider: TGitProvider;
+    host_kind: TGitHostKind;
+}
+
+/**
+ * Git connection and sync events and the only properties each may carry.
+ * Every value is a closed enum: no repo, owner, URL, host, path, file name,
+ * commit message, SHA, token or error text ever appears here.
+ */
+export interface IGitEventMap {
+    "git connect started": IGitWhere & { method: TGitMethod };
+    "git sign-in returned": {
+        provider?: TGitProvider;
+        outcome: "ok" | "failed";
+        error_class?: TGitErrorClass;
+    };
+    "git repo listed": IGitWhere & { outcome: "found" | "empty" | "failed" };
+    "git connected": IGitWhere & { method: TGitMethod };
+    "git connect failed": IGitWhere & {
+        method: TGitMethod;
+        error_class: TGitErrorClass;
+    };
+    "git template created": IGitWhere;
+    "git save failed": IGitWhere & { error_class: TGitErrorClass };
+    "git commit completed": IGitWhere & { duration_bucket: TGitDuration };
+    "git sync prompt shown": { kind: "conflict" | "diverged" };
+    "git sync prompt resolved": {
+        kind: "conflict" | "diverged";
+        choice: "mine" | "remote";
+    };
+    "git session prompt shown": { sessions: "one" | "many" };
+    "git session prompt resolved": {
+        choice: "continue" | "squash" | "discard" | "cancel";
+    };
+    "git auth expired": IGitWhere & { during: "commit" | "autosave" };
+    "git token refresh": IGitWhere & { outcome: "ok" | "failed" };
+    "git resume opened": IGitWhere;
+    "git history opened": IGitWhere;
+    "git version restored": IGitWhere;
+}
+
+export type TGitEvent = keyof IGitEventMap;
+
+const PROVIDERS = [
+    "github",
+    "gitlab",
+    "bitbucket",
+    "codeberg",
+    "forgejo",
+    "gitea",
+    "other",
+] as const;
+const HOST_KINDS = ["public", "self_hosted"] as const;
+const METHODS = ["oauth", "token"] as const;
+const ERROR_CLASSES = [
+    "auth",
+    "not_found",
+    "conflict",
+    "network",
+    "rate_limited",
+    "proxy",
+    "server",
+    "unknown",
+] as const;
+const DURATIONS = ["lt1s", "1to5s", "5to30s", "gt30s"] as const;
+const OUTCOME_OK = ["ok", "failed"] as const;
+const PROMPT_KINDS = ["conflict", "diverged"] as const;
+const CHOICES = ["mine", "remote"] as const;
+const WHERE = { provider: PROVIDERS, host_kind: HOST_KINDS } as const;
+
+/** Runtime allowlist; the type keeps it in step with `IGitEventMap`. */
+export const GIT_EVENT_SCHEMA: {
+    [E in TGitEvent]: { [K in keyof IGitEventMap[E]]-?: readonly string[] };
+} = {
+    "git connect started": { ...WHERE, method: METHODS },
+    "git sign-in returned": {
+        provider: PROVIDERS,
+        outcome: OUTCOME_OK,
+        error_class: ERROR_CLASSES,
+    },
+    "git repo listed": { ...WHERE, outcome: ["found", "empty", "failed"] },
+    "git connected": { ...WHERE, method: METHODS },
+    "git connect failed": {
+        ...WHERE,
+        method: METHODS,
+        error_class: ERROR_CLASSES,
+    },
+    "git template created": WHERE,
+    "git save failed": { ...WHERE, error_class: ERROR_CLASSES },
+    "git commit completed": { ...WHERE, duration_bucket: DURATIONS },
+    "git sync prompt shown": { kind: PROMPT_KINDS },
+    "git sync prompt resolved": { kind: PROMPT_KINDS, choice: CHOICES },
+    "git session prompt shown": { sessions: ["one", "many"] },
+    "git session prompt resolved": {
+        choice: ["continue", "squash", "discard", "cancel"],
+    },
+    "git auth expired": { ...WHERE, during: ["commit", "autosave"] },
+    "git token refresh": { ...WHERE, outcome: OUTCOME_OK },
+    "git resume opened": WHERE,
+    "git history opened": WHERE,
+    "git version restored": WHERE,
+};
