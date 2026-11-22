@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import Button from "@components/ui/button";
+import { buttonClass } from "@components/ui/button-class";
 import Card from "@components/ui/card";
 import ResumeLibrary from "./resume-library";
 import { Github, Upload } from "@components/ui/icons";
@@ -129,7 +130,7 @@ export default function ResumeSelector() {
                         </p>
                         <Link
                             to="/connect"
-                            className="inline-flex rounded bg-accent px-3 py-1.5 text-sm font-semibold text-light-50 hover:opacity-90 dark:text-dark-50">
+                            className={buttonClass("primary", "sm")}>
                             Connect a repository
                         </Link>
                     </section>

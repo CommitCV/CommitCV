@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { buttonClass } from "@components/ui/button-class";
 import RemoteFiles from "@components/connect/remote-files";
 import { useRemoteEntries } from "@components/connect/use-remote-entries";
 import { connections, type IConnection } from "../../git/connections";
@@ -50,7 +51,7 @@ export default function RemoteResumes() {
                 </h2>
                 <Link
                     to="/connect"
-                    className="rounded-md border border-border-light px-3 py-1.5 text-sm font-semibold hover:bg-light-200 dark:border-border-dark dark:hover:bg-dark-100">
+                    className={buttonClass("secondary", "sm")}>
                     Connect a repository
                 </Link>
             </div>

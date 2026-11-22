@@ -4,6 +4,7 @@ import { useShallow } from "zustand/react/shallow";
 import type { ISection, TSectionType } from "@resume/resume";
 import { useResumeStore } from "@store/useResumeStore";
 import Button from "@components/ui/button";
+import { buttonClass } from "@components/ui/button-class";
 import {
     AlignJustify,
     ChevronDown,
@@ -217,7 +218,7 @@ export default function SectionEditor({
                                 event.currentTarget.getBoundingClientRect();
                             setLayoutMenu({ x: rect.left, y: rect.bottom + 4 });
                         }}
-                        className="mr-1 flex items-center gap-1 rounded border border-border-light bg-light-100 px-1.5 py-1 text-light-800 hover:bg-light-300 dark:border-border-dark dark:bg-dark-200 dark:text-dark-800 dark:hover:bg-dark-300">
+                        className={buttonClass("secondary", "sm", "gap-1")}>
                         <layout.Icon className="h-3.5 w-3.5" />
                         <ChevronDown className="h-2.5 w-2.5" />
                     </button>
@@ -227,7 +228,7 @@ export default function SectionEditor({
                     aria-label={section.title || "Untitled section"}
                     aria-expanded={expanded}
                     onClick={() => setExpanded(path, !expanded)}
-                    className="p-1">
+                    className={buttonClass("ghost", "icon")}>
                     <ChevronDown
                         className={`h-4 w-4 text-light-700 transition-transform dark:text-dark-700 ${
                             expanded ? "rotate-180" : ""
@@ -237,9 +238,9 @@ export default function SectionEditor({
                 <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     aria-label={`Remove ${section.title || "nested section"}`}
-                    className="px-1.5 hover:text-red-600 dark:hover:text-red-500"
+                    className="hover:text-red-600 dark:hover:text-red-500"
                     onClick={() => removeSection(path)}>
                     <Trash className="h-4 w-4" />
                 </Button>

@@ -110,9 +110,9 @@ export default function ResumeLibrary({ compact = false }: ResumeLibraryProps) {
                         <Button
                             type="button"
                             variant="ghost"
-                            size="sm"
+                            size="icon"
                             aria-label={`Delete ${entry.filename}`}
-                            className="px-1.5 text-red-600"
+                            className="text-red-600"
                             onClick={() => void deleteResume(entry.id)}>
                             <Trash className="h-4 w-4" />
                         </Button>

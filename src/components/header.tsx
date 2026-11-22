@@ -1,10 +1,10 @@
 import { NavLink } from "react-router";
+import { buttonClass } from "@components/ui/button-class";
 import Logo from "@components/ui/logo";
 import ThemeSwitcher from "@components/theme-switcher";
 import { useGitHubSession } from "@hooks/useGitHubSession";
 
-const authButtonClass =
-    "inline-flex items-center justify-center rounded-md bg-light-200 px-5 py-2 text-base font-semibold text-light-950 hover:opacity-90 dark:bg-dark-100 dark:text-dark-950";
+const authButtonClass = buttonClass("secondary", "sm");
 
 export default function Header() {
     const { login, signOut } = useGitHubSession();
@@ -21,7 +21,11 @@ export default function Header() {
                 <div className="flex items-center gap-4">
                     <NavLink
                         to="/library"
-                        className="hidden rounded-md border border-border-light px-3 py-1.5 text-sm font-semibold text-light-950 hover:bg-light-200 dark:border-border-dark dark:text-dark-950 dark:hover:bg-dark-100 sm:inline-flex">
+                        className={buttonClass(
+                            "ghost",
+                            "sm",
+                            "hidden font-semibold sm:inline-flex",
+                        )}>
                         Resume Library
                     </NavLink>
                     {login === null ? (

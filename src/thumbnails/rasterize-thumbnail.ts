@@ -1,8 +1,9 @@
 import { splitSvgPages } from "@typst/split-svg-pages";
+import { encodeThumbnail } from "./encode-thumbnail";
 
 const WIDTH = 320;
 
-/** Draws the first page of a Typst SVG to a PNG. Needs a browser DOM. */
+/** Draws the first page of a Typst SVG to a WebP (JPEG where unsupported). Needs a browser DOM. */
 export async function rasterizeFirstPage(svg: string): Promise<Blob> {
     const [page] = splitSvgPages(svg);
     // Typst embeds a script with raw `&&` (invalid XML, so the image won't
@@ -27,12 +28,7 @@ export async function rasterizeFirstPage(svg: string): Promise<Blob> {
         context.fillStyle = "#fff";
         context.fillRect(0, 0, canvas.width, canvas.height);
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        return await new Promise<Blob>((resolve, reject) =>
-            canvas.toBlob(
-                (blob) => (blob ? resolve(blob) : reject(new Error("no blob"))),
-                "image/png",
-            ),
-        );
+        return await encodeThumbnail(canvas);
     } finally {
         URL.revokeObjectURL(url);
     }

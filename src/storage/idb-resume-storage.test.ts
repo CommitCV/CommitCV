@@ -2,6 +2,7 @@ import { IDBFactory } from "fake-indexeddb";
 import { describe, expect, it } from "vitest";
 import type { IResume } from "@resume/resume";
 import { IdbResumeStorage } from "./idb-resume-storage";
+import { openDb, RESUMES, request } from "./db";
 import type { IResumeEntry, IResumeStorage } from "./resume-storage";
 
 function makeResume(filename: string, note: string): IResume {
@@ -191,5 +192,74 @@ describe("IdbResumeStorage", () => {
         expect((await storage.load("old")).filename).toBe("old");
         await storage.saveThumbnail("old", "h", new Blob(["x"]));
         expect((await storage.loadThumbnail("old"))?.hash).toBe("h");
+    });
+
+    describe("compression", () => {
+        async function rawRecord(factory: IDBFactory, id: string) {
+            const db = await openDb(factory);
+            return request<Record<string, unknown> | undefined>(
+                db.transaction(RESUMES).objectStore(RESUMES).get(id),
+            );
+        }
+
+        it("stores a gzipped resume with its listing fields alongside", async () => {
+            const factory = new IDBFactory();
+            const resume = makeResume("one", "text ".repeat(200));
+            await new IdbResumeStorage(factory).save("a", resume);
+
+            const record = await rawRecord(factory, "a");
+            expect(record).toMatchObject({ filename: "one", date: "02-26-26" });
+            expect(record?.resume).toBeUndefined();
+            const data = record?.data as Uint8Array;
+            expect(data.byteLength).toBeLessThan(
+                JSON.stringify(resume).length / 2,
+            );
+            expect(data[0]).toBe(0x1f); // gzip magic
+            expect(data[1]).toBe(0x8b);
+        });
+
+        it("reads a record saved before compression and compresses it on next save", async () => {
+            const factory = new IDBFactory();
+            const db = await openDb(factory);
+            const tx = db.transaction(RESUMES, "readwrite");
+            tx.objectStore(RESUMES).put({
+                id: "old",
+                resume: makeResume("plain", "x"),
+                updatedAt: 5,
+            });
+            await new Promise((r) => (tx.oncomplete = r));
+
+            const storage = new IdbResumeStorage(factory);
+            expect((await storage.list())[0]).toMatchObject({
+                id: "old",
+                filename: "plain",
+                updatedAt: 5,
+            });
+            expect((await storage.load("old")).filename).toBe("plain");
+
+            await storage.save("old", makeResume("plain", "y"));
+            const record = await rawRecord(factory, "old");
+            expect(record?.resume).toBeUndefined();
+            expect(record?.data).toBeInstanceOf(Uint8Array);
+        });
+    });
+
+    it("lists and loads a resume whose save wasn't awaited", async () => {
+        const storage = new IdbResumeStorage(new IDBFactory());
+        void storage.save("a", makeResume("one", "first"));
+        expect((await storage.list()).map((e) => e.id)).toEqual(["a"]);
+        void storage.save("a", makeResume("two", "second"));
+        void storage.save("a", makeResume("three", "third"));
+        expect((await storage.load("a")).filename).toBe("three");
+    });
+
+    it("holds 1000 resumes", async () => {
+        const storage = new IdbResumeStorage(new IDBFactory());
+        for (let i = 0; i < 1000; i++) {
+            await storage.save(`id${i}`, makeResume(`r${i}`, `note ${i}`));
+        }
+        const entries = await storage.list();
+        expect(entries).toHaveLength(1000);
+        expect((await storage.load("id999")).filename).toBe("r999");
     });
 });

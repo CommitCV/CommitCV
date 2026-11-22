@@ -1,5 +1,6 @@
 import { faMoon, faSun } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { buttonClass } from "@components/ui/button-class";
 import { useTheme } from "@hooks/useTheme";
 
 export default function ThemeSwitcher() {
@@ -13,11 +14,15 @@ export default function ThemeSwitcher() {
         <button
             type="button"
             onClick={toggle}
-            className="p-2 rounded-full text-light-700 dark:text-dark-700 hover:bg-light-200 dark:hover:bg-dark-100 transition-colors"
+            className={buttonClass(
+                "ghost",
+                "icon",
+                "rounded-full text-light-700 dark:text-dark-700",
+            )}
             aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}>
             <FontAwesomeIcon
                 icon={theme === "dark" ? faSun : faMoon}
-                className="h-[22px] w-[22px]"
+                className="h-5 w-5"
             />
         </button>
     );
