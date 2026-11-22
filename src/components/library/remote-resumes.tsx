@@ -50,7 +50,7 @@ export default function RemoteResumes() {
                     Remote repositories
                 </h2>
                 <Link
-                    to="/connect"
+                    to="/signin"
                     className={buttonClass("secondary", "sm")}>
                     Connect a repository
                 </Link>

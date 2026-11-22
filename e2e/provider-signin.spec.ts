@@ -101,6 +101,36 @@ test.describe("sign in with a git host", () => {
         expect(params.get("host")).toBe("git.example.org");
     });
 
+    test("the sign-in page offers only git hosts, then lands in the library", async ({
+        page,
+    }) => {
+        await fakeGit(page);
+        await mockOAuth(page);
+        await page.goto("/signin");
+        await expect(
+            page.getByRole("heading", { name: "Sign in", exact: true }),
+        ).toBeVisible();
+        await expect(
+            page.getByRole("button", { name: "Sign in with GitHub" }),
+        ).toBeVisible();
+        await expect(page.getByLabel("Repository URL")).toHaveCount(0);
+
+        const login = page.waitForRequest(/\/api\/oauth\/login\?/);
+        await page.route("**/api/oauth/login*", (route) => route.abort());
+        await page.getByRole("button", { name: "Sign in with GitHub" }).click();
+        const params = new URL((await login).url()).searchParams;
+        expect(params.get("return")).toBe("/signin");
+
+        await page.unroute("**/api/oauth/login*");
+        await page.goto("/signin?signed_in=github");
+        const panel = page.getByRole("region", {
+            name: "Sign in with a git host",
+        });
+        await panel.getByLabel("Author email").fill("ada@example.com");
+        await page.getByRole("button", { name: "Use ada/cv" }).click();
+        await expect(page).toHaveURL(/\/library$/);
+    });
+
     test("hides sign-in when nothing is configured", async ({ page }) => {
         await mockOAuth(page, { providers: [] });
         await page.goto("/connect");

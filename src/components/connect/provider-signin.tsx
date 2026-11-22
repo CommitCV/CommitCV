@@ -28,7 +28,13 @@ const ICONS = {
 const select =
     "rounded border border-border-light bg-light-100 px-2 py-1.5 text-sm dark:border-border-dark dark:bg-dark-200";
 
-function ProviderButton({ option }: { option: ProviderOption }) {
+function ProviderButton({
+    option,
+    returnTo,
+}: {
+    option: ProviderOption;
+    returnTo?: string;
+}) {
     const [host, setHost] = useState(option.hosts[0]);
     const codeberg = host === "codeberg.org";
     const name = codeberg
@@ -43,7 +49,9 @@ function ProviderButton({ option }: { option: ProviderOption }) {
                 type="button"
                 variant="secondary"
                 onClick={() =>
-                    window.location.assign(loginUrl(option.provider, host))
+                    window.location.assign(
+                        loginUrl(option.provider, host, returnTo),
+                    )
                 }>
                 {icon && (
                     <FontAwesomeIcon
@@ -85,10 +93,17 @@ const initialParams = () => new URLSearchParams(window.location.search);
  */
 export default function ProviderSignin({
     onConnected,
+    returnTo,
+    standalone = false,
 }: {
     onConnected: (connection: IConnection) => void;
+    /** Page the provider returns to; defaults to `/connect`. */
+    returnTo?: string;
+    /** The sign-in page itself: always shown, without the paste-a-URL hint. */
+    standalone?: boolean;
 }) {
     const [providers, setProviders] = useState<ProviderOption[]>([]);
+    const [loaded, setLoaded] = useState(false);
     const [params] = useState(initialParams);
     const [handoff, setHandoff] = useState<Handoff>();
     const [error, setError] = useState(() => {
@@ -98,7 +113,11 @@ export default function ProviderSignin({
 
     useEffect(() => {
         let active = true;
-        void fetchProviders().then((list) => active && setProviders(list));
+        void fetchProviders().then((list) => {
+            if (!active) return;
+            setProviders(list);
+            setLoaded(true);
+        });
         if (params.get("signed_in")) {
             takeHandoff().then(
                 (h) => active && setHandoff(h),
@@ -119,7 +138,7 @@ export default function ProviderSignin({
         };
     }, [params]);
 
-    if (!providers.length && !handoff && !error) return null;
+    if (!standalone && !providers.length && !handoff && !error) return null;
     return (
         <section
             aria-label="Sign in with a git host"
@@ -148,12 +167,18 @@ export default function ProviderSignin({
                         <ProviderButton
                             key={option.provider}
                             option={option}
+                            returnTo={returnTo}
                         />
                     ))}
+                    {standalone && loaded && !providers.length && (
+                        <p className="text-sm text-light-700 dark:text-dark-700">
+                            No git hosts are set up on this server.
+                        </p>
+                    )}
                     <p className="text-xs text-light-700 dark:text-dark-700">
-                        Or paste a repository URL and access token below. The
-                        sign-in token is handed to this browser once and never
-                        stored on the server.
+                        {standalone
+                            ? "The sign-in token is handed to this browser once and never stored on the server."
+                            : "Or paste a repository URL and access token below. The sign-in token is handed to this browser once and never stored on the server."}
                     </p>
                 </>
             )}

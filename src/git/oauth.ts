@@ -56,8 +56,12 @@ export function signinErrorMessage(code: string): string {
     return SIGNIN_ERRORS[code] ?? "Sign-in failed. Try again.";
 }
 
-export function loginUrl(provider: string, host: string): string {
-    const params = new URLSearchParams({ provider, host, return: "/connect" });
+export function loginUrl(
+    provider: string,
+    host: string,
+    returnTo = "/connect",
+): string {
+    const params = new URLSearchParams({ provider, host, return: returnTo });
     return `/api/oauth/login?${params}`;
 }
 

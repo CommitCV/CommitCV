@@ -261,3 +261,11 @@ option is hidden. After signing in with GitHub the repo picker links to the
 template's `/generate` page (GitHub's "Use this template"). The user creates
 the repo there, adds it to the CommitCV app's installation, then signs in
 again to pick it. The official template is `https://github.com/CommitCV/resume`.
+
+## Sign-in page
+
+`/signin` is the front door: it lists only the git hosts the server offers,
+then the repo picker, then sends the user to `/library`. Entry points (the
+library, the resume selector, "Reconnect" and the header's Sign In) link
+there. `/connect` still exists for pasting an access token and managing saved
+connections.
