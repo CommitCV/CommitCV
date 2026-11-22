@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Header from "@components/header";
 import Footer from "@components/footer";
+import ProviderSignin from "@components/connect/provider-signin";
 import ConnectForm from "@components/connect/connect-form";
 import ConnectionList from "@components/connect/connection-list";
 import NewRemoteResume from "@components/connect/new-remote-resume";
@@ -59,6 +60,12 @@ export default function Connect() {
                 </p>
                 <div className="grid gap-6 lg:grid-cols-2">
                     <div className="space-y-6">
+                        <ProviderSignin
+                            onConnected={(connection) => {
+                                void refresh();
+                                setSelectedId(connection.id);
+                            }}
+                        />
                         <section className="rounded-lg border border-border-light p-4 dark:border-border-dark">
                             <ConnectForm
                                 onConnected={(connection) => {

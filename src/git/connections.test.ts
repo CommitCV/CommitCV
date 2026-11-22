@@ -1,5 +1,6 @@
 import { IDBFactory } from "fake-indexeddb";
 import { describe, expect, it } from "vitest";
+import { openDb } from "../storage/db";
 import { IdbResumeStorage } from "../storage/idb-resume-storage";
 import { ConnectionStore, type TNewConnection } from "./connections";
 
@@ -75,5 +76,68 @@ describe("ConnectionStore", () => {
 
         await expect(store.list()).rejects.toThrow(/blocked/);
         expect(await store.list()).toEqual([]);
+    });
+});
+
+describe("ConnectionStore encryption", () => {
+    const withOauth: TNewConnection = {
+        ...draft,
+        oauth: {
+            host: "gitlab.com",
+            refreshToken: "refresh_secret",
+            expiresAt: 5,
+        },
+    };
+
+    async function rawRows(factory: IDBFactory): Promise<unknown[]> {
+        const db = await openDb(factory);
+        return new Promise((resolve, reject) => {
+            const req = db
+                .transaction("connections")
+                .objectStore("connections")
+                .getAll();
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    it("never writes the access or refresh token as plain text", async () => {
+        const factory = new IDBFactory();
+        const store = new ConnectionStore(factory);
+        const saved = await store.add(withOauth);
+        const raw = await rawRows(factory);
+        expect(JSON.stringify(raw)).not.toContain("ghp_secret");
+        expect(JSON.stringify(raw)).not.toContain("refresh_secret");
+        expect(await store.get(saved.id)).toEqual({
+            ...withOauth,
+            id: saved.id,
+        });
+    });
+
+    it("reads a legacy plaintext record and seals it on the next update", async () => {
+        const factory = new IDBFactory();
+        const db = await openDb(factory);
+        await new Promise<void>((resolve, reject) => {
+            const tx = db.transaction("connections", "readwrite");
+            tx.objectStore("connections").put({ ...draft, id: "old" });
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+        const store = new ConnectionStore(factory);
+        const old = await store.get("old");
+        expect(old?.token).toBe("ghp_secret");
+        await store.update(old!);
+        expect(JSON.stringify(await rawRows(factory))).not.toContain(
+            "ghp_secret",
+        );
+        expect((await store.get("old"))?.token).toBe("ghp_secret");
+    });
+
+    it("shares one key across store instances", async () => {
+        const factory = new IDBFactory();
+        const saved = await new ConnectionStore(factory).add(draft);
+        expect((await new ConnectionStore(factory).get(saved.id))?.token).toBe(
+            "ghp_secret",
+        );
     });
 });

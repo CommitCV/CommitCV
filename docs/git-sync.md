@@ -62,10 +62,16 @@ connection. A saved connection's repo lists its root `.json` files; opening
 one loads it into the editor, and a new resume can be created and committed
 straight into the repo. The library page lists every connected repo.
 
-Tokens are stored only in IndexedDB (`connections` store, database version 4,
+Tokens are stored only in IndexedDB (`connections` store, database version 5,
 shared opener in `src/storage/db.ts`). They never go in localStorage, the
 persisted draft or the resume source, which is
 `{ kind: "git", connectionId, path }`. Removing a connection deletes its token.
+
+Access and refresh tokens are AES-GCM encrypted at rest with a non-extractable
+key kept in the `keys` store, so they are not readable as plain text on disk or
+in devtools. That does not stop a script running on the origin, so the server
+also sends a strict `Content-Security-Policy` on HTML responses
+(`server/csp.ts`): only our own code and the `VITE_UMAMI_URL` origin may run.
 
 Create a token with permission to read and write repository contents:
 
@@ -73,6 +79,67 @@ Create a token with permission to read and write repository contents:
 - GitLab: `read_repository` and `write_repository` scopes.
 - Bitbucket: repository access token with Repositories: Write.
 - Gitea, Forgejo, Codeberg: application token with repository read and write.
+
+## Sign in with a git host
+
+Instead of pasting a token, `/connect` can offer **Sign in with GitHub / GitLab /
+Bitbucket / Gitea / Forgejo**. A provider appears only when the operator has
+configured an OAuth app for it (`GET /api/oauth/providers` lists the
+configured providers and instance hosts, never secrets). The flow is the
+authorization code grant with PKCE where the provider supports it (not
+Bitbucket). After signing in the page shows a repo picker (first 100 repos
+with a search box, or paste a URL), then runs the usual test and save. The
+saved connection is the same record as a pasted token, so git traffic is
+unchanged. The connection is created only once a repo is chosen, because it
+is keyed on the repo URL.
+
+### Operator setup
+
+Register an OAuth app per provider with redirect URI
+`PUBLIC_URL/api/oauth/callback`, then set the env vars (see `.env.example`).
+Set `SESSION_SECRET` (HMAC key for the signed state cookie); production
+refuses to offer sign-in without it.
+
+| Provider  | Env                                                                       | Scopes                                                                             |
+| --------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| GitHub    | `GITHUB_CLIENT_ID/SECRET` (or `OAUTH_GITHUB_*`)                           | `repo read:user`                                                                   |
+| GitLab    | `OAUTH_GITLAB_CLIENT_ID/SECRET`, `OAUTH_GITLAB_INSTANCES` for self-hosted | `read_api read_user read_repository write_repository`                              |
+| Bitbucket | `OAUTH_BITBUCKET_CLIENT_ID/SECRET`                                        | Set on the OAuth consumer: Account read, Repositories write. Needs a callback URL. |
+| Gitea     | `OAUTH_GITEA_INSTANCES`                                                   | `write:repository read:user`                                                       |
+| Forgejo   | `OAUTH_FORGEJO_INSTANCES` (Codeberg is Forgejo)                           | `write:repository read:user`                                                       |
+
+`OAUTH_<PROVIDER>_INSTANCES` is JSON mapping a host to its app, for example
+`{"codeberg.org":{"clientId":"...","clientSecret":"..."}}`.
+
+**Self-hosted limitation:** an OAuth app is registered per instance, so only
+instances the operator configured can be signed in to. For any other instance
+(and any provider without credentials) use the token flow above.
+
+### Privacy
+
+The server sees the token transiently, during the code exchange and the
+handoff, and never stores or logs it. The callback keeps the token in an
+in-memory map under a random single-use nonce for 60 seconds (capped at 1000
+entries) and redirects to `/connect?signed_in=<provider>` with the nonce in a
+short-lived httpOnly cookie. The page POSTs `/api/oauth/handoff` (same-origin
+only, `Cache-Control: no-store`), receives the token once and the entry is
+deleted. The token never appears in a URL or persistent cookie. The state and
+PKCE verifier live in a signed, httpOnly, SameSite=Lax cookie (Secure on an
+https `PUBLIC_URL`); `redirect_uri` is built from `PUBLIC_URL` and the return
+path must be a same-origin relative path.
+
+Two small routes exist because provider APIs send no CORS headers. Both take
+the token in the `Authorization` header, only talk to configured hosts and
+store nothing: `GET /api/oauth/repos?provider&host&q` and, for GitHub,
+`POST /api/oauth/github/generate-from-template` (creates a private repo).
+
+GitLab, Bitbucket, Gitea and Forgejo issue expiring tokens. The connection
+then also keeps `oauth: { host, refreshToken, expiresAt }` (IndexedDB only).
+When a saved connection is opened with an expired token, the client calls
+`POST /api/oauth/refresh` (the client secret stays on the server, nothing is
+stored) and saves the new token; if that fails the old token is used and the
+git call reports an auth error, so the user reconnects. A mid-session auth
+failure is not retried yet.
 
 ## Storage adapter
 
@@ -178,4 +245,6 @@ as a conflict; Keep mine then retries on the fresh head.
 Set `VITE_TEMPLATE_REPO_URL` (build time, see `.env.example`) to offer "Create
 from the CommitCV template" on `/connect`. It only links to the template for
 fork or use-template instructions and exists for attribution. Unset, the
-option is hidden.
+option is hidden. After signing in with GitHub it instead offers **Create my
+repo from the CommitCV template**, which generates a private repository
+through GitHub's template API.

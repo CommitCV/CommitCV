@@ -3,7 +3,8 @@ export const RESUMES = "resumes";
 export const THUMBNAILS = "thumbnails";
 export const CONNECTIONS = "connections";
 export const SESSIONS = "sessions";
-const DB_VERSION = 4;
+export const KEYS = "keys";
+const DB_VERSION = 5;
 
 /**
  * One opener for the shared database so every store upgrades together. When
@@ -18,7 +19,13 @@ export function openDb(
         const req = (factory ?? indexedDB).open(DB_NAME, DB_VERSION);
         // Older databases already have some stores; only add what's missing.
         req.onupgradeneeded = () => {
-            for (const name of [RESUMES, THUMBNAILS, CONNECTIONS, SESSIONS]) {
+            for (const name of [
+                RESUMES,
+                THUMBNAILS,
+                CONNECTIONS,
+                SESSIONS,
+                KEYS,
+            ]) {
                 if (!req.result.objectStoreNames.contains(name)) {
                     req.result.createObjectStore(name, { keyPath: "id" });
                 }
