@@ -13,13 +13,24 @@ V3 is a ground-up rewrite on Vite, React and Tailwind CSS v4.
 - Live preview and PDF export compiled in the browser with Typst WASM. Resume
   text is never sent to a rendering service.
 - JSON and standalone Typst export.
-- Local library backed by browser `localStorage`, with an unsaved draft that
-  survives a reload.
-- GitHub storage: sign in with OAuth, then save resumes as JSON files in a
-  repository you choose. A save over a file that changed on GitHub is rejected
-  instead of overwriting it.
-- Production server that serves the app and proxies the GitHub API. The access
-  token stays in an HTTP-only cookie.
+- Library page with local resumes and, for each connected git repository, its
+  resumes as cards with a live preview. Cards have an actions menu, and a
+  repository can be removed from its header.
+- Local library stored in IndexedDB, with gzip-compressed resumes, cached
+  thumbnails and a request for persistent storage. Resumes saved by earlier
+  builds in `localStorage` move over on first use. An unsaved draft survives a
+  reload.
+- Git sync: connect any https git repository, or sign in with GitHub, GitLab,
+  Bitbucket or Codeberg, and keep resumes as JSON files in it. Tokens stay in
+  your browser. Commit messages describe what changed in the resume.
+- Autosave to a session branch, with a squashed commit to the default branch on
+  save (`Mod+S`). Reopening a resume offers to continue a saved session, and
+  warns when the session and the repository have diverged. Changes from another
+  device are merged instead of overwritten, and a true conflict is reported.
+- History: list earlier versions of a resume and restore one.
+- A git proxy in the production server forwards git requests so the browser can
+  reach hosts without CORS. It only allows public https hosts, with limits on
+  body size, response size and time. It never stores tokens.
 - Docker image, container smoke test and MkDocs documentation site.
 - Unit tests (Vitest) and end-to-end tests (Playwright).
 - Undo and redo from the editor toolbar or with keyboard shortcuts.
