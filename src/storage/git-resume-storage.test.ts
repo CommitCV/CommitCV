@@ -77,6 +77,38 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
         await expect(s.load("missing.json")).rejects.toThrow(/not found/);
     });
 
+    it("sends credentials with the first request", async () => {
+        const seen: Record<string, string>[] = [];
+        const inner = http;
+        http = {
+            request: (r) => {
+                seen.push(r.headers ?? {});
+                return inner.request(r);
+            },
+        };
+        await storage().list();
+        expect(seen.length).toBeGreaterThan(0);
+        expect(seen[0].Authorization).toMatch(/^Basic /);
+    });
+
+    it("reuses a fresh fetch for reads, and always fetches for a save", async () => {
+        let requests = 0;
+        const inner = http;
+        http = {
+            request: (r) => {
+                if (r.url.includes("info/refs")) requests++;
+                return inner.request(r);
+            },
+        };
+        const s = storage();
+        await s.list();
+        const afterFirst = requests;
+        await s.load("a.json");
+        expect(requests).toBe(afterFirst);
+        await s.save("a.json", resume("a", "again"));
+        expect(requests).toBeGreaterThan(afterFirst);
+    });
+
     it("commits to the default branch with the message and pushes", async () => {
         const s = storage();
         await s.save("b.json", resume("b"), "add b");
