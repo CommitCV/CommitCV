@@ -64,6 +64,7 @@ export function useCardMenu({
                     label: "Delete",
                     onSelect: () => setConfirming(true),
                     separatorBefore: true,
+                    danger: true,
                 },
             ]}
         />

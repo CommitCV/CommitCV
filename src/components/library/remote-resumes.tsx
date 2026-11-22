@@ -127,6 +127,7 @@ function Repo({
                                 type="button"
                                 size="sm"
                                 variant="secondary"
+                                className="text-red-600"
                                 aria-label={`Confirm remove ${path}`}
                                 onClick={() => onRemove(connection.id)}>
                                 Remove
