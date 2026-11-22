@@ -74,7 +74,11 @@ changed by hand.
 
 ## Saving and exporting
 
-Save creates a local resume when the draft has no source. A draft loaded from
-GitHub keeps its repository and path. Download PDF is the main export; the
+Local resumes autosave silently about a second after each change, and when the
+page is hidden or the editor is left, so there is no save button or status.
+A new resume joins the library on its first edit, not when it is opened. If a
+local save fails, the toolbar shows "Couldn't save locally" and the next edit
+retries. A draft loaded from GitHub keeps its repository and path, and only
+those remote resumes show Commit Changes and the saved/unsaved status. Download PDF is the main export; the
 menu beside it also exports JSON or standalone Typst. No export sends resume
 content to a rendering service.

@@ -6,6 +6,7 @@ import Header from "@components/header";
 import SectionEditor from "@components/editor/section-editor";
 import ResumePreview from "@components/editor/resume-preview";
 import { useEffect, useState } from "react";
+import { startLocalAutosave } from "@store/local-autosave";
 import { useResumeStore } from "@store/useResumeStore";
 import { trackResumeCreated } from "@analytics/tracker";
 
@@ -22,6 +23,9 @@ export default function Editor() {
         setFitMode(null);
         setZoom(next);
     }
+
+    // Unmounting flushes, so leaving for the library never drops an edit.
+    useEffect(() => startLocalAutosave(useResumeStore), []);
 
     useEffect(() => {
         if (!resume) {

@@ -207,7 +207,8 @@ export const useResumeStore = create<IResumeStore>()(
                         date: today(),
                     },
                     source: null,
-                    saveState: "dirty",
+                    // Untouched until the first edit, so autosave leaves it out of the library.
+                    saveState: "clean",
                     saveError: null,
                     expanded: {},
                     ...clearedHistory,
@@ -350,7 +351,12 @@ export const useResumeStore = create<IResumeStore>()(
                     const resume = get().resume!;
                     await storageFor(source).save(id, resume, message);
                     if (source.kind === "local") scheduleThumbnail(id, resume);
-                    set({ saveState: "clean" });
+                    const now = get();
+                    // A load swapped the document; its state is not ours to set.
+                    if (now.source !== source) return;
+                    set({
+                        saveState: now.resume === resume ? "clean" : "dirty",
+                    });
                 } catch (err) {
                     set({
                         saveState: "error",
