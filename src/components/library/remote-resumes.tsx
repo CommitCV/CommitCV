@@ -13,6 +13,7 @@ import { resumeStorages } from "@store/useResumeStore";
 import { exportResume, type ExportKind } from "@resume/export-resume";
 import type { IResume } from "@resume/resume";
 import { connections, type IConnection } from "../../git/connections";
+import { hasUnsyncedEdits } from "../../git/sessions";
 import { parseRepoUrl } from "../../git/remote-config";
 import RemoteResumeCard from "./remote-resume-card";
 
@@ -39,6 +40,9 @@ function Repo({
     const [openError, setOpenError] = useState("");
     const [resumes, setResumes] = useState<Map<string, IResume>>();
     const { path, host } = repoOf(connection);
+    const unsynced = Object.values(found.sessions ?? {}).some(
+        (s) => s.local && hasUnsyncedEdits(s.local),
+    );
 
     // One read for every file, so previews can render as cards scroll in.
     useEffect(() => {
@@ -122,6 +126,7 @@ function Repo({
                         <>
                             <span className={note}>
                                 Remove this repository?
+                                {unsynced && " Unsynced edits will be lost."}
                             </span>
                             <Button
                                 type="button"
