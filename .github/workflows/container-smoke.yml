@@ -3,7 +3,7 @@ name: Container smoke test
 on:
     pull_request:
     push:
-        branches: [main]
+        branches: [main, "v*"]
 
 jobs:
     smoke:

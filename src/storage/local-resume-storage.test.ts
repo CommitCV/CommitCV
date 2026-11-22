@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { IResume } from "@resume/resume";
 import { ResumeParseError } from "@resume/parse-resume";
 import { LocalResumeStorage } from "./local-resume-storage";
@@ -35,6 +35,28 @@ function makeResume(filename: string, note: string): IResume {
 }
 
 describe("LocalResumeStorage", () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it("can be constructed where no global localStorage exists", async () => {
+        const original = Object.getOwnPropertyDescriptor(
+            globalThis,
+            "localStorage",
+        );
+        Reflect.deleteProperty(globalThis, "localStorage");
+        try {
+            // Node without Web Storage (CI) must not throw at construction.
+            const storage = new LocalResumeStorage();
+            // The global is looked up on use, not captured at construction.
+            vi.stubGlobal("localStorage", fakeBrowserStorage());
+            await storage.save("r1", makeResume("first", "hello"));
+            expect(await storage.list()).toHaveLength(1);
+        } finally {
+            vi.unstubAllGlobals();
+            if (original)
+                Object.defineProperty(globalThis, "localStorage", original);
+        }
+    });
+
     it("round-trips save, list, load and remove", async () => {
         const browser = fakeBrowserStorage();
         const storage = new LocalResumeStorage(browser);

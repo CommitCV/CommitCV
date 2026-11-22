@@ -10,10 +10,16 @@ type BrowserStorage = Pick<
 >;
 
 export class LocalResumeStorage implements IResumeStorage {
-    private readonly storage: BrowserStorage;
+    private readonly injected?: BrowserStorage;
 
-    constructor(storage: BrowserStorage = localStorage) {
-        this.storage = storage;
+    constructor(storage?: BrowserStorage) {
+        this.injected = storage;
+    }
+
+    // Resolved on use so constructing at module load works where the global
+    // is absent (Node without Web Storage, e.g. CI and SSR).
+    private get storage(): BrowserStorage {
+        return this.injected ?? localStorage;
     }
 
     async list(): Promise<IResumeEntry[]> {
