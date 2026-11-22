@@ -255,7 +255,10 @@ export function oauthApi(options: OAuthOptions): Hono {
             };
             if (SPECS[a.provider].pkce) params.code_verifier = tx.verifier;
             tokens = await tokenRequest(a, params);
-        } catch {
+        } catch (error) {
+            console.error(
+                `oauth ${a.provider}: exchange failed: ${error instanceof Error ? error.message : "unknown"}`,
+            );
             return fail("exchange_failed");
         }
 
