@@ -14,6 +14,7 @@ export default function ResumeSelector() {
     const newResume = useResumeStore((store) => store.newResume);
     const load = useResumeStore((store) => store.load);
     const [error, setError] = useState("");
+    const [dragging, setDragging] = useState(false);
 
     async function uploadResume(file: File) {
         try {
@@ -39,63 +40,66 @@ export default function ResumeSelector() {
                 variant="surface"
                 className="p-6 md:p-8">
                 <p className="mb-8 text-center text-lg font-medium text-light-950 dark:text-dark-950">
-                    Start a new resume, upload an existing one, or
+                    Upload an existing resume, start a new one, or
                     <br />
                     connect a git repository to access your library of resumes
                 </p>
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    <Card
-                        variant="elevated"
-                        className="flex flex-col items-center justify-center gap-6 rounded-xl p-8">
-                        <p className="text-center text-2xl font-semibold tracking-tight text-light-950 dark:text-dark-950">
-                            Start a new resume!
-                        </p>
-                        <Button
-                            type="button"
-                            variant="primary"
-                            onClick={() => {
-                                // Saved straight away, so it is in the library even if untouched.
-                                newResume();
-                                void useResumeStore
-                                    .getState()
-                                    .save()
-                                    .then(() => {
-                                        trackResumeCreated();
-                                        navigate("/editor");
-                                    });
-                            }}>
-                            Start editing
-                        </Button>
-                    </Card>
-                    <label className="flex cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-4 border-dashed border-border-light p-8 text-center transition-opacity hover:opacity-80 dark:border-border-dark">
-                        <Upload className="h-8 w-8 text-light-700 dark:text-dark-700" />
-                        <span className="text-2xl font-semibold tracking-tight text-light-700 dark:text-dark-700">
-                            Drag or click to upload a .json file here
-                        </span>
-                        <input
-                            type="file"
-                            accept=".json,application/json"
-                            className="sr-only"
-                            onChange={(event) => {
-                                const file = event.target.files?.[0];
-                                if (file) void uploadResume(file);
-                            }}
-                        />
-                    </label>
-                    <Card
-                        variant="elevated"
-                        className="flex flex-col items-center justify-center gap-6 rounded-xl p-8">
-                        <p className="text-center text-2xl font-semibold tracking-tight text-light-950 dark:text-dark-950">
-                            Use a git repository
-                        </p>
-                        <Link
-                            to="/signin"
-                            className={buttonClass("primary", "md", "gap-2")}>
-                            <Git className="h-4 w-4" />
-                            Connect a repository
-                        </Link>
-                    </Card>
+                <label
+                    onDragOver={(event) => {
+                        event.preventDefault();
+                        setDragging(true);
+                    }}
+                    onDragLeave={() => setDragging(false)}
+                    onDrop={(event) => {
+                        event.preventDefault();
+                        setDragging(false);
+                        const file = event.dataTransfer.files[0];
+                        if (file) void uploadResume(file);
+                    }}
+                    className={`flex cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-4 border-dashed p-12 text-center transition-opacity hover:opacity-80 ${
+                        dragging
+                            ? "border-accent"
+                            : "border-border-light dark:border-border-dark"
+                    }`}>
+                    <Upload className="h-8 w-8 text-light-700 dark:text-dark-700" />
+                    <span className="text-2xl font-semibold tracking-tight text-light-700 dark:text-dark-700">
+                        Drag or click to upload a .json file here
+                    </span>
+                    <input
+                        type="file"
+                        accept=".json,application/json"
+                        className="sr-only"
+                        onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) void uploadResume(file);
+                        }}
+                    />
+                </label>
+
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+                    <Button
+                        type="button"
+                        variant="primary"
+                        onClick={() => {
+                            // Saved straight away, so it is in the library even if untouched.
+                            newResume();
+                            void useResumeStore
+                                .getState()
+                                .save()
+                                .then(() => {
+                                    trackResumeCreated();
+                                    navigate("/editor");
+                                });
+                        }}>
+                        Start editing
+                    </Button>
+                    <Link
+                        to="/signin"
+                        className={buttonClass("secondary", "md", "gap-2")}>
+                        <Git className="h-4 w-4" />
+                        Connect a repository
+                    </Link>
                 </div>
 
                 {error && (

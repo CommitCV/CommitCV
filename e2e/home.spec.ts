@@ -25,25 +25,23 @@ test.describe("home", () => {
         );
     });
 
-    test("loads a JSON resume dropped on the upload area", async ({ page }) => {
+    test("loads a JSON resume dropped anywhere on the upload area", async ({
+        page,
+    }) => {
         await page.goto("/");
-        const dataTransfer = await page.evaluateHandle(
-            (text) => {
-                const transfer = new DataTransfer();
-                transfer.items.add(
-                    new File([text], "message-1.json", {
-                        type: "application/json",
-                    }),
-                );
-                return transfer;
-            },
-            readFileSync("e2e/fixtures/message-1.json", "utf8"),
-        );
-        const dropZone = page.getByText(
-            "Drag or click to upload a .json file here",
-        );
-        await dropZone.dispatchEvent("dragover", { dataTransfer });
-        await dropZone.dispatchEvent("drop", { dataTransfer });
+        const text = readFileSync("e2e/fixtures/message-1.json", "utf8");
+        const transfer = await page.evaluateHandle((content) => {
+            const data = new DataTransfer();
+            data.items.add(
+                new File([content], "dropped.json", {
+                    type: "application/json",
+                }),
+            );
+            return data;
+        }, text);
+        await page
+            .getByText("Drag or click to upload a .json file here")
+            .dispatchEvent("drop", { dataTransfer: transfer });
         await expect(page).toHaveURL(/\/editor$/);
         await expect(page.getByLabel("Resume filename")).not.toHaveValue(
             "starter-resume",

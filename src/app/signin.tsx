@@ -15,7 +15,9 @@ export default function SignIn() {
                 </h1>
                 <p className="text-center text-light-700 dark:text-dark-700">
                     Your resumes are saved as commits in a git repository you
-                    own. Sign in with your git host to choose one.
+                    own.
+                    <br />
+                    Sign in with your git host to choose one.
                 </p>
                 <ProviderSignin
                     standalone
