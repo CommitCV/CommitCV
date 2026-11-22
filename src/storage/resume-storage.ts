@@ -9,9 +9,12 @@ export interface IResumeEntry {
 }
 
 /**
- * A place resumes are stored. Implementations: browser IndexedDB
- * (migrating the old localStorage entries) and a GitHub repository
- * via the server proxy.
+ * Where resumes live. Each resume is addressed by an opaque id chosen by
+ * the store. `list` returns entries without loading content, `load`
+ * rejects when the id is unknown, and `save` replaces the resume under
+ * an id (the optional message describes the change for stores that keep
+ * history). `remove` deletes it. Stores may be local or remote, so every
+ * method is async and may reject.
  */
 export interface IResumeStorage {
     list(): Promise<IResumeEntry[]>;
