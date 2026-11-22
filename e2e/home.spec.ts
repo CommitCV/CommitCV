@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { test, expect } from "@playwright/test";
 
 test.describe("home", () => {
@@ -18,6 +19,31 @@ test.describe("home", () => {
         await page
             .locator('input[type="file"]')
             .setInputFiles("e2e/fixtures/message-1.json");
+        await expect(page).toHaveURL(/\/editor$/);
+        await expect(page.getByLabel("Resume filename")).not.toHaveValue(
+            "starter-resume",
+        );
+    });
+
+    test("loads a JSON resume dropped on the upload area", async ({ page }) => {
+        await page.goto("/");
+        const dataTransfer = await page.evaluateHandle(
+            (text) => {
+                const transfer = new DataTransfer();
+                transfer.items.add(
+                    new File([text], "message-1.json", {
+                        type: "application/json",
+                    }),
+                );
+                return transfer;
+            },
+            readFileSync("e2e/fixtures/message-1.json", "utf8"),
+        );
+        const dropZone = page.getByText(
+            "Drag or click to upload a .json file here",
+        );
+        await dropZone.dispatchEvent("dragover", { dataTransfer });
+        await dropZone.dispatchEvent("drop", { dataTransfer });
         await expect(page).toHaveURL(/\/editor$/);
         await expect(page.getByLabel("Resume filename")).not.toHaveValue(
             "starter-resume",

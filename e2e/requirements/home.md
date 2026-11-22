@@ -9,6 +9,7 @@
 
 - [start button]: keyboard and pointer activation both start a resume
 - [file input]: selecting a file through the visible upload area loads it
+- [drop]: dropping a JSON file on the upload area loads it
 
 ## Edge cases
 
