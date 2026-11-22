@@ -35,7 +35,9 @@ CORS headers, so the browser cannot talk to them directly. The user's token
 travels in the browser's `Authorization` header; the proxy forwards it and
 nothing else about the request. It does not store tokens or resume content,
 never reads the `gh_token` cookie, and logs only method, host and status of
-failed requests.
+failed requests: no repository path, header or response body. With
+`GIT_PROXY_TIMING=1` it also logs timings and sizes per request, naming only
+the host and endpoint.
 
 Only `GET info/refs?service=git-upload-pack|git-receive-pack` and
 `POST git-upload-pack|git-receive-pack` are proxied, over https on port 443.

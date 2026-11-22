@@ -270,7 +270,9 @@ async function defaultResolve(host: string): Promise<Address[]> {
  * CORS proxy for git smart-HTTP, shaped for isomorphic-git's
  * `corsProxy` option: `/<host>/<repo path>/<git endpoint>`. Tokens
  * arrive in the client's Authorization header and are only forwarded;
- * nothing about a request is stored or logged beyond method/host/status.
+ * nothing about a request is stored or logged beyond method/host/status,
+ * plus the endpoint name and sizes when `GIT_PROXY_TIMING=1`. Repository
+ * paths, headers and bodies are never logged.
  */
 export function gitProxy(options: GitProxyOptions): Hono {
     const app = new Hono();
@@ -476,14 +478,9 @@ export function gitProxy(options: GitProxyOptions): Hono {
                 }
 
                 if (response.status >= 400) {
-                    // Status and a short body only; never request headers.
-                    const detail = await response
-                        .clone()
-                        .text()
-                        .then((t) => t.slice(0, 200).replace(/\s+/g, " "))
-                        .catch(() => "");
+                    // Method, host and status only: no path, headers or body.
                     console.warn(
-                        `git-proxy: ${target.hostname}${target.pathname} -> ${response.status} ${detail}`,
+                        `git-proxy ${c.req.method} ${target.hostname} ${response.status}`,
                     );
                 }
                 const out = new Headers(cors);
