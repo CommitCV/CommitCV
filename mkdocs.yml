@@ -19,6 +19,7 @@ nav:
     - Resume library: library.md
     - Local storage: local-storage.md
     - Remote storage: remote-storage.md
+    - Commit messages: commit-messages.md
     - Typst preview: typst-wasm.md
     - Testing: testing.md
     - Changelog: changelog.md
