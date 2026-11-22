@@ -10,13 +10,12 @@ export default function Home() {
 
             <main className="flex-1">
                 <section className="flex flex-col items-center gap-6 px-8 pt-16 pb-12">
-                    <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-center">
+                    <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-center text-balance">
                         Your resume your way
                     </h1>
-                    <p className="text-lg text-light-700 dark:text-dark-700 text-center">
-                        Make your resume with ease using our visual editor
-                        <br />
-                        and export it locally on your device.
+                    <p className="max-w-md text-lg text-light-700 dark:text-dark-700 text-center text-balance">
+                        Make your resume with ease using our visual editor and
+                        export it locally on your device.
                     </p>
                 </section>
 
