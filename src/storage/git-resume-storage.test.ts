@@ -110,6 +110,17 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
         expect(requests).toBeGreaterThan(afterFirst);
     });
 
+    it("opens a resume file that has no filename or date", async () => {
+        const { filename, date, ...bare_ } = resume("x");
+        void filename;
+        void date;
+        bare = makeBareRepo({ "x.json": JSON.stringify(bare_) });
+        http = bareRepoHttp(bare, TOKEN);
+        const loaded = await storage().load("x.json");
+        expect(loaded.filename).toBe("x");
+        expect(loaded.date).not.toBe("");
+    });
+
     it("peeks at files for previews, skipping ones that are not resumes", async () => {
         const s = storage();
         const found = await s.peek(["a.json", "note.txt", "missing.json"]);

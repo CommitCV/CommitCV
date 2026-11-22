@@ -85,6 +85,14 @@ export default function Library() {
             await refresh();
         }, "Unable to delete resume");
 
+    // Saved straight away so the new resume is in the library even if untouched.
+    const createResume = () =>
+        run(async () => {
+            newResume();
+            await useResumeStore.getState().save();
+            navigate("/editor");
+        }, "Unable to create resume");
+
     const importFile = (file: File) =>
         run(async () => {
             const resume = await importResumeFile(file);
@@ -108,8 +116,7 @@ export default function Library() {
                             type="button"
                             variant="primary"
                             onClick={() => {
-                                newResume();
-                                navigate("/editor");
+                                void createResume();
                             }}>
                             <Plus className="mr-2 h-4 w-4" />
                             New resume
@@ -163,8 +170,7 @@ export default function Library() {
                         <Button
                             type="button"
                             onClick={() => {
-                                newResume();
-                                navigate("/editor");
+                                void createResume();
                             }}>
                             New resume
                         </Button>

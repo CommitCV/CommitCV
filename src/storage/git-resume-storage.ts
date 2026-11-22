@@ -152,6 +152,25 @@ const slug = (path: string) =>
 const DEEPEN_STEP = 50;
 const MAX_DEEPENS = 20;
 
+/**
+ * Parses a file from the repo. Legacy files are migrated, and a file
+ * written by another tool without `filename`/`date` gets them from its
+ * path so it still opens.
+ */
+const fromRepoFile = (json: unknown, id: string): IResume => {
+    const meta = { filename: id.replace(/\.json$/, ""), date: today() };
+    if (isLegacyResume(json)) return migrateLegacyResume(json, meta);
+    if (typeof json === "object" && json !== null) {
+        const record = json as Record<string, unknown>;
+        return parseResume({
+            ...record,
+            filename: record.filename ?? meta.filename,
+            date: record.date ?? meta.date,
+        });
+    }
+    return parseResume(json);
+};
+
 const parse = (text: string | null): IResume | null => {
     if (text === null) return null;
     try {
@@ -254,7 +273,7 @@ export class GitResumeStorage implements IGitStorage {
             this.seen.set(id, text);
             await this.setBase(id, head);
             if (text === null) throw new Error(`${id} not found`);
-            return parseResume(JSON.parse(text));
+            return fromRepoFile(JSON.parse(text), id);
         });
     }
 
@@ -267,15 +286,7 @@ export class GitResumeStorage implements IGitStorage {
                     const text = await client.readFile(this.branch, id);
                     if (text === null) continue;
                     const json: unknown = JSON.parse(text);
-                    found.set(
-                        id,
-                        isLegacyResume(json)
-                            ? migrateLegacyResume(json, {
-                                  filename: id.replace(/\.json$/, ""),
-                                  date: today(),
-                              })
-                            : parseResume(json),
-                    );
+                    found.set(id, fromRepoFile(json, id));
                 } catch {
                     // No preview for a file that is not a resume.
                 }
@@ -345,12 +356,7 @@ export class GitResumeStorage implements IGitStorage {
             let resume: IResume;
             try {
                 const json: unknown = JSON.parse(text);
-                resume = isLegacyResume(json)
-                    ? migrateLegacyResume(json, {
-                          filename: id.replace(/\.json$/, ""),
-                          date: today(),
-                      })
-                    : parseResume(json);
+                resume = fromRepoFile(json, id);
             } catch (err) {
                 const why =
                     err instanceof ResumeParseError
