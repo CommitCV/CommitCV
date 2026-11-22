@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Button from "@components/ui/button";
 import { Save } from "@components/ui/icons";
 import { TOOLBAR_ROW } from "@components/ui/toolbar";
 import { useResumeStore } from "@store/useResumeStore";
 import GitSyncStatus from "./git-sync-status";
+import HistoryPanel from "./history-panel";
 
 export default function EditorToolbar() {
     const filename = useResumeStore((store) => store.resume?.filename ?? "");
@@ -12,6 +13,7 @@ export default function EditorToolbar() {
         (store) => !store.source || store.source.kind === "local",
     );
     const isGit = useResumeStore((store) => store.source?.kind === "git");
+    const [historyOpen, setHistoryOpen] = useState(false);
     const setFilename = useResumeStore((store) => store.setFilename);
     const save = useResumeStore((store) => store.save);
     const undo = useResumeStore((store) => store.undo);
@@ -82,7 +84,19 @@ export default function EditorToolbar() {
                         <Save className="h-4 w-4" />
                         {saveState === "saving" ? "Saving…" : "Commit Changes"}
                     </Button>
+                    {isGit && (
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setHistoryOpen(true)}>
+                            History
+                        </Button>
+                    )}
                     <GitSyncStatus />
+                    {historyOpen && (
+                        <HistoryPanel onClose={() => setHistoryOpen(false)} />
+                    )}
                 </>
             )}
         </div>

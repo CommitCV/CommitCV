@@ -286,6 +286,16 @@ describe("useResumeStore", () => {
             expect(firstText()).toBe("changed");
         });
 
+        it("restores an earlier version as a dirty edit that undo reverts", () => {
+            const original = state().resume;
+            const old = { ...makeResume(), filename: "old" };
+            state().restore(old);
+            expect(state().resume).toBe(old);
+            expect(state().saveState).toBe("dirty");
+            state().undo();
+            expect(state().resume).toBe(original);
+        });
+
         it("folds quick typing in one field into one step", () => {
             vi.useFakeTimers();
             const original = firstText();

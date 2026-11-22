@@ -191,6 +191,8 @@ interface IResumeStore {
     redo(): void;
     load(resume: IResume, source: TResumeSource | null): void;
     newResume(): void;
+    /** Replaces the document with an earlier version as one undoable edit. */
+    restore(resume: IResume): void;
     setFilename(filename: string): void;
     updateSection(path: TSectionPath, patch: Partial<ISection>): void;
     addSection(parentPath: TSectionPath, section: ISection): void;
@@ -274,6 +276,19 @@ export const useResumeStore = create<IResumeStore>()(
                     expanded: {},
                     ...clearedHistory,
                 }),
+
+            restore: (resume) =>
+                set((s) =>
+                    s.resume
+                        ? {
+                              ...record(s),
+                              resume,
+                              saveState: "dirty",
+                              expanded: {},
+                              focusedText: null,
+                          }
+                        : {},
+                ),
 
             newResume: () =>
                 set({

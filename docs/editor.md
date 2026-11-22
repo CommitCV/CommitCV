@@ -64,6 +64,19 @@ holds the last 100 steps, is cleared when another resume loads, and is not
 kept across reloads. The preview's zoom and page inputs keep the browser's own
 undo.
 
+## Version history
+
+Resumes opened from a connected git repository have a History button in the
+toolbar; local resumes do not (connect a repository to get history). It opens
+a dialog listing the commits on the default branch that changed the file,
+newest first, with message, age and author. Selecting one previews that
+version and summarizes what restoring it would change. "Restore this version"
+loads it into the editor as a normal edit: it is undoable with `Mod+Z`, marks
+the document unsaved, autosaves to the session branch, and becomes a new
+commit on the next Commit Changes. Restoring never rewrites history. If there
+are uncommitted changes you are asked to confirm first. Escape closes the
+dialog and returns focus to the button.
+
 ## Preview
 
 The preview toolbar steps between pages and controls zoom. Zoom changes by

@@ -1,5 +1,7 @@
 import type { IResume } from "@resume/resume";
-import { parseResume } from "@resume/parse-resume";
+import { parseResume, ResumeParseError } from "@resume/parse-resume";
+import { isLegacyResume, migrateLegacyResume } from "@resume/legacy-resume";
+import { today } from "@resume/dates";
 import { GitAuthError, GitConflictError } from "../git/errors";
 import type { GitClient } from "../git/git-client";
 import {
@@ -12,7 +14,11 @@ import {
     generateCommitBody,
     generateCommitMessage,
 } from "@resume/commit-message";
-import type { IResumeEntry, IResumeStorage } from "./resume-storage";
+import type {
+    IHistoryPage,
+    IResumeEntry,
+    IVersionedStorage,
+} from "./resume-storage";
 import { ConflictError, UnauthorizedError } from "./github-resume-storage";
 
 /** The slice of `GitClient` the adapter needs (lets tests and e2e fake it). */
@@ -30,12 +36,15 @@ export type TGitClient = Pick<
     | "deleteRemoteBranch"
     | "listRemoteBranches"
     | "sessionCommits"
+    | "log"
+    | "deepen"
+    | "isShallow"
 >;
 
 export type TConflictChoice = "mine" | "remote";
 
 /** What the editor needs beyond `IResumeStorage`: session autosave and commit. */
-export interface IGitStorage extends IResumeStorage {
+export interface IGitStorage extends IVersionedStorage {
     /**
      * Autosave: commit to the session branch and push it. Throws
      * `SessionDivergedError` if the remote branch moved; only `force`
@@ -130,6 +139,10 @@ const slug = (path: string) =>
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "") || "resume";
 
+/** Commits fetched per `deepen` while paging back through shallow history. */
+const DEEPEN_STEP = 50;
+const MAX_DEEPENS = 20;
+
 const parse = (text: string | null): IResume | null => {
     if (text === null) return null;
     try {
@@ -172,6 +185,8 @@ export class GitResumeStorage implements IGitStorage {
      * the current head and a newer remote change would be reverted silently.
      */
     private readonly loadedAt = new Map<string, string>();
+    /** Parsed old versions; a commit never changes. */
+    private readonly versions = new Map<string, IResume>();
 
     private async setBase(id: string, sha: string): Promise<void> {
         this.loadedAt.set(id, sha);
@@ -223,6 +238,85 @@ export class GitResumeStorage implements IGitStorage {
             await this.setBase(id, head);
             if (text === null) throw new Error(`${id} not found`);
             return parseResume(JSON.parse(text));
+        });
+    }
+
+    async history(
+        id: string,
+        { limit, before }: { limit: number; before?: string },
+    ): Promise<IHistoryPage> {
+        return this.guard(async () => {
+            const { client, defaultBranch } = await this.sync();
+            // A file that is gone (or not yet created) has no restore points.
+            if ((await client.readFile(defaultBranch, id)) === null) {
+                return { entries: [], hasMore: false };
+            }
+            // The default branch only holds squashed commits, so session
+            // commits never show up here.
+            let all = await client.log(defaultBranch, id);
+            // `before` missing from a re-shallowed log counts as "not yet loaded".
+            const start = () => {
+                if (!before) return 0;
+                const at = all.findIndex((c) => c.sha === before);
+                return at < 0 ? all.length : at + 1;
+            };
+            // A shallow clone lists its oldest commit as touching every
+            // file, so keep deepening until it is out of the requested page.
+            for (let i = 0; i < MAX_DEEPENS; i++) {
+                if (all.length - start() > limit) break;
+                if (!(await client.isShallow())) break;
+                await client.deepen(DEEPEN_STEP);
+                all = await client.log(defaultBranch, id);
+            }
+            const rest = all.slice(start());
+            const hasMore =
+                rest.length > limit ||
+                (await client.isShallow().catch(() => false));
+            const entries = [];
+            for (const c of rest.slice(0, limit)) {
+                // Skip commits that removed the file.
+                if ((await client.readFile(c.sha, id)) === null) continue;
+                const [message, ...more] = c.message.split("\n");
+                const body = more.join("\n").trim();
+                entries.push({
+                    sha: c.sha,
+                    message,
+                    ...(body && { body }),
+                    date: c.date.getTime(),
+                    author: c.author.name,
+                });
+            }
+            return { entries, hasMore };
+        });
+    }
+
+    async loadAt(id: string, sha: string): Promise<IResume> {
+        const cached = this.versions.get(sha);
+        if (cached) return structuredClone(cached);
+        return this.guard(async () => {
+            const { client } = await this.sync();
+            const text = await client.readFile(sha, id);
+            if (text === null) {
+                throw new Error(`${id} did not exist in that version.`);
+            }
+            let resume: IResume;
+            try {
+                const json: unknown = JSON.parse(text);
+                resume = isLegacyResume(json)
+                    ? migrateLegacyResume(json, {
+                          filename: id.replace(/\.json$/, ""),
+                          date: today(),
+                      })
+                    : parseResume(json);
+            } catch (err) {
+                const why =
+                    err instanceof ResumeParseError
+                        ? err.message
+                        : "it is not valid JSON";
+                throw new Error(`This version can't be opened: ${why}.`);
+            }
+            this.versions.set(sha, resume);
+            return structuredClone(resume);
         });
     }
 

@@ -36,6 +36,21 @@ fetched commit looks like it changed every file, and older edits are missing
 until `deepen(n)` fetches more. Tokens stay in the browser; the proxy only
 forwards the `Authorization` header.
 
+## Version history
+
+`GitResumeStorage.history(id, { limit, before })` lists the default-branch
+commits that changed a file, newest first. Because Commit Changes squashes a
+session into one commit, these are the user's meaningful restore points;
+session-branch commits are never listed. `loadAt(id, sha)` returns the
+validated resume at a commit (legacy files are migrated; an unreadable one
+raises a readable error) and caches it per sha. Clones are shallow, so when
+fewer than a page of commits is fetched, `history` calls `deepen` first, and
+`hasMore` stays true while the clone is still shallow ("Load older" in the
+UI). A shallow clone reports its oldest fetched commit as touching every file,
+so that entry is withheld until the history behind it is fetched. A deleted or
+not-yet-created file has no history, and renames are not followed. Restoring
+is an ordinary edit (see [Editor](editor.md#version-history)).
+
 ## Connecting a repository
 
 `/connect` (linked from the library and home page) takes a git https URL, an
