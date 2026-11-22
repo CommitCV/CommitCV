@@ -5,8 +5,15 @@ export const CONNECTIONS = "connections";
 export const SESSIONS = "sessions";
 const DB_VERSION = 4;
 
-/** One opener for the shared database so every store upgrades together. */
-export function openDb(factory?: IDBFactory): Promise<IDBDatabase> {
+/**
+ * One opener for the shared database so every store upgrades together. When
+ * another tab upgrades the schema this connection closes itself (otherwise
+ * that tab's open hangs) and `onStale` lets the caller drop its cached handle.
+ */
+export function openDb(
+    factory?: IDBFactory,
+    onStale?: () => void,
+): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
         const req = (factory ?? indexedDB).open(DB_NAME, DB_VERSION);
         // Older databases already have some stores; only add what's missing.
@@ -17,7 +24,14 @@ export function openDb(factory?: IDBFactory): Promise<IDBDatabase> {
                 }
             }
         };
-        req.onsuccess = () => resolve(req.result);
+        req.onsuccess = () => {
+            const db = req.result;
+            db.onversionchange = () => {
+                db.close();
+                onStale?.();
+            };
+            resolve(db);
+        };
         req.onerror = () => reject(req.error);
     });
 }
