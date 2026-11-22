@@ -72,4 +72,23 @@ describe("SessionStore", () => {
         expect(entries.map((e) => e.filename)).toEqual(["old"]);
         expect((await new ConnectionStore(factory).list()).length).toBe(1);
     });
+
+    it("retries opening the database after it failed", async () => {
+        const real = new IDBFactory();
+        let failures = 1;
+        const flaky = {
+            open(name: string, version?: number) {
+                if (failures-- <= 0) return real.open(name, version);
+                const req = {
+                    error: new Error("blocked"),
+                } as unknown as IDBOpenDBRequest;
+                setTimeout(() => req.onerror?.(new Event("error")));
+                return req;
+            },
+        } as unknown as IDBFactory;
+        const store = new SessionStore(flaky);
+
+        await expect(store.list()).rejects.toThrow(/blocked/);
+        expect(await store.list()).toEqual([]);
+    });
 });
