@@ -23,6 +23,9 @@ import {
 } from "@resume/drag-drop";
 import { today } from "@resume/dates";
 import starter from "@resume/starter-resume.json";
+import { connections } from "../git/connections";
+import { openConnection } from "../git/open-connection";
+import { GitResumeStorage } from "@storage/git-resume-storage";
 import { GitHubResumeStorage } from "@storage/github-resume-storage";
 import { IdbResumeStorage } from "@storage/idb-resume-storage";
 import { LocalResumeStorage } from "@storage/local-resume-storage";
@@ -32,7 +35,9 @@ import { createBrowserThumbnails } from "../thumbnails";
 
 export type TResumeSource =
     | { kind: "local"; id: string }
-    | { kind: "github"; repo: string; path: string };
+    | { kind: "github"; repo: string; path: string }
+    /** `connectionId` points at a saved connection; its token never lands here. */
+    | { kind: "git"; connectionId: string; path: string };
 
 export type TSaveState = "clean" | "dirty" | "saving" | "error";
 
@@ -48,6 +53,7 @@ export interface IFocusedText {
 }
 
 const githubStorages = new Map<string, GitHubResumeStorage>();
+const gitStorages = new Map<string, GitResumeStorage>();
 
 // Storage seam: production uses the real adapters; tests swap them out.
 const localIdb = new IdbResumeStorage(undefined, new LocalResumeStorage());
@@ -61,12 +67,37 @@ export const resumeStorages = {
         }
         return storage;
     },
+    /** Resolves the saved connection on first use, so this stays sync. */
+    git(connectionId: string): IResumeStorage {
+        let storage = gitStorages.get(connectionId);
+        if (!storage) {
+            storage = new GitResumeStorage(async () => {
+                const connection = await connections.get(connectionId);
+                if (!connection) {
+                    throw new Error("This repository connection was removed.");
+                }
+                return openConnection(connection);
+            });
+            gitStorages.set(connectionId, storage);
+        }
+        return storage;
+    },
 };
 
 export function storageFor(source: TResumeSource): IResumeStorage {
-    return source.kind === "local"
-        ? resumeStorages.local
-        : resumeStorages.github(source.repo);
+    switch (source.kind) {
+        case "local":
+            return resumeStorages.local;
+        case "github":
+            return resumeStorages.github(source.repo);
+        case "git":
+            return resumeStorages.git(source.connectionId);
+    }
+}
+
+/** Forgets a connection's cached storage (after it is removed). */
+export function forgetGitStorage(connectionId: string): void {
+    gitStorages.delete(connectionId);
 }
 
 let thumbnails: ReturnType<typeof createBrowserThumbnails> | undefined;

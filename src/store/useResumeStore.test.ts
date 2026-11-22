@@ -57,6 +57,21 @@ describe("useResumeStore", () => {
         expect(github.saved[0]?.id).toBe("resume.json");
     });
 
+    it("sends git saves to the connection's storage with the path as id", async () => {
+        const git = new FakeStorage();
+        resumeStorages.git = (id) => (id === "c1" ? git : local);
+        useResumeStore.getState().load(makeResume(), {
+            kind: "git",
+            connectionId: "c1",
+            path: "cv.json",
+        });
+        await useResumeStore.getState().save("msg");
+        expect(git.saved).toEqual([
+            expect.objectContaining({ id: "cv.json", message: "msg" }),
+        ]);
+        expect(local.saved).toHaveLength(0);
+    });
+
     it("marks dirty on edits and clean after a save", async () => {
         useResumeStore.getState().setFilename("renamed");
         expect(useResumeStore.getState().saveState).toBe("dirty");

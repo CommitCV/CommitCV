@@ -1,5 +1,11 @@
 # Remote storage
 
+Two remotes exist. Any https git host (access token, git protocol through
+the proxy below) is the one the UI offers: see [Git client](git-sync.md). The
+GitHub OAuth contents-API adapter described next is kept in the code and the
+store (`github` source) but has no UI entry point since the connect page
+replaced the repository picker.
+
 GitHub storage saves each resume as a JSON file in a repository. The browser
 calls the CommitCV server, which forwards authenticated requests to GitHub.
 The GitHub access token remains in an HTTP-only cookie.

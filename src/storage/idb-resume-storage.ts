@@ -1,11 +1,13 @@
 import type { IResume } from "@resume/resume";
 import { parseResume } from "@resume/parse-resume";
+import {
+    openDb,
+    request,
+    RESUMES as STORE,
+    THUMBNAILS,
+    transactionDone,
+} from "./db";
 import type { IResumeEntry, IResumeStorage } from "./resume-storage";
-
-const DB_NAME = "commitcv";
-const STORE = "resumes";
-const THUMBNAILS = "thumbnails";
-const DB_VERSION = 2;
 
 interface IRecord {
     id: string;
@@ -17,21 +19,6 @@ interface IRecord {
 export interface IThumbnail {
     hash: string;
     blob: Blob;
-}
-
-function request<T>(req: IDBRequest<T>): Promise<T> {
-    return new Promise((resolve, reject) => {
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-    });
-}
-
-function transactionDone(tx: IDBTransaction): Promise<void> {
-    return new Promise((resolve, reject) => {
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-        tx.onabort = () => reject(tx.error);
-    });
 }
 
 /**
@@ -132,23 +119,11 @@ export class IdbResumeStorage implements IResumeStorage {
     }
 
     private open(): Promise<IDBDatabase> {
-        const db = (this.db ??= new Promise<IDBDatabase>((resolve, reject) => {
-            const req = (this.factory ?? indexedDB).open(DB_NAME, DB_VERSION);
-            // v1 databases already have `resumes`; only add what's missing.
-            req.onupgradeneeded = () => {
-                for (const name of [STORE, THUMBNAILS]) {
-                    if (!req.result.objectStoreNames.contains(name)) {
-                        req.result.createObjectStore(name, { keyPath: "id" });
-                    }
-                }
-            };
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => reject(req.error);
-        }).catch((error) => {
+        this.db ??= openDb(this.factory).catch((error) => {
             this.db = undefined;
             throw error;
-        }));
-        return db;
+        });
+        return this.db;
     }
 
     private async all(): Promise<IRecord[]> {

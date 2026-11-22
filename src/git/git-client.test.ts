@@ -88,6 +88,40 @@ describe.skipIf(!hasGit)("GitClient against a local bare repo", () => {
         expect(await c.listFiles("b")).toEqual(["a.json"]);
     });
 
+    it("removes a file, prunes empty directories and resets to the remote", async () => {
+        const c = newClient(http);
+        await c.cloneOrOpen(URL_);
+        await c.commitFile({
+            branch: "main",
+            path: "d/x.json",
+            content: "1",
+            message: "add",
+        });
+        await c.removeFile({
+            branch: "main",
+            path: "d/x.json",
+            message: "delete d/x.json",
+        });
+        expect(await c.readFile("main", "d/x.json")).toBeNull();
+        await c.removeFile({
+            branch: "main",
+            path: "a.json",
+            message: "delete a.json",
+        });
+        await c.push({ branch: "main" });
+        expect(gitIn(bare, "ls-tree", "--name-only", "main").trim()).toBe(
+            "note.txt",
+        );
+        await c.commitFile({
+            branch: "main",
+            path: "local.json",
+            content: "x",
+            message: "unpushed",
+        });
+        await c.resetToRemote("main");
+        expect(await c.readFile("main", "local.json")).toBeNull();
+    });
+
     it("lets a second client fetch the branch and read the file", async () => {
         const one = newClient(http);
         await one.cloneOrOpen(URL_);
