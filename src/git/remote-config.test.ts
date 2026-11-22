@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { authorFor, COMMITTER } from "./identity";
 import {
+    gitRemoteUrl,
     authFor,
     corsProxyFor,
     detectProvider,
@@ -56,6 +57,23 @@ describe("detectProvider", () => {
         ["git.example.com", "generic"],
     ])("%s -> %s", (host, provider) => {
         expect(detectProvider(host)).toBe(provider);
+    });
+});
+
+describe("gitRemoteUrl", () => {
+    it("adds .git for GitLab only, so POSTs reach the git endpoint", () => {
+        expect(gitRemoteUrl("https://gitlab.com/ada/cv", "gitlab")).toBe(
+            "https://gitlab.com/ada/cv.git",
+        );
+        expect(gitRemoteUrl("https://gitlab.example.org/g/s/cv")).toBe(
+            "https://gitlab.example.org/g/s/cv.git",
+        );
+        expect(gitRemoteUrl("https://gitlab.com/ada/cv.git", "gitlab")).toBe(
+            "https://gitlab.com/ada/cv.git",
+        );
+        expect(gitRemoteUrl("https://github.com/ada/cv", "github")).toBe(
+            "https://github.com/ada/cv",
+        );
     });
 });
 

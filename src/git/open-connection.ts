@@ -1,7 +1,7 @@
 import type { IOpenedRepo, TGitClient } from "../storage/git-resume-storage";
 import type { IConnection } from "./connections";
 import { loadGit } from "./load";
-import { parseRepoUrl } from "./remote-config";
+import { gitRemoteUrl, parseRepoUrl } from "./remote-config";
 
 declare global {
     interface Window {
@@ -16,7 +16,10 @@ declare global {
 export async function openConnection(
     connection: Omit<IConnection, "id">,
 ): Promise<IOpenedRepo> {
-    const url = parseRepoUrl(connection.url).url;
+    const url = gitRemoteUrl(
+        parseRepoUrl(connection.url).url,
+        connection.provider,
+    );
     if (import.meta.env.DEV && window.__commitcvGitFactory) {
         const client = await window.__commitcvGitFactory(
             connection as IConnection,
