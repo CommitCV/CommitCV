@@ -207,8 +207,22 @@ describe("oauth providers + login", () => {
             "/\\evil.com",
             "/a\nb",
             "javascript:alert(1)",
+            "/.//evil.com",
+            "/..//x",
+            "/a/..//evil.com",
         ]) {
             expect(safeReturnPath(bad)).toBe("/connect");
+        }
+    });
+
+    it("never returns a protocol-relative path", () => {
+        for (const input of [
+            "/ok",
+            "/a/./b?q=//x",
+            "/%2F%2Fevil.com",
+            "/.//e",
+        ]) {
+            expect(safeReturnPath(input)).toMatch(/^\/(?![/\\])/);
         }
     });
 });

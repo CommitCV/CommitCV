@@ -64,7 +64,10 @@ export function safeReturnPath(input: string | undefined): string {
     try {
         const url = new URL(input, "http://local.invalid");
         if (url.origin !== "http://local.invalid") return fallback;
-        return url.pathname + url.search;
+        const path = url.pathname + url.search;
+        // Dot segments can collapse to `//host`, which browsers treat as
+        // another origin.
+        return /^\/[/\\]/.test(path) ? fallback : path;
     } catch {
         return fallback;
     }
