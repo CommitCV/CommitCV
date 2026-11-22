@@ -63,8 +63,11 @@ interface Diff {
     touched: SectionChange[];
 }
 
+/** Collapses whitespace and newlines so user text can't add lines. */
+const flat = (s: string) => s.trim().replace(/\s+/g, " ");
+
 const clip = (s: string) => {
-    const t = s.trim().replace(/\s+/g, " ");
+    const t = flat(s);
     return t.length > MAX_LABEL ? `${t.slice(0, MAX_LABEL - 1)}…` : t;
 };
 
@@ -96,7 +99,7 @@ function diffChildren(prev: ISection, next: ISection, where: string) {
     const match = matchSections(prev.subsections, next.subsections);
     next.subsections.forEach((n, i) => {
         const p = prev.subsections[match[i]];
-        const at = n.title ? `${where} > ${n.title}` : where;
+        const at = n.title ? `${where} > ${flat(n.title)}` : where;
         if (!p) {
             out.push({ kind: "add", where, label: labelOf(n) });
         } else {
@@ -126,11 +129,11 @@ function diff(prev: IResume | null, next: IResume): Diff {
         const p = prev.sections[match[i]];
         if (!p) return void result.added.push(n);
         const sc: SectionChange = {
-            name: n.title,
+            name: flat(n.title),
             isHeader: n.type === "header",
-            changes: diffChildren(p, n, n.title.toLowerCase()),
+            changes: diffChildren(p, n, flat(n.title).toLowerCase()),
         };
-        if (p.title !== n.title) sc.renamedFrom = p.title;
+        if (p.title !== n.title) sc.renamedFrom = flat(p.title);
         if (p.toggled !== n.toggled) sc.toggled = n.toggled;
         if (sc.changes.length || sc.renamedFrom || sc.toggled !== undefined)
             result.touched.push(sc);
@@ -169,21 +172,23 @@ export function generateCommitMessage(
     prev: IResume | null,
     next: IResume,
 ): string {
-    const fallback = `update ${next.filename}`;
+    const filename = flat(next.filename);
+    const fallback = `update ${filename}`;
     const d = diff(prev, next);
-    if (d.created) return `create ${next.filename}`;
+    if (d.created) return `create ${filename}`;
     const names = [
         ...d.touched.map((t) => (t.isHeader ? "header" : t.name.toLowerCase())),
-        ...[...d.added, ...d.removed].map((s) => s.title.toLowerCase()),
+        ...[...d.added, ...d.removed].map((s) => flat(s.title).toLowerCase()),
     ];
     const count = d.touched.length + d.added.length + d.removed.length;
     if (count === 0)
         return truncate(d.reordered ? "reorder sections" : fallback);
     if (count === 1) {
         const [t] = d.touched;
-        if (d.added[0]) return truncate(`add section: ${d.added[0].title}`);
+        if (d.added[0])
+            return truncate(`add section: ${flat(d.added[0].title)}`);
         if (d.removed[0])
-            return truncate(`remove section: ${d.removed[0].title}`);
+            return truncate(`remove section: ${flat(d.removed[0].title)}`);
         if (t.isHeader && !t.renamedFrom && t.toggled === undefined)
             return "update header";
         if (!t.changes.length) {
@@ -215,8 +220,9 @@ export function generateCommitBody(
     const d = diff(prev, next);
     const lines: string[] = [];
     if (d.created) return "";
-    for (const s of d.added) lines.push(`- added section "${s.title}"`);
-    for (const s of d.removed) lines.push(`- removed section "${s.title}"`);
+    for (const s of d.added) lines.push(`- added section "${flat(s.title)}"`);
+    for (const s of d.removed)
+        lines.push(`- removed section "${flat(s.title)}"`);
     if (d.reordered) lines.push("- reordered sections");
     for (const t of d.touched) {
         const key = t.name.toLowerCase();

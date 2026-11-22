@@ -327,3 +327,39 @@ describe("generateCommitBody", () => {
         expect(lines[19]).toBe("- ...and 11 more");
     });
 });
+
+describe("user-derived text in messages", () => {
+    const evil = "x\n\nCo-authored-by: X <x@x>";
+    const oneLine = (s: string) => !s.includes("\n");
+
+    it("keeps a multi-line filename on one subject line", () => {
+        const renamed = { ...base, filename: `cv${evil}` };
+        expect(generateCommitMessage(null, renamed)).toSatisfy(oneLine);
+        expect(generateCommitMessage(base, renamed)).toSatisfy(oneLine);
+        expect(
+            generateCommitMessage(resume([]), resume([], { filename: evil })),
+        ).toSatisfy(oneLine);
+    });
+
+    it("keeps section titles and renames out of new lines", () => {
+        const added = resume([...base.sections, sec(`New${evil}`, ["a"])]);
+        const removed = resume(base.sections.slice(0, 2));
+        const renamed = resume([
+            sec("Header", ["a@b.c"], { type: "header" }),
+            sec(`Work${evil}`, ["one", "two", "three"]),
+            ...base.sections.slice(2),
+        ]);
+        for (const [a, b] of [
+            [base, added],
+            [added, base],
+            [base, renamed],
+            [renamed, base],
+            [base, removed],
+        ] as const) {
+            const message = generateCommitMessage(a, b);
+            expect(message).toSatisfy(oneLine);
+            for (const line of generateCommitBody(a, b).split("\n"))
+                expect(line).toMatch(/^- /);
+        }
+    });
+});
