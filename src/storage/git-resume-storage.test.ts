@@ -104,9 +104,17 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
         await s.list();
         const afterFirst = requests;
         await s.load("a.json");
+        await s.peek(["a.json"]);
         expect(requests).toBe(afterFirst);
         await s.save("a.json", resume("a", "again"));
         expect(requests).toBeGreaterThan(afterFirst);
+    });
+
+    it("peeks at files for previews, skipping ones that are not resumes", async () => {
+        const s = storage();
+        const found = await s.peek(["a.json", "note.txt", "missing.json"]);
+        expect([...found.keys()]).toEqual(["a.json"]);
+        expect(found.get("a.json")?.filename).toBe("a");
     });
 
     it("commits to the default branch with the message and pushes", async () => {

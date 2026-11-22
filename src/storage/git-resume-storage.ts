@@ -63,6 +63,11 @@ export interface IGitStorage extends IVersionedStorage {
      * returns the default branch's version.
      */
     discardSession(id: string, branch?: string): Promise<IResume | null>;
+    /**
+     * Reads files from the default branch for previews. Unlike `load` it
+     * leaves the conflict bookkeeping alone; unreadable files are skipped.
+     */
+    peek(ids: string[]): Promise<Map<string, IResume>>;
     /** Unsquashed session branches of one file, most recent activity first. */
     findSessions(id: string): Promise<ISessionInfo[]>;
     /** Unsquashed sessions of every file in the repository. */
@@ -250,6 +255,32 @@ export class GitResumeStorage implements IGitStorage {
             await this.setBase(id, head);
             if (text === null) throw new Error(`${id} not found`);
             return parseResume(JSON.parse(text));
+        });
+    }
+
+    async peek(ids: string[]): Promise<Map<string, IResume>> {
+        return this.guard(async () => {
+            const { client } = await this.sync(READ_TTL_MS);
+            const found = new Map<string, IResume>();
+            for (const id of ids) {
+                try {
+                    const text = await client.readFile(this.branch, id);
+                    if (text === null) continue;
+                    const json: unknown = JSON.parse(text);
+                    found.set(
+                        id,
+                        isLegacyResume(json)
+                            ? migrateLegacyResume(json, {
+                                  filename: id.replace(/\.json$/, ""),
+                                  date: today(),
+                              })
+                            : parseResume(json),
+                    );
+                } catch {
+                    // No preview for a file that is not a resume.
+                }
+            }
+            return found;
         });
     }
 

@@ -8,6 +8,8 @@ import {
 } from "@components/connect/use-remote-entries";
 import { useOpenGitResume } from "@components/session/use-open-git-resume";
 import { sessionAge } from "@store/open-git-resume";
+import { resumeStorages } from "@store/useResumeStore";
+import type { IResume } from "@resume/resume";
 import { connections, type IConnection } from "../../git/connections";
 import { parseRepoUrl } from "../../git/remote-config";
 import RemoteResumeCard from "./remote-resume-card";
@@ -26,7 +28,23 @@ function Repo({ connection }: { connection: IConnection }) {
     const found = useRemoteSessions(connection.id, !!entries);
     const { open: openFile, dialog } = useOpenGitResume();
     const [openError, setOpenError] = useState("");
+    const [resumes, setResumes] = useState<Map<string, IResume>>();
     const { path, host } = repoOf(connection);
+
+    // One read for every file, so previews can render as cards scroll in.
+    useEffect(() => {
+        if (!entries?.length) return;
+        let active = true;
+        const storage = resumeStorages.git(connection.id);
+        if (!("peek" in storage)) return;
+        storage.peek(entries.map((e) => e.id)).then(
+            (found) => active && setResumes(found),
+            () => {},
+        );
+        return () => {
+            active = false;
+        };
+    }, [connection.id, entries]);
 
     async function open(id: string) {
         setOpenError("");
@@ -101,6 +119,8 @@ function Repo({ connection }: { connection: IConnection }) {
                                 key={entry.id}
                                 entry={entry}
                                 repo={path}
+                                thumbnailKey={`remote:${connection.id}:${entry.id}`}
+                                resume={resumes?.get(entry.id)}
                                 sessionLabel={
                                     session
                                         ? `Unsaved session · ${sessionAge(found.at - session.lastCommit.date)}`

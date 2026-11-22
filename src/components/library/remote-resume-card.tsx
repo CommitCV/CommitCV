@@ -1,10 +1,17 @@
+import type { IResume } from "@resume/resume";
 import { lastEdited } from "@resume/library-entries";
 import type { IResumeEntry } from "@storage/resume-storage";
+import { useInView } from "./use-in-view";
+import { useRemoteThumbnail } from "./use-remote-thumbnail";
 
 interface RemoteResumeCardProps {
     entry: IResumeEntry;
     /** `owner/repo` the file lives in. */
     repo: string;
+    /** Cache key for the preview: one per connection and path. */
+    thumbnailKey: string;
+    /** The file's content, once read; the preview renders from it. */
+    resume?: IResume;
     /** "Unsaved session · 5m ago", when the file has one. */
     sessionLabel?: string;
     onOpen: (id: string) => void;
@@ -14,11 +21,16 @@ interface RemoteResumeCardProps {
 export default function RemoteResumeCard({
     entry,
     repo,
+    thumbnailKey,
+    resume,
     sessionLabel,
     onOpen,
 }: RemoteResumeCardProps) {
+    const [ref, visible] = useInView();
+    const thumbnail = useRemoteThumbnail(thumbnailKey, resume, visible);
     return (
         <li
+            ref={ref}
             data-testid="library-card"
             className="flex flex-col overflow-hidden rounded-md border-4 border-border-light bg-light-200 dark:border-border-dark dark:bg-dark-100">
             <button
@@ -27,9 +39,20 @@ export default function RemoteResumeCard({
                 onClick={() => onOpen(entry.id)}
                 className="flex flex-1 flex-col text-left hover:opacity-90">
                 <div className="flex aspect-[8.5/11] w-full items-center justify-center bg-light-300 dark:bg-dark-200">
-                    <span className="text-sm text-light-700 dark:text-dark-700">
-                        Opens from git
-                    </span>
+                    {thumbnail ? (
+                        <img
+                            data-testid="library-thumbnail"
+                            src={thumbnail}
+                            alt=""
+                            className="h-full w-full object-cover object-top"
+                        />
+                    ) : (
+                        <span
+                            data-testid="library-thumbnail-placeholder"
+                            className="text-sm text-light-700 dark:text-dark-700">
+                            Preview loading
+                        </span>
+                    )}
                 </div>
                 <div className="p-3">
                     <span className="flex items-center gap-2">
@@ -43,9 +66,11 @@ export default function RemoteResumeCard({
                     <span className="block truncate text-sm text-light-700 dark:text-dark-700">
                         {repo}
                     </span>
-                    <span className="block text-sm text-light-700 dark:text-dark-700">
-                        {lastEdited(entry)}
-                    </span>
+                    {(entry.date || entry.updatedAt !== undefined) && (
+                        <span className="block text-sm text-light-700 dark:text-dark-700">
+                            {lastEdited(entry)}
+                        </span>
+                    )}
                     {sessionLabel && (
                         <span
                             data-testid="session-badge"

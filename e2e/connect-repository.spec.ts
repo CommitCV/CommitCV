@@ -112,6 +112,8 @@ test.describe("connect a repository", () => {
         await page.getByRole("link", { name: "Resume Library" }).click();
         const repo = page.getByTestId("remote-repo");
         await expect(repo).toContainText("acme/cv");
+        // Rendered in this browser from the repo's file, not stored in it.
+        await expect(repo.getByTestId("library-thumbnail")).toBeVisible();
         await repo.getByRole("button", { name: "Open remote.json" }).click();
         await expect(page).toHaveURL(/\/editor$/);
     });
