@@ -119,6 +119,24 @@ test.describe("connect a repository", () => {
         await expect(page).toHaveURL(/\/editor$/);
     });
 
+    test("removes a repository from the library with the x, after confirming", async ({
+        page,
+    }) => {
+        await connect(page);
+        await page.getByRole("link", { name: "Resume Library" }).click();
+        const repo = page.getByTestId("remote-repo");
+        await repo.getByRole("button", { name: "Remove acme/cv" }).click();
+        await repo.getByRole("button", { name: "Cancel" }).click();
+        await expect(repo).toBeVisible();
+        await repo.getByRole("button", { name: "Remove acme/cv" }).click();
+        await repo
+            .getByRole("button", { name: "Confirm remove acme/cv" })
+            .click();
+        await expect(page.getByTestId("remote-repo")).toHaveCount(0);
+        await page.reload();
+        await expect(page.getByTestId("remote-repo")).toHaveCount(0);
+    });
+
     test("downloads a remote resume from its card menu", async ({ page }) => {
         await connect(page);
         await page.getByRole("link", { name: "Resume Library" }).click();

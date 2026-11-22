@@ -22,6 +22,7 @@ import {
     faTrash,
     faUnderline,
     faUpload,
+    faXmark,
     type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
@@ -66,3 +67,4 @@ export const Trash = icon(faTrash);
 export const Underline = icon(faUnderline);
 export const Undo = icon(faRotateLeft);
 export const Upload = icon(faUpload);
+export const Xmark = icon(faXmark);

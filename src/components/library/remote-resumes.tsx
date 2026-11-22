@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "@components/ui/button";
 import { buttonClass } from "@components/ui/button-class";
+import { Xmark } from "@components/ui/icons";
 import {
     useRemoteEntries,
     useRemoteSessions,
@@ -24,7 +25,14 @@ function repoOf(connection: IConnection): { path: string; host: string } {
     }
 }
 
-function Repo({ connection }: { connection: IConnection }) {
+function Repo({
+    connection,
+    onRemove,
+}: {
+    connection: IConnection;
+    onRemove: (id: string) => void;
+}) {
+    const [confirming, setConfirming] = useState(false);
     const { entries, error, reload } = useRemoteEntries(connection.id);
     const found = useRemoteSessions(connection.id, !!entries);
     const { open: openFile, dialog } = useOpenGitResume();
@@ -109,13 +117,49 @@ function Repo({ connection }: { connection: IConnection }) {
                         </span>
                     )}
                 </h3>
-                <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={reload}>
-                    Refresh
-                </Button>
+                <div className="flex items-center gap-1">
+                    {confirming ? (
+                        <>
+                            <span className={note}>
+                                Remove this repository?
+                            </span>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                aria-label={`Confirm remove ${path}`}
+                                onClick={() => onRemove(connection.id)}>
+                                Remove
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setConfirming(false)}>
+                                Cancel
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={reload}>
+                                Refresh
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`Remove ${path}`}
+                                title="Remove this repository"
+                                onClick={() => setConfirming(true)}>
+                                <Xmark className="h-4 w-4" />
+                            </Button>
+                        </>
+                    )}
+                </div>
             </div>
             {!entries && !error && <p className={note}>Loading repository…</p>}
             {shownError && (
@@ -187,6 +231,13 @@ export default function RemoteResumes() {
         };
     }, []);
 
+    const remove = (id: string) => {
+        connections
+            .remove(id)
+            .then(() => setItems((all) => all.filter((c) => c.id !== id)))
+            .catch(() => {});
+    };
+
     return (
         <section
             aria-label="Remote repositories"
@@ -210,6 +261,7 @@ export default function RemoteResumes() {
                 <Repo
                     key={item.id}
                     connection={item}
+                    onRemove={remove}
                 />
             ))}
         </section>
