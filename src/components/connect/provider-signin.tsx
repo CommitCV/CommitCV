@@ -56,7 +56,7 @@ function ProviderButton({
                 className={centered ? "w-64 justify-center" : undefined}
                 onClick={() => {
                     trackGit("git connect started", {
-                        ...whereOfHost(host, option.provider),
+                        ...whereOfHost(host),
                         method: "oauth",
                     });
                     window.location.assign(
@@ -146,7 +146,7 @@ export default function ProviderSignin({
             takeHandoff().then(
                 (h) => {
                     trackGit("git sign-in returned", {
-                        provider: whereOfHost(h.host, h.provider).provider,
+                        provider: whereOfHost(h.host).provider,
                         outcome: "ok",
                     });
                     if (active) setHandoff(h);

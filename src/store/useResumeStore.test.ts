@@ -134,14 +134,13 @@ describe("useResumeStore", () => {
             });
             const events = () => track.mock.calls;
 
-            it("reports a commit with provider, host kind and a duration bucket only", async () => {
+            it("reports a commit with provider and a duration bucket only", async () => {
                 await useResumeStore.getState().save("secret message");
                 await vi.waitFor(() => expect(events()).toHaveLength(1));
                 expect(events()[0]).toEqual([
                     "git commit completed",
                     {
                         provider: "github",
-                        host_kind: "public",
                         duration_bucket: "lt1s",
                     },
                 ]);
@@ -158,7 +157,6 @@ describe("useResumeStore", () => {
                     "git save failed",
                     {
                         provider: "github",
-                        host_kind: "public",
                         error_class: "network",
                     },
                 ]);

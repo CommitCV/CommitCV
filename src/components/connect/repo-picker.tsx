@@ -48,7 +48,7 @@ export default function RepoPicker({
             listRepos(handoff, query).then(
                 (list) => {
                     trackGit("git repo listed", {
-                        ...whereOfHost(handoff.host, handoff.provider),
+                        ...whereOfHost(handoff.host),
                         outcome: list.repos.length ? "found" : "empty",
                     });
                     if (!active) return;
@@ -58,7 +58,7 @@ export default function RepoPicker({
                 },
                 (reason: unknown) => {
                     trackGit("git repo listed", {
-                        ...whereOfHost(handoff.host, handoff.provider),
+                        ...whereOfHost(handoff.host),
                         outcome: "failed",
                     });
                     if (!active) return;
@@ -90,7 +90,7 @@ export default function RepoPicker({
             const result = await testConnection(draft);
             if (!result.ok) {
                 trackGit("git connect failed", {
-                    ...whereOfHost(handoff.host, handoff.provider),
+                    ...whereOfHost(handoff.host),
                     method: "oauth",
                     error_class: result.errorClass,
                 });
@@ -98,7 +98,7 @@ export default function RepoPicker({
             }
             const saved = await connections.add(draft);
             trackGit("git connected", {
-                ...whereOfHost(handoff.host, handoff.provider),
+                ...whereOfHost(handoff.host),
                 method: "oauth",
             });
             onConnected(saved);

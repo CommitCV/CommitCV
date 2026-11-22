@@ -1,39 +1,26 @@
-import { detectProvider } from "../git/remote-config.ts";
-import type { GitProvider } from "../git/remote-config.ts";
 import { trackEvent } from "./tracker.ts";
 import type {
     IGitEventMap,
     TGitDuration,
     TGitErrorClass,
     TGitEvent,
-    TGitHostKind,
     TGitProvider,
 } from "./types.ts";
 
-const PUBLIC_HOSTS = new Set([
-    "github.com",
-    "gitlab.com",
-    "bitbucket.org",
-    "codeberg.org",
-    "gitea.com",
-]);
+const INTEGRATED_HOSTS: Record<string, TGitProvider> = {
+    "github.com": "github",
+    "gitlab.com": "gitlab",
+    "codeberg.org": "codeberg",
+};
 
 /**
- * Reduces a git host to a coarse provider and whether it is a well-known
- * public host. `hint` is the provider the app already knows (for example a
- * self-hosted GitLab); the host itself is never reported.
+ * Reduces a git host to a provider: the three integrated hosts by name,
+ * everything else (self-hosted included) as "additional". The host itself is
+ * never reported.
  */
-export function classifyProvider(
-    host: string,
-    hint?: GitProvider,
-): { provider: TGitProvider; host_kind: TGitHostKind } {
+export function classifyProvider(host: string): { provider: TGitProvider } {
     const h = host.toLowerCase().replace(/:\d+$/, "");
-    const detected = h === "codeberg.org" ? "codeberg" : detectProvider(h);
-    const known = hint && hint !== "generic" ? hint : detected;
-    return {
-        provider: known === "generic" ? "other" : known,
-        host_kind: PUBLIC_HOSTS.has(h) ? "public" : "self_hosted",
-    };
+    return { provider: INTEGRATED_HOSTS[h] ?? "additional" };
 }
 
 /** Buckets a failure into a closed class; the message is never read out. */

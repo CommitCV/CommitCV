@@ -57,15 +57,7 @@ export type TEventPayload =
     | IPerformanceData
     | Record<string, string | number | boolean>;
 
-export type TGitProvider =
-    | "github"
-    | "gitlab"
-    | "bitbucket"
-    | "codeberg"
-    | "forgejo"
-    | "gitea"
-    | "other";
-export type TGitHostKind = "public" | "self_hosted";
+export type TGitProvider = "github" | "gitlab" | "codeberg" | "additional";
 export type TGitMethod = "oauth" | "token";
 export type TGitErrorClass =
     | "auth"
@@ -80,7 +72,6 @@ export type TGitDuration = "lt1s" | "1to5s" | "5to30s" | "gt30s";
 
 interface IGitWhere {
     provider: TGitProvider;
-    host_kind: TGitHostKind;
 }
 
 /**
@@ -122,16 +113,7 @@ export interface IGitEventMap {
 
 export type TGitEvent = keyof IGitEventMap;
 
-const PROVIDERS = [
-    "github",
-    "gitlab",
-    "bitbucket",
-    "codeberg",
-    "forgejo",
-    "gitea",
-    "other",
-] as const;
-const HOST_KINDS = ["public", "self_hosted"] as const;
+const PROVIDERS = ["github", "gitlab", "codeberg", "additional"] as const;
 const METHODS = ["oauth", "token"] as const;
 const ERROR_CLASSES = [
     "auth",
@@ -147,7 +129,7 @@ const DURATIONS = ["lt1s", "1to5s", "5to30s", "gt30s"] as const;
 const OUTCOME_OK = ["ok", "failed"] as const;
 const PROMPT_KINDS = ["conflict", "diverged"] as const;
 const CHOICES = ["mine", "remote"] as const;
-const WHERE = { provider: PROVIDERS, host_kind: HOST_KINDS } as const;
+const WHERE = { provider: PROVIDERS } as const;
 
 /** Runtime allowlist; the type keeps it in step with `IGitEventMap`. */
 export const GIT_EVENT_SCHEMA: {

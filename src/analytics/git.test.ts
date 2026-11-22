@@ -11,27 +11,18 @@ import { _resetAnalyticsForTesting } from "./tracker.ts";
 
 describe("classifyProvider", () => {
     it.each([
-        ["github.com", "github", "public"],
-        ["GitHub.com:443", "github", "public"],
-        ["gitlab.com", "gitlab", "public"],
-        ["bitbucket.org", "bitbucket", "public"],
-        ["codeberg.org", "codeberg", "public"],
-        ["gitlab.corp.example", "gitlab", "self_hosted"],
-        ["gitea.example.org", "gitea", "self_hosted"],
-        ["forgejo.example.org", "forgejo", "self_hosted"],
-        ["git.example.org", "other", "self_hosted"],
-    ])("%s -> %s, %s", (host, provider, hostKind) => {
-        expect(classifyProvider(host)).toEqual({
-            provider,
-            host_kind: hostKind,
-        });
-    });
-
-    it("trusts a known provider over a custom hostname", () => {
-        expect(classifyProvider("git.example.org", "gitlab")).toEqual({
-            provider: "gitlab",
-            host_kind: "self_hosted",
-        });
+        ["github.com", "github"],
+        ["GitHub.com:443", "github"],
+        ["gitlab.com", "gitlab"],
+        ["codeberg.org", "codeberg"],
+        ["gitlab.corp.example", "additional"],
+        ["bitbucket.org", "additional"],
+        ["gitea.example.org", "additional"],
+        ["forgejo.example.org", "additional"],
+        ["git.example.org", "additional"],
+        ["", "additional"],
+    ])("%s -> %s", (host, provider) => {
+        expect(classifyProvider(host)).toEqual({ provider });
     });
 
     it("never echoes the host", () => {
@@ -76,14 +67,12 @@ describe("trackGit", () => {
         vi.stubGlobal("window", { umami: { track } });
         trackGit("git connected", {
             provider: "github",
-            host_kind: "public",
             method: "token",
             // @ts-expect-error not part of the schema
             repo: "ada/cv",
         });
         expect(track).toHaveBeenCalledWith("git connected", {
             provider: "github",
-            host_kind: "public",
             method: "token",
         });
     });

@@ -134,10 +134,9 @@ describe("git event allowlist", () => {
         expect(
             sanitizeEventData("git connected", {
                 provider: "github",
-                host_kind: "public",
                 method: "oauth",
             }),
-        ).toEqual({ provider: "github", host_kind: "public", method: "oauth" });
+        ).toEqual({ provider: "github", method: "oauth" });
     });
 
     it("strips repo names, URLs, hosts, paths and unknown properties", () => {
@@ -156,11 +155,26 @@ describe("git event allowlist", () => {
     it("drops values outside the enum, even harmless-looking ones", () => {
         const result = sanitizeEventData("git connect failed", {
             provider: "git.corp.example",
-            host_kind: "public",
             error_class: "Error: token ghp_abc was rejected",
             method: 42,
         });
-        expect(result).toEqual({ host_kind: "public" });
+        expect(result).toBeUndefined();
+    });
+
+    it("rejects retired providers and host_kind", () => {
+        expect(
+            sanitizeEventData("git connected", {
+                provider: "bitbucket",
+                host_kind: "public",
+                method: "token",
+            }),
+        ).toEqual({ method: "token" });
+        expect(
+            sanitizeEventData("git connected", {
+                provider: "additional",
+                method: "token",
+            }),
+        ).toEqual({ provider: "additional", method: "token" });
     });
 
     it("sends nothing for an unknown git event (fail closed)", () => {
