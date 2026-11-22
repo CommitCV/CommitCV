@@ -65,8 +65,10 @@ const PASS_RESPONSE_HEADERS = [
     "expires",
     "pragma",
     "etag",
-    "www-authenticate",
 ];
+// `www-authenticate` is dropped on purpose: a 401 carrying a Basic challenge
+// makes the browser pop its own sign-in dialog instead of letting the app
+// handle the failure.
 const GIT_PATH =
     /^(?:\/[A-Za-z0-9._~-]+)+\/(info\/refs|git-upload-pack|git-receive-pack)$/;
 const SERVICES = ["git-upload-pack", "git-receive-pack"];
@@ -326,8 +328,7 @@ export function gitProxy(options: GitProxyOptions): Hono {
         const origin = c.req.header("origin");
         return {
             "Access-Control-Allow-Origin": origin ?? "",
-            "Access-Control-Expose-Headers":
-                "content-type, git-protocol, www-authenticate",
+            "Access-Control-Expose-Headers": "content-type, git-protocol",
             Vary: "Origin",
         };
     }
