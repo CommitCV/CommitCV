@@ -11,7 +11,7 @@ import {
 } from "../../git/oauth";
 import { parseRepoUrl } from "../../git/remote-config";
 import { testConnection } from "../../git/test-connection";
-import { TEMPLATE_REPO_URL } from "../../git/template";
+import { templateOffer } from "../../git/template";
 
 const input =
     "mt-1 w-full rounded border border-border-light bg-light-100 px-2 py-1.5 font-normal outline-none focus:border-accent dark:border-border-dark dark:bg-dark-200";
@@ -19,16 +19,6 @@ const input =
 interface RepoPickerProps {
     handoff: Handoff;
     onConnected: (connection: IConnection) => void;
-}
-
-function templatePath(): string | undefined {
-    try {
-        return TEMPLATE_REPO_URL
-            ? parseRepoUrl(TEMPLATE_REPO_URL).path
-            : undefined;
-    } catch {
-        return undefined;
-    }
 }
 
 /** After sign-in: choose a repo (or paste a URL), then test and save. */
@@ -41,7 +31,7 @@ export default function RepoPicker({ handoff, onConnected }: RepoPickerProps) {
     const [url, setUrl] = useState("");
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
-    const template = handoff.provider === "github" ? templatePath() : undefined;
+    const template = templateOffer(handoff.provider, handoff.host);
 
     useEffect(() => {
         let active = true;
@@ -197,12 +187,19 @@ export default function RepoPicker({ handoff, onConnected }: RepoPickerProps) {
                         {" "}
                         or{" "}
                         <a
-                            href={`${TEMPLATE_REPO_URL}/generate`}
+                            href={template.url}
                             target="_blank"
                             rel="noreferrer"
                             className="text-accent underline">
-                            start from the CommitCV template
+                            {template.label}
                         </a>
+                        {template.importFrom && (
+                            <>
+                                {" "}
+                                (paste <code>{template.importFrom}</code> as the
+                                repository URL)
+                            </>
+                        )}
                     </>
                 )}
                 . Make it private and add a README so it has a branch
