@@ -60,6 +60,10 @@ export class GitClient {
         return {
             http: this.d.http,
             corsProxy: this.d.corsProxy,
+            // Sent up front: otherwise every request first draws a 401.
+            headers: {
+                Authorization: `Basic ${btoa(`${auth.username}:${auth.password}`)}`,
+            },
             onAuth: () => auth,
         };
     }
@@ -95,7 +99,8 @@ export class GitClient {
                     remote: REMOTE,
                     singleBranch: true,
                     tags: false,
-                    depth,
+                    // Incremental: re-limiting the depth would throw away
+                    // history that session inspection fetched.
                 });
             } else {
                 await git.clone({
@@ -394,14 +399,18 @@ export class GitClient {
      */
     async sessionCommits(
         branch: string,
-        { remote = true, depth = 100 } = {},
+        {
+            remote = true,
+            depth = 100,
+            skipDefault = false,
+        }: { remote?: boolean; depth?: number; skipDefault?: boolean } = {},
     ): Promise<{
         headSha: string;
         baseSha: string | null;
         commits: LogEntry[];
     }> {
         if (remote) {
-            await this.fetch({ depth });
+            if (!skipDefault) await this.fetch({ depth });
             await this.fetch({ branch, depth });
         }
         const headSha = remote
@@ -476,6 +485,13 @@ export class GitClient {
 
     /** Branch names on the server (live, no fetch) starting with `prefix`. */
     async listRemoteBranches(prefix = ""): Promise<string[]> {
+        return (await this.listRemoteRefs(prefix)).map((r) => r.name);
+    }
+
+    /** Remote branches under `prefix` with the commit each points at. */
+    async listRemoteRefs(
+        prefix = "",
+    ): Promise<{ name: string; oid: string }[]> {
         const head = "refs/heads/";
         const refs = await this.run(() =>
             git.listServerRefs({
@@ -485,9 +501,9 @@ export class GitClient {
             }),
         );
         return refs
-            .map((r) => r.ref.slice(head.length))
-            .filter((b) => b.startsWith(prefix))
-            .sort();
+            .map((r) => ({ name: r.ref.slice(head.length), oid: r.oid }))
+            .filter((r) => r.name.startsWith(prefix))
+            .sort((a, b) => a.name.localeCompare(b.name));
     }
 
     async deleteRemoteBranch(branch: string): Promise<void> {

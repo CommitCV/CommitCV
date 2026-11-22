@@ -35,6 +35,7 @@ export type TGitClient = Pick<
     | "deleteLocalBranch"
     | "deleteRemoteBranch"
     | "listRemoteBranches"
+    | "listRemoteRefs"
     | "sessionCommits"
     | "log"
     | "deepen"
@@ -132,6 +133,9 @@ interface ISynced extends IOpenedRepo {
     head: string;
 }
 
+/** How long read-only calls reuse the last fetch of the default branch. */
+const READ_TTL_MS = 15_000;
+
 const slug = (path: string) =>
     path
         .replace(/\.json$/, "")
@@ -172,6 +176,14 @@ export class GitResumeStorage implements IGitStorage {
     private readonly newId: () => string;
     private repo?: Promise<IOpenedRepo>;
     private branch = "";
+    /** The last read-only sync, reused while it is fresh. */
+    private synced?: ISynced;
+    /** Default head at the last sync, and the one whose history is fetched deep. */
+    private defaultHead = "";
+    private deepFor = "";
+    private syncedAt = 0;
+    /** Session checks by branch tip, so unchanged branches cost no requests. */
+    private readonly inspected = new Map<string, ISessionInfo | null>();
     private queue: Promise<unknown> = Promise.resolve();
     /** Last content seen per path (null = absent), for conflict checks. */
     private readonly seen = new Map<string, string | null>();
@@ -220,7 +232,7 @@ export class GitResumeStorage implements IGitStorage {
 
     async list(): Promise<IResumeEntry[]> {
         return this.guard(async () => {
-            const { client } = await this.sync();
+            const { client } = await this.sync(READ_TTL_MS);
             const files = await client.listFiles(this.branch);
             return files.map((id) => ({
                 id,
@@ -232,7 +244,7 @@ export class GitResumeStorage implements IGitStorage {
 
     async load(id: string): Promise<IResume> {
         return this.guard(async () => {
-            const { client, head } = await this.sync();
+            const { client, head } = await this.sync(READ_TTL_MS);
             const text = await client.readFile(this.branch, id);
             this.seen.set(id, text);
             await this.setBase(id, head);
@@ -294,7 +306,7 @@ export class GitResumeStorage implements IGitStorage {
         const cached = this.versions.get(sha);
         if (cached) return structuredClone(cached);
         return this.guard(async () => {
-            const { client } = await this.sync();
+            const { client } = await this.sync(READ_TTL_MS);
             const text = await client.readFile(sha, id);
             if (text === null) {
                 throw new Error(`${id} did not exist in that version.`);
@@ -390,14 +402,14 @@ export class GitResumeStorage implements IGitStorage {
 
     async findSessions(id: string): Promise<ISessionInfo[]> {
         return this.guard(async () => {
-            const { client, defaultBranch } = await this.sync();
+            const { client, defaultBranch } = await this.sync(READ_TTL_MS);
             return this.inspectAll(client, defaultBranch, [id]);
         });
     }
 
     async listSessions(): Promise<ISessionInfo[]> {
         return this.guard(async () => {
-            const { client, defaultBranch } = await this.sync();
+            const { client, defaultBranch } = await this.sync(READ_TTL_MS);
             const files = await client.listFiles(defaultBranch);
             return this.inspectAll(client, defaultBranch, files);
         });
@@ -408,7 +420,9 @@ export class GitResumeStorage implements IGitStorage {
         defaultBranch: string,
         paths: string[],
     ): Promise<ISessionInfo[]> {
-        const names = await client.listRemoteBranches("commitcv/");
+        const refs = await client.listRemoteRefs("commitcv/");
+        const names = refs.map((r) => r.name);
+        const tips = new Map(refs.map((r) => [r.name, r.oid]));
         const records = await this.sessions.list(this.connectionId);
         const found: ISessionInfo[] = [];
         for (const path of paths) {
@@ -451,6 +465,7 @@ export class GitResumeStorage implements IGitStorage {
                     branch,
                     own,
                     true,
+                    tips.get(branch),
                 );
                 if (info) found.push(info);
             }
@@ -465,13 +480,45 @@ export class GitResumeStorage implements IGitStorage {
         branch: string,
         local: ISession | undefined,
         remote: boolean,
+        tip?: string,
+    ): Promise<ISessionInfo | null> {
+        // A branch tip never changes content, so an unchanged one is not
+        // fetched again; the default branch moving can change the verdict.
+        const key = `${path}|${branch}|${tip}|${this.defaultHead}`;
+        if (remote && tip && this.inspected.has(key)) {
+            const hit = this.inspected.get(key) ?? null;
+            return hit && { ...hit, local };
+        }
+        const info = await this.inspectFresh(
+            client,
+            defaultBranch,
+            path,
+            branch,
+            local,
+            remote,
+        );
+        if (remote && tip) this.inspected.set(key, info);
+        return info;
+    }
+
+    private async inspectFresh(
+        client: TGitClient,
+        defaultBranch: string,
+        path: string,
+        branch: string,
+        local: ISession | undefined,
+        remote: boolean,
     ): Promise<ISessionInfo | null> {
         const found = await client
-            .sessionCommits(branch, { remote })
+            .sessionCommits(branch, {
+                remote,
+                skipDefault: remote && this.deepFor === this.defaultHead,
+            })
             .catch((err: unknown) => {
                 if (remote) throw err;
                 return null;
             });
+        if (remote && found) this.deepFor = this.defaultHead;
         if (!found?.commits.length) return null;
         const [latest] = found.commits;
         const [content, before] = await Promise.all([
@@ -499,7 +546,7 @@ export class GitResumeStorage implements IGitStorage {
         info: ISessionInfo,
     ): Promise<IOpenedSession> {
         return this.guard(async () => {
-            const { client } = await this.sync();
+            const { client } = await this.sync(READ_TTL_MS);
             const text = await client.readFile(info.headSha, id);
             const remote = parse(text);
             if (!remote) throw new Error(`${id} is unreadable on the session.`);
@@ -743,7 +790,16 @@ export class GitResumeStorage implements IGitStorage {
     }
 
     /** Fetches (cloning on first use) and drops any unpushed local commit. */
-    private async sync(): Promise<ISynced> {
+    private async sync(maxAgeMs = 0): Promise<ISynced> {
+        if (
+            maxAgeMs > 0 &&
+            this.synced &&
+            this.now() - this.syncedAt < maxAgeMs
+        ) {
+            return this.synced;
+        }
+        // Writes always fetch, and leave nothing for a later read to reuse.
+        this.synced = undefined;
         this.repo ??= this.open();
         const repo = await this.repo.catch((err: unknown) => {
             this.repo = undefined;
@@ -755,7 +811,13 @@ export class GitResumeStorage implements IGitStorage {
         this.branch = defaultBranch;
         const head =
             (await repo.client.resetToRemote(defaultBranch)) ?? headSha;
-        return { ...repo, defaultBranch, head };
+        this.defaultHead = head;
+        const synced = { ...repo, defaultBranch, head };
+        if (maxAgeMs > 0) {
+            this.synced = synced;
+            this.syncedAt = this.now();
+        }
+        return synced;
     }
 
     /** Calls run one at a time: autosave and commit must not interleave. */

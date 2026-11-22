@@ -364,6 +364,12 @@ export async function fakeGit(page: Page) {
                     .filter((b) => b.startsWith(prefix))
                     .sort();
             },
+            async listRemoteRefs(prefix = "") {
+                return Object.keys(S.remote)
+                    .filter((b) => b.startsWith(prefix))
+                    .sort()
+                    .map((name) => ({ name, oid: S.remote[name].head }));
+            },
             async sessionCommits(
                 branch: string,
                 { remote = true }: { remote?: boolean } = {},

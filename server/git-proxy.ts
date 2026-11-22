@@ -65,8 +65,10 @@ const PASS_RESPONSE_HEADERS = [
     "expires",
     "pragma",
     "etag",
-    "www-authenticate",
 ];
+// `www-authenticate` is dropped on purpose: a 401 carrying a Basic challenge
+// makes the browser pop its own sign-in dialog instead of letting the app
+// handle the failure.
 const GIT_PATH =
     /^(?:\/[A-Za-z0-9._~-]+)+\/(info\/refs|git-upload-pack|git-receive-pack)$/;
 const SERVICES = ["git-upload-pack", "git-receive-pack"];
@@ -268,7 +270,9 @@ async function defaultResolve(host: string): Promise<Address[]> {
  * CORS proxy for git smart-HTTP, shaped for isomorphic-git's
  * `corsProxy` option: `/<host>/<repo path>/<git endpoint>`. Tokens
  * arrive in the client's Authorization header and are only forwarded;
- * nothing about a request is stored or logged beyond method/host/status.
+ * nothing about a request is stored or logged beyond method/host/status,
+ * plus the endpoint name and sizes when `GIT_PROXY_TIMING=1`. Repository
+ * paths, headers and bodies are never logged.
  */
 export function gitProxy(options: GitProxyOptions): Hono {
     const app = new Hono();
@@ -326,8 +330,7 @@ export function gitProxy(options: GitProxyOptions): Hono {
         const origin = c.req.header("origin");
         return {
             "Access-Control-Allow-Origin": origin ?? "",
-            "Access-Control-Expose-Headers":
-                "content-type, git-protocol, www-authenticate",
+            "Access-Control-Expose-Headers": "content-type, git-protocol",
             Vary: "Origin",
         };
     }
@@ -344,6 +347,8 @@ export function gitProxy(options: GitProxyOptions): Hono {
             return false;
         }
     }
+
+    const timing = process.env.GIT_PROXY_TIMING === "1";
 
     app.all("/*", async (c) => {
         const fail = (status: ProxyError["status"], message: string) =>
@@ -417,6 +422,7 @@ export function gitProxy(options: GitProxyOptions): Hono {
                 }),
             );
 
+            const startedAt = performance.now();
             for (let hop = 0; ; hop++) {
                 host = target.hostname;
                 const address = await pickAddress(host);
@@ -472,14 +478,9 @@ export function gitProxy(options: GitProxyOptions): Hono {
                 }
 
                 if (response.status >= 400) {
-                    // Status and a short body only; never request headers.
-                    const detail = await response
-                        .clone()
-                        .text()
-                        .then((t) => t.slice(0, 200).replace(/\s+/g, " "))
-                        .catch(() => "");
+                    // Method, host and status only: no path, headers or body.
                     console.warn(
-                        `git-proxy: ${target.hostname}${target.pathname} -> ${response.status} ${detail}`,
+                        `git-proxy ${c.req.method} ${target.hostname} ${response.status}`,
                     );
                 }
                 const out = new Headers(cors);
@@ -492,14 +493,18 @@ export function gitProxy(options: GitProxyOptions): Hono {
                     await response.body?.cancel();
                     throw new ProxyError(502, "upstream response too large");
                 }
-                handedOff = response.body !== null;
+                const timed = timing
+                    ? timeBody(response, {
+                          label: `${c.req.method} ${target.hostname} ${endpointOf(target)}`,
+                          startedAt,
+                          sent: received,
+                      })
+                    : response.body;
+                handedOff = timed !== null;
                 return new Response(
-                    response.body &&
-                        guardBody(
-                            response.body,
-                            maxResponse,
-                            deadline.signal,
-                            () => clearTimeout(deadlineTimer),
+                    timed &&
+                        guardBody(timed, maxResponse, deadline.signal, () =>
+                            clearTimeout(deadlineTimer),
                         ),
                     { status: response.status, headers: out },
                 );
@@ -521,4 +526,38 @@ export function gitProxy(options: GitProxyOptions): Hono {
     });
 
     return app;
+}
+
+/** `info/refs`, `git-upload-pack` or `git-receive-pack`: no owner or repo. */
+const endpointOf = (url: URL) =>
+    url.pathname.endsWith("/info/refs")
+        ? "info/refs"
+        : (url.pathname.split("/").pop() ?? "");
+
+/** Logs time to first byte, total time and sizes once the body finishes. */
+function timeBody(
+    response: Response,
+    {
+        label,
+        startedAt,
+        sent,
+    }: { label: string; startedAt: number; sent: number },
+): ReadableStream<Uint8Array> | null {
+    const firstByte = performance.now() - startedAt;
+    let received = 0;
+    const log = (note = "") =>
+        console.info(
+            `git-proxy timing: ${label} -> ${response.status} ttfb ${firstByte.toFixed(0)}ms total ${(performance.now() - startedAt).toFixed(0)}ms sent ${sent}B received ${received}B${note}`,
+        );
+    return (
+        response.body?.pipeThrough(
+            new TransformStream<Uint8Array, Uint8Array>({
+                transform(chunk, controller) {
+                    received += chunk.byteLength;
+                    controller.enqueue(chunk);
+                },
+                flush: () => log(),
+            }),
+        ) ?? (log(), null)
+    );
 }

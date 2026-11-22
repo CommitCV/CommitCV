@@ -105,6 +105,16 @@ export function authFor(config: RemoteConfig): GitCredentials {
     }
 }
 
+/**
+ * The URL git talks to. GitLab redirects `repo/info/refs` to `repo.git/...`
+ * but the client keeps POSTing to the original path, which GitLab's web app
+ * rejects with a 422, so GitLab clones always use the `.git` form.
+ */
+export function gitRemoteUrl(url: string, provider?: GitProvider): string {
+    const kind = provider ?? detectProvider(parseRepoUrl(url).host);
+    return kind === "gitlab" && !url.endsWith(".git") ? `${url}.git` : url;
+}
+
 export function corsProxyFor(origin: string): string {
     return `${origin.replace(/\/+$/, "")}/api/git-proxy`;
 }

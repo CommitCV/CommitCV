@@ -268,6 +268,20 @@ describe("git proxy headers and CORS", () => {
         );
     });
 
+    it("keeps an upstream Basic challenge from reaching the browser", async () => {
+        const { server } = setup(
+            {},
+            async () =>
+                new Response("no", {
+                    status: 401,
+                    headers: { "www-authenticate": 'Basic realm="GitHub"' },
+                }),
+        );
+        const response = await server.request(REFS);
+        expect(response.status).toBe(401);
+        expect(response.headers.get("www-authenticate")).toBeNull();
+    });
+
     it("answers preflight for the public origin", async () => {
         const response = await setup().server.request(REFS, {
             method: "OPTIONS",
