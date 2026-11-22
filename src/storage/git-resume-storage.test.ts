@@ -568,7 +568,7 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
             const [info] = await reopened.findSessions("cv.json");
             expect(info?.local).toBeDefined();
             expect(
-                (await reopened.inspectSession("cv.json", info)).local,
+                (await reopened.inspectSession("cv.json", info)).remote,
             ).toEqual(two("a3", "b"));
             expect(await store.list()).toHaveLength(1);
         });
