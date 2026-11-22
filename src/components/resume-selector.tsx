@@ -3,15 +3,11 @@ import { useState } from "react";
 import Button from "@components/ui/button";
 import { buttonClass } from "@components/ui/button-class";
 import Card from "@components/ui/card";
-import ResumeLibrary from "./resume-library";
-import { Github, Upload } from "@components/ui/icons";
+import { Git, Upload } from "@components/ui/icons";
 import { importResumeFile } from "@resume/import-resume-file";
-import { useResumeStore } from "@store/useResumeStore";
+import { requestPersistence } from "@storage/persistence";
+import { resumeStorages, useResumeStore } from "@store/useResumeStore";
 import { trackResumeCreated, trackResumeImported } from "@analytics/tracker";
-
-// Choice cards sit on the page background, inside the surface box.
-const choiceCard =
-    "flex flex-col items-center justify-center rounded-xl border-4 border-border-light bg-light-100 text-center sm:aspect-square dark:border-border-dark dark:bg-dark-300";
 
 export default function ResumeSelector() {
     const navigate = useNavigate();
@@ -22,7 +18,11 @@ export default function ResumeSelector() {
 
     async function uploadResume(file: File) {
         try {
-            load(await importResumeFile(file), null);
+            const resume = await importResumeFile(file);
+            const id = crypto.randomUUID();
+            await resumeStorages.local.save(id, resume);
+            void requestPersistence();
+            load(resume, { kind: "local", id });
             trackResumeImported();
             navigate("/editor");
         } catch (reason) {
@@ -35,67 +35,37 @@ export default function ResumeSelector() {
     }
 
     return (
-        <div className="mx-auto w-full max-w-3xl">
+        <div className="mx-auto w-full max-w-4xl">
             <Card
                 variant="surface"
                 className="p-6 md:p-8">
                 <p className="mb-8 text-center text-lg font-medium text-light-950 dark:text-dark-950">
-                    Start a new resume or upload an existing resume or
+                    Upload an existing resume, start a new one, or
                     <br />
-                    sign in with GitHub to access your library of resumes
+                    connect a git repository to access your library of resumes
                 </p>
 
-                <div className="mx-auto grid max-w-xl grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-12">
-                    <div className={`${choiceCard} gap-6 p-10`}>
-                        <p className="text-xl font-semibold tracking-tight text-light-950 dark:text-dark-950">
-                            Start a new resume!
-                        </p>
-                        <Button
-                            type="button"
-                            variant="primary"
-                            onClick={() => {
-                                newResume();
-                                trackResumeCreated();
-                                navigate("/editor");
-                            }}>
-                            Start editing
-                        </Button>
-                    </div>
-                    <label
-                        className={`${choiceCard} cursor-pointer p-3 transition-opacity hover:opacity-80 has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-accent`}
-                        onDragOver={(event) => {
-                            if (!event.dataTransfer.types.includes("Files")) {
-                                return;
-                            }
-                            event.preventDefault();
-                            setDragging(true);
-                        }}
-                        onDragLeave={(event) => {
-                            const next = event.relatedTarget;
-                            if (
-                                next instanceof Node &&
-                                event.currentTarget.contains(next)
-                            ) {
-                                return;
-                            }
-                            setDragging(false);
-                        }}
-                        onDrop={(event) => {
-                            event.preventDefault();
-                            setDragging(false);
-                            const file = event.dataTransfer.files[0];
-                            if (file) void uploadResume(file);
-                        }}>
-                        <span
-                            className={`flex h-full w-full flex-col items-center justify-center gap-4 rounded-lg border-4 border-dashed p-6 transition-colors ${
-                                dragging
-                                    ? "border-accent"
-                                    : "border-border-light dark:border-border-dark"
-                            }`}>
-                            <Upload className="h-8 w-8 text-light-700 dark:text-dark-700" />
-                            <span className="text-xl font-semibold tracking-tight text-light-700 dark:text-dark-700">
-                                Drag or click to upload a .json file here
-                            </span>
+                <div
+                    onDragOver={(event) => {
+                        event.preventDefault();
+                        setDragging(true);
+                    }}
+                    onDragLeave={() => setDragging(false)}
+                    onDrop={(event) => {
+                        event.preventDefault();
+                        setDragging(false);
+                        const file = event.dataTransfer.files[0];
+                        if (file) void uploadResume(file);
+                    }}
+                    className={`flex flex-col items-center justify-center gap-8 rounded-xl border-4 border-dashed p-12 text-center ${
+                        dragging
+                            ? "border-accent"
+                            : "border-border-light dark:border-border-dark"
+                    }`}>
+                    <label className="flex cursor-pointer flex-col items-center gap-4 transition-opacity hover:opacity-80">
+                        <Upload className="h-8 w-8 text-light-700 dark:text-dark-700" />
+                        <span className="text-2xl font-semibold tracking-tight text-light-700 dark:text-dark-700">
+                            Drag or click to upload a .json file here
                         </span>
                         <input
                             type="file"
@@ -107,6 +77,30 @@ export default function ResumeSelector() {
                             }}
                         />
                     </label>
+                    <div className="flex flex-wrap items-center justify-center gap-4">
+                        <Button
+                            type="button"
+                            variant="primary"
+                            onClick={() => {
+                                // Saved straight away, so it is in the library even if untouched.
+                                newResume();
+                                void useResumeStore
+                                    .getState()
+                                    .save()
+                                    .then(() => {
+                                        trackResumeCreated();
+                                        navigate("/editor");
+                                    });
+                            }}>
+                            Start editing
+                        </Button>
+                        <Link
+                            to="/signin"
+                            className={buttonClass("secondary", "md", "gap-2")}>
+                            <Git className="h-4 w-4" />
+                            Connect a repository
+                        </Link>
+                    </div>
                 </div>
 
                 {error && (
@@ -116,25 +110,6 @@ export default function ResumeSelector() {
                         {error}
                     </p>
                 )}
-                <div className="mt-6 grid gap-4 md:grid-cols-2">
-                    <ResumeLibrary compact />
-                    <section className="rounded-lg border border-border-light p-4 dark:border-border-dark">
-                        <div className="mb-3 flex items-center gap-2">
-                            <Github className="h-5 w-5" />
-                            <h2 className="text-lg font-semibold">
-                                Git repository
-                            </h2>
-                        </div>
-                        <p className="mb-3 text-sm text-light-700 dark:text-dark-700">
-                            Keep your resumes in any https git repository.
-                        </p>
-                        <Link
-                            to="/signin"
-                            className={buttonClass("primary", "sm")}>
-                            Connect a repository
-                        </Link>
-                    </section>
-                </div>
             </Card>
         </div>
     );

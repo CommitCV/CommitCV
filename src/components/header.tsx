@@ -1,5 +1,6 @@
 import { NavLink } from "react-router";
 import { buttonClass } from "@components/ui/button-class";
+import { Git } from "@components/ui/icons";
 import Logo from "@components/ui/logo";
 import ThemeSwitcher from "@components/theme-switcher";
 import { useGitHubSession } from "@hooks/useGitHubSession";
@@ -22,17 +23,18 @@ export default function Header() {
                     <NavLink
                         to="/library"
                         className={buttonClass(
-                            "ghost",
+                            "secondary",
                             "sm",
-                            "hidden font-semibold sm:inline-flex",
+                            "hidden sm:inline-flex",
                         )}>
                         Resume Library
                     </NavLink>
                     {login === null ? (
                         <NavLink
                             to="/signin"
-                            className={authButtonClass}>
-                            Sign In
+                            className={`${authButtonClass} gap-1.5`}>
+                            <Git className="h-4 w-4" />
+                            Sign in with Git
                         </NavLink>
                     ) : (
                         <button

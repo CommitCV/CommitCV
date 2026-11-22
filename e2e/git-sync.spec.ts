@@ -6,7 +6,6 @@ import { connect } from "./fixtures/fake-git";
 async function openRemote(page: Page) {
     await page.clock.install();
     await connect(page);
-    await page.getByTestId("connection").getByRole("button").first().click();
     await page.getByRole("button", { name: "Open remote.json" }).click();
     await expect(page).toHaveURL(/\/editor$/);
 }

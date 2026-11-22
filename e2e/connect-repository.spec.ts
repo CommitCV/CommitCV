@@ -47,7 +47,6 @@ test.describe("connect a repository", () => {
         expect(await page.locator("body").innerText()).not.toContain(
             "net-secret-123",
         );
-        await expect(page.getByTestId("connection")).toHaveCount(0);
     });
 
     test("saves a connection, keeps the token out of localStorage and opens a file", async ({
@@ -60,13 +59,7 @@ test.describe("connect a repository", () => {
         );
         expect(local).not.toContain(TOKEN);
 
-        await page.reload();
-        await expect(page.getByTestId("connection")).toContainText("acme/cv");
-        await page
-            .getByTestId("connection")
-            .getByRole("button")
-            .first()
-            .click();
+        await page.goto("/library");
         await page.getByRole("button", { name: "Open remote.json" }).click();
         await expect(page).toHaveURL(/\/editor$/);
         await expect(page.getByLabel("Resume filename")).toHaveValue(
@@ -149,16 +142,6 @@ test.describe("connect a repository", () => {
         const download = page.waitForEvent("download");
         await page.getByRole("menuitem", { name: "Download JSON" }).click();
         expect((await download).suggestedFilename()).toMatch(/\.json$/);
-    });
-
-    test("removes a connection only after confirming", async ({ page }) => {
-        await connect(page);
-        await page.getByRole("button", { name: "Remove acme/cv" }).click();
-        await page.getByRole("button", { name: "Cancel" }).click();
-        await expect(page.getByTestId("connection")).toHaveCount(1);
-        await page.getByRole("button", { name: "Remove acme/cv" }).click();
-        await page.getByRole("button", { name: "Confirm remove" }).click();
-        await expect(page.getByTestId("connection")).toHaveCount(0);
     });
 
     test("hides the template option when no template URL is configured", async ({

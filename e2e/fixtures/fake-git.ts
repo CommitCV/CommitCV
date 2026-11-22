@@ -402,5 +402,5 @@ export async function connect(page: Page) {
     await page.getByLabel("Author name").fill("Ada");
     await page.getByLabel("Author email").fill("ada@example.com");
     await page.getByRole("button", { name: "Connect", exact: true }).click();
-    await expect(page.getByTestId("connection")).toContainText("acme/cv");
+    await expect(page.getByRole("heading", { name: /acme\/cv/ })).toBeVisible();
 }

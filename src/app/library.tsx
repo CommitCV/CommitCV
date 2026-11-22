@@ -14,6 +14,7 @@ import { sortEntries } from "@resume/library-entries";
 import type { IResumeEntry } from "@storage/resume-storage";
 import { requestPersistence } from "@storage/persistence";
 import { resumeStorages, useResumeStore } from "@store/useResumeStore";
+import { trackResumeCreated, trackResumeDeleted } from "@analytics/tracker";
 
 const message = (reason: unknown, fallback: string) =>
     reason instanceof Error ? reason.message : fallback;
@@ -82,6 +83,7 @@ export default function Library() {
     const remove = (id: string) =>
         run(async () => {
             await resumeStorages.local.remove(id);
+            trackResumeDeleted();
             await refresh();
         }, "Unable to delete resume");
 
@@ -90,6 +92,7 @@ export default function Library() {
         run(async () => {
             newResume();
             await useResumeStore.getState().save();
+            trackResumeCreated();
             navigate("/editor");
         }, "Unable to create resume");
 
