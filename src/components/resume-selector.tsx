@@ -9,6 +9,7 @@ import { today } from "@resume/dates";
 import { isLegacyResume, migrateLegacyResume } from "@resume/legacy-resume";
 import { parseResume } from "@resume/parse-resume";
 import { useResumeStore } from "@store/useResumeStore";
+import { trackResumeCreated, trackResumeImported } from "@analytics/tracker";
 
 export default function ResumeSelector() {
     const navigate = useNavigate();
@@ -26,6 +27,7 @@ export default function ResumeSelector() {
                   })
                 : parseResume(json);
             load(resume, null);
+            trackResumeImported();
             navigate("/editor");
         } catch (reason) {
             setError(
@@ -59,6 +61,7 @@ export default function ResumeSelector() {
                             variant="primary"
                             onClick={() => {
                                 newResume();
+                                trackResumeCreated();
                                 navigate("/editor");
                             }}>
                             Start editing
