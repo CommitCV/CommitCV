@@ -381,6 +381,64 @@ export class GitClient {
         );
     }
 
+    /**
+     * Commits on `branch` that are not in the default branch's history,
+     * newest first, and the commit it branched from (null when that is older
+     * than the fetched history). `remote` reads the server's version of the
+     * branch (fetching it and the default branch); otherwise the local ref.
+     */
+    async sessionCommits(
+        branch: string,
+        { remote = true, depth = 100 } = {},
+    ): Promise<{
+        headSha: string;
+        baseSha: string | null;
+        commits: LogEntry[];
+    }> {
+        if (remote) {
+            await this.fetch({ depth });
+            await this.fetch({ branch, depth });
+        }
+        const headSha = remote
+            ? await git.resolveRef({
+                  ...this.base,
+                  ref: `refs/remotes/${REMOTE}/${branch}`,
+              })
+            : await this.resolve(branch);
+        const onDefault = new Set(
+            (
+                await git.log({
+                    ...this.base,
+                    ref: await this.resolve(await this.defaultBranch()),
+                    depth,
+                })
+            ).map((c) => c.oid),
+        );
+        const commits: LogEntry[] = [];
+        let baseSha: string | null = null;
+        for (const { oid, commit: c } of await git.log({
+            ...this.base,
+            ref: headSha,
+            depth,
+        })) {
+            if (onDefault.has(oid)) {
+                baseSha = oid;
+                break;
+            }
+            commits.push({
+                sha: oid,
+                message: c.message.trimEnd(),
+                author: { name: c.author.name, email: c.author.email },
+                committer: {
+                    name: c.committer.name,
+                    email: c.committer.email,
+                },
+                date: new Date(c.author.timestamp * 1000),
+            });
+        }
+        return { headSha, baseSha, commits };
+    }
+
     /** Fetch `n` more commits of history for `branch`. */
     async deepen(n: number, branch?: string): Promise<void> {
         await this.run(async () =>
@@ -415,16 +473,28 @@ export class GitClient {
     }
 
     async deleteRemoteBranch(branch: string): Promise<void> {
-        await this.run(() =>
-            git.push({
+        const ref = `refs/heads/${branch}`;
+        await this.run(async () => {
+            // push --delete resolves the local ref; a fetched-only branch has none.
+            await git.resolveRef({ ...this.base, ref }).catch(async () =>
+                git.writeRef({
+                    ...this.base,
+                    ref,
+                    value: await git.resolveRef({
+                        ...this.base,
+                        ref: `refs/remotes/${REMOTE}/${branch}`,
+                    }),
+                }),
+            );
+            return git.push({
                 ...this.base,
                 ...this.net,
                 remote: REMOTE,
                 url: this.url,
-                ref: `refs/heads/${branch}`,
+                ref,
                 delete: true,
-            }),
-        );
+            });
+        });
     }
 
     /**

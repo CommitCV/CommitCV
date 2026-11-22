@@ -18,6 +18,7 @@ export default function GitSyncStatus() {
     const sync = useResumeStore((s) => s.sync);
     const saveError = useResumeStore((s) => s.saveError);
     const resolve = useResumeStore((s) => s.resolveConflict);
+    const resolveDivergence = useResumeStore((s) => s.resolveDivergence);
     const now = useNow(5000);
     const busy = saveState === "saving";
 
@@ -61,6 +62,29 @@ export default function GitSyncStatus() {
                         disabled={busy}
                         onClick={() => void resolve("remote")}>
                         Take remote
+                    </Button>
+                </div>
+            )}
+            {sync.phase === "diverged" && (
+                <div
+                    role="alert"
+                    className="flex w-full flex-wrap items-center gap-2 text-xs">
+                    <span>This session was updated elsewhere.</span>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        disabled={busy}
+                        onClick={() => void resolveDivergence("remote")}>
+                        Use remote version
+                    </Button>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        disabled={busy}
+                        onClick={() => void resolveDivergence("mine")}>
+                        Keep my version (overwrite remote)
                     </Button>
                 </div>
             )}

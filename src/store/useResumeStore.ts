@@ -28,6 +28,7 @@ import { openConnection } from "../git/open-connection";
 import { sessions } from "../git/sessions";
 import {
     GitResumeStorage,
+    SessionDivergedError,
     type IGitStorage,
 } from "@storage/git-resume-storage";
 import {
@@ -51,7 +52,14 @@ export type TSaveState = "clean" | "dirty" | "saving" | "error";
 
 /** Git sessions: autosave progress, separate from commit's `saveState`. */
 export interface ISyncState {
-    phase: "idle" | "syncing" | "retrying" | "auth" | "conflict";
+    phase:
+        | "idle"
+        | "syncing"
+        | "retrying"
+        | "auth"
+        | "conflict"
+        /** The remote session branch moved on another device. */
+        | "diverged";
     /** When the session branch last got the document (ms); null once committed. */
     autosavedAt: number | null;
 }
@@ -207,6 +215,8 @@ interface IResumeStore {
     autosave(): Promise<TAutosaveOutcome>;
     /** After a commit conflict: overwrite the default branch, or take its version. */
     resolveConflict(choice: "mine" | "remote"): Promise<void>;
+    /** After autosave found the session updated elsewhere. */
+    resolveDivergence(choice: "mine" | "remote"): Promise<void>;
 }
 
 const isGitStorage = (s: IResumeStorage): s is IGitStorage =>
@@ -432,8 +442,9 @@ export const useResumeStore = create<IResumeStore>()(
             autosave: async () => {
                 const { resume, source } = get();
                 if (!resume || source?.kind !== "git") return "skip";
-                // The conflict prompt owns the status until it is resolved.
-                if (get().sync.phase === "conflict") return "skip";
+                // A prompt owns the status until it is resolved.
+                const { phase } = get().sync;
+                if (phase === "conflict" || phase === "diverged") return "skip";
                 const storage = storageFor(source);
                 if (!isGitStorage(storage)) return "skip";
                 set({ sync: { ...get().sync, phase: "syncing" } });
@@ -441,6 +452,10 @@ export const useResumeStore = create<IResumeStore>()(
                     await storage.saveSession(source.path, resume);
                 } catch (err) {
                     if (get().source !== source) return "skip";
+                    if (err instanceof SessionDivergedError) {
+                        set({ sync: { ...get().sync, phase: "diverged" } });
+                        return "skip";
+                    }
                     const auth = err instanceof UnauthorizedError;
                     set({
                         sync: {
@@ -479,6 +494,38 @@ export const useResumeStore = create<IResumeStore>()(
                     set({
                         saveState: get().resume === resume ? "clean" : "dirty",
                         sync: idleSync,
+                    });
+                } catch (err) {
+                    failCommit(set, get, source, err);
+                }
+            },
+
+            resolveDivergence: async (choice) => {
+                const { resume, source } = get();
+                if (!resume || source?.kind !== "git") return;
+                const storage = storageFor(source);
+                if (!isGitStorage(storage)) return;
+                set({ saveState: "saving", saveError: null });
+                try {
+                    if (choice === "remote") {
+                        const infos = await storage.findSessions(source.path);
+                        const info = infos.find((i) => i.local);
+                        if (!info) throw new Error("The session is gone.");
+                        const theirs = await storage.resolveSession(
+                            source.path,
+                            info,
+                            "remote",
+                        );
+                        if (get().source === source) get().load(theirs, source);
+                        return;
+                    }
+                    await storage.saveSession(source.path, resume, {
+                        force: true,
+                    });
+                    if (get().source !== source) return;
+                    set({
+                        saveState: get().resume === resume ? "clean" : "dirty",
+                        sync: { phase: "idle", autosavedAt: Date.now() },
                     });
                 } catch (err) {
                     failCommit(set, get, source, err);

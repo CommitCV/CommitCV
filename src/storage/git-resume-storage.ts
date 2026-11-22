@@ -2,7 +2,11 @@ import type { IResume } from "@resume/resume";
 import { parseResume } from "@resume/parse-resume";
 import { GitAuthError, GitConflictError } from "../git/errors";
 import type { GitClient } from "../git/git-client";
-import { MemorySessionStore, type ISessionStore } from "../git/sessions";
+import {
+    MemorySessionStore,
+    type ISession,
+    type ISessionStore,
+} from "../git/sessions";
 import { mergeResume } from "@resume/merge-resume";
 import {
     generateCommitBody,
@@ -24,18 +28,75 @@ export type TGitClient = Pick<
     | "squashToDefault"
     | "deleteLocalBranch"
     | "deleteRemoteBranch"
+    | "listRemoteBranches"
+    | "sessionCommits"
 >;
 
 export type TConflictChoice = "mine" | "remote";
 
 /** What the editor needs beyond `IResumeStorage`: session autosave and commit. */
 export interface IGitStorage extends IResumeStorage {
-    /** Autosave: commit to the session branch and push it. */
-    saveSession(id: string, resume: IResume): Promise<void>;
+    /**
+     * Autosave: commit to the session branch and push it. Throws
+     * `SessionDivergedError` if the remote branch moved; only `force`
+     * (the user's "keep mine") overwrites it.
+     */
+    saveSession(
+        id: string,
+        resume: IResume,
+        opts?: { force?: boolean },
+    ): Promise<void>;
     /** Squash the session onto the default branch (see `commit`). */
     commit(id: string, resume: IResume, opts?: ICommitOptions): Promise<void>;
-    /** Drops the session and returns the default branch's version. */
-    discardSession(id: string): Promise<IResume | null>;
+    /**
+     * Drops the session (and `branch`, a session found on the remote) and
+     * returns the default branch's version.
+     */
+    discardSession(id: string, branch?: string): Promise<IResume | null>;
+    /** Unsquashed session branches of one file, most recent activity first. */
+    findSessions(id: string): Promise<ISessionInfo[]>;
+    /** Unsquashed sessions of every file in the repository. */
+    listSessions(): Promise<ISessionInfo[]>;
+    /** What continuing `info` would load, and whether choices are needed. */
+    inspectSession(id: string, info: ISessionInfo): Promise<IOpenedSession>;
+    /** Makes `info` the active session and returns the chosen version. */
+    resolveSession(
+        id: string,
+        info: ISessionInfo,
+        choice: TSessionChoice,
+    ): Promise<IResume>;
+}
+
+/** An unsquashed session branch that is ahead of the default branch. */
+export interface ISessionInfo {
+    path: string;
+    branch: string;
+    headSha: string;
+    /** Default commit the session started from; null when out of history. */
+    baseSha: string | null;
+    lastCommit: { message: string; date: number };
+    aheadBy: number;
+    /** This browser's record of the session, if it has one. */
+    local?: ISession;
+}
+
+export interface IOpenedSession {
+    /** The session as last pushed. */
+    remote: IResume;
+    /** Newer local edits that were never pushed, if any. */
+    local: IResume | null;
+    /** The remote branch moved since this browser last pushed it. */
+    diverged: boolean;
+}
+
+export type TSessionChoice = "remote" | "mine";
+
+/** The remote session branch has commits this browser does not have. */
+export class SessionDivergedError extends Error {
+    constructor() {
+        super("This session was updated elsewhere.");
+        this.name = "SessionDivergedError";
+    }
 }
 
 export interface ICommitOptions {
@@ -165,46 +226,249 @@ export class GitResumeStorage implements IGitStorage {
         });
     }
 
-    async saveSession(id: string, resume: IResume): Promise<void> {
+    async saveSession(
+        id: string,
+        resume: IResume,
+        { force = false }: { force?: boolean } = {},
+    ): Promise<void> {
+        await this.guard(() => this.saveNow(id, resume, force));
+    }
+
+    /** Commits to the session branch and fast-forwards the remote one. */
+    private async saveNow(
+        id: string,
+        resume: IResume,
+        force: boolean,
+    ): Promise<void> {
         const content = JSON.stringify(resume, null, 4);
-        await this.guard(async () => {
-            const { client, head, defaultBranch } = await this.sync();
-            let session = await this.sessions.get(this.connectionId, id);
-            const onDefault = await client.readFile(defaultBranch, id);
-            if (!session && content === onDefault) return;
-            const known = session?.baseSha ?? (await this.baseOf(id));
-            // Without a known base the file is not ours to overwrite: skip
-            // autosave and let Commit raise the conflict prompt instead.
-            if (!known && onDefault !== null) return;
-            const branch =
-                session?.branch ?? `commitcv/${slug(id)}-${this.newId()}`;
-            const current = session
-                ? await client.readFile(branch, id)
-                : onDefault;
-            session ??= {
+        const { client, head, defaultBranch } = await this.sync();
+        let session = await this.sessions.get(this.connectionId, id);
+        const onDefault = await client.readFile(defaultBranch, id);
+        if (!session && content === onDefault) return;
+        const known = session?.baseSha ?? (await this.baseOf(id));
+        // Without a known base the file is not ours to overwrite: skip
+        // autosave and let Commit raise the conflict prompt instead.
+        if (!known && onDefault !== null) return;
+        const branch =
+            session?.branch ?? `commitcv/${slug(id)}-${this.newId()}`;
+        const current = session ? await client.readFile(branch, id) : onDefault;
+        session ??= {
+            connectionId: this.connectionId,
+            path: id,
+            branch,
+            baseSha: known ?? head,
+            headSha: null,
+            lastPushedSha: null,
+            startedAt: this.now(),
+        };
+        if (current !== content) {
+            session.headSha = await this.commitToSession(
+                client,
+                session,
+                parse(current),
+                resume,
+            );
+            session.lastContent = content;
+            await this.sessions.put(session);
+        }
+        if (
+            session.headSha &&
+            (force || session.headSha !== session.lastPushedSha)
+        ) {
+            try {
+                // Only an explicit "keep mine" may overwrite the remote branch.
+                await client.push({ branch, force });
+            } catch (err) {
+                // By name too: the e2e fake cannot throw the real class.
+                if (
+                    err instanceof GitConflictError ||
+                    (err as Error)?.name === "GitConflictError"
+                ) {
+                    throw new SessionDivergedError();
+                }
+                throw err;
+            }
+            session.lastPushedSha = session.headSha;
+            delete session.lastContent;
+            await this.sessions.put(session);
+        }
+    }
+
+    async findSessions(id: string): Promise<ISessionInfo[]> {
+        return this.guard(async () => {
+            const { client, defaultBranch } = await this.sync();
+            return this.inspectAll(client, defaultBranch, [id]);
+        });
+    }
+
+    async listSessions(): Promise<ISessionInfo[]> {
+        return this.guard(async () => {
+            const { client, defaultBranch } = await this.sync();
+            const files = await client.listFiles(defaultBranch);
+            return this.inspectAll(client, defaultBranch, files);
+        });
+    }
+
+    private async inspectAll(
+        client: TGitClient,
+        defaultBranch: string,
+        paths: string[],
+    ): Promise<ISessionInfo[]> {
+        const names = await client.listRemoteBranches("commitcv/");
+        const records = await this.sessions.list(this.connectionId);
+        const found: ISessionInfo[] = [];
+        for (const path of paths) {
+            const prefix = `commitcv/${slug(path)}-`;
+            // Ids have no dash, which keeps `a.json` apart from `a-1.json`.
+            const branches = names.filter(
+                (b) =>
+                    b.startsWith(prefix) &&
+                    !b.slice(prefix.length).includes("-"),
+            );
+            const record = records.find((r) => r.path === path);
+            const onRemote = record && branches.includes(record.branch);
+            if (record && !onRemote) {
+                const unpushed =
+                    record.headSha !== record.lastPushedSha ||
+                    record.lastContent !== undefined;
+                if (record.lastPushedSha && !unpushed) {
+                    // Squashed or discarded elsewhere: the record is stale.
+                    await this.endSession(client, record);
+                    continue;
+                }
+                // Never pushed, or edits made since the last push (offline):
+                // that work only exists locally, so offer it.
+                const info = await this.inspect(
+                    client,
+                    defaultBranch,
+                    path,
+                    record.branch,
+                    record,
+                    false,
+                );
+                if (info) found.push(info);
+            }
+            for (const branch of branches) {
+                const own = record?.branch === branch ? record : undefined;
+                const info = await this.inspect(
+                    client,
+                    defaultBranch,
+                    path,
+                    branch,
+                    own,
+                    true,
+                );
+                if (info) found.push(info);
+            }
+        }
+        return found.sort((a, b) => b.lastCommit.date - a.lastCommit.date);
+    }
+
+    private async inspect(
+        client: TGitClient,
+        defaultBranch: string,
+        path: string,
+        branch: string,
+        local: ISession | undefined,
+        remote: boolean,
+    ): Promise<ISessionInfo | null> {
+        const found = await client
+            .sessionCommits(branch, { remote })
+            .catch((err: unknown) => {
+                if (remote) throw err;
+                return null;
+            });
+        if (!found?.commits.length) return null;
+        const [latest] = found.commits;
+        const [content, before] = await Promise.all([
+            client.readFile(found.headSha, path),
+            client.readFile(found.baseSha ?? defaultBranch, path),
+        ]);
+        // A branch that leaves this file as it was belongs to something else.
+        if (content === null || content === before) return null;
+        return {
+            path,
+            branch,
+            headSha: found.headSha,
+            baseSha: found.baseSha,
+            lastCommit: {
+                message: latest.message.split("\n")[0],
+                date: latest.date.getTime(),
+            },
+            aheadBy: found.commits.length,
+            local,
+        };
+    }
+
+    async inspectSession(
+        id: string,
+        info: ISessionInfo,
+    ): Promise<IOpenedSession> {
+        return this.guard(async () => {
+            const { client } = await this.sync();
+            const text = await client.readFile(info.headSha, id);
+            const remote = parse(text);
+            if (!remote) throw new Error(`${id} is unreadable on the session.`);
+            const record = await this.sessions.get(this.connectionId, id);
+            const own = record?.branch === info.branch ? record : undefined;
+            return {
+                remote,
+                local:
+                    own?.lastContent !== undefined && own.lastContent !== text
+                        ? parse(own.lastContent)
+                        : null,
+                diverged: this.diverged(own, info),
+            };
+        });
+    }
+
+    private diverged(own: ISession | undefined, info: ISessionInfo): boolean {
+        return (
+            !!own?.lastPushedSha &&
+            own.lastPushedSha !== info.headSha &&
+            own.headSha !== info.headSha
+        );
+    }
+
+    async resolveSession(
+        id: string,
+        info: ISessionInfo,
+        choice: TSessionChoice,
+    ): Promise<IResume> {
+        return this.guard(async () => {
+            const { client, head } = await this.sync();
+            const record = await this.sessions.get(this.connectionId, id);
+            const own = record?.branch === info.branch ? record : undefined;
+            if (choice === "mine") {
+                if (!own) throw new Error("There are no local edits to keep.");
+                const text =
+                    own.lastContent ?? (await client.readFile(own.branch, id));
+                const mine = parse(text);
+                if (!mine) throw new Error(`${id} is unreadable.`);
+                await this.saveNow(id, mine, this.diverged(own, info));
+                return mine;
+            }
+            const remote = parse(await client.readFile(info.headSha, id));
+            if (!remote) throw new Error(`${id} is unreadable on the session.`);
+            if (own && !own.lastPushedSha && own.headSha === info.headSha) {
+                // Local-only session: pushing it is what makes it resumable.
+                await client.push({ branch: own.branch });
+                own.lastPushedSha = own.headSha;
+                delete own.lastContent;
+                await this.sessions.put(own);
+                return remote;
+            }
+            await client.resetToRemote(info.branch);
+            await this.sessions.put({
                 connectionId: this.connectionId,
                 path: id,
-                branch,
-                baseSha: known ?? head,
-                headSha: null,
-                lastPushedSha: null,
-                startedAt: this.now(),
-            };
-            if (current !== content) {
-                session.headSha = await this.commitToSession(
-                    client,
-                    session,
-                    parse(current),
-                    resume,
-                );
-                await this.sessions.put(session);
-            }
-            if (session.headSha && session.headSha !== session.lastPushedSha) {
-                // The branch is ours alone, so overwriting a stale copy is fine.
-                await client.push({ branch, force: true });
-                session.lastPushedSha = session.headSha;
-                await this.sessions.put(session);
-            }
+                branch: info.branch,
+                baseSha: info.baseSha ?? own?.baseSha ?? head,
+                headSha: info.headSha,
+                lastPushedSha: info.headSha,
+                startedAt: own?.startedAt ?? this.now(),
+            });
+            return remote;
         });
     }
 
@@ -313,11 +577,15 @@ export class GitResumeStorage implements IGitStorage {
         return JSON.stringify(merged, null, 4);
     }
 
-    async discardSession(id: string): Promise<IResume | null> {
+    async discardSession(id: string, branch?: string): Promise<IResume | null> {
         return this.guard(async () => {
             const { client, head, defaultBranch } = await this.sync();
             const session = await this.sessions.get(this.connectionId, id);
             if (session) await this.endSession(client, session);
+            if (branch && branch !== session?.branch) {
+                await client.deleteRemoteBranch(branch).catch(() => {});
+                await client.deleteLocalBranch(branch);
+            }
             const text = await client.readFile(defaultBranch, id);
             this.seen.set(id, text);
             await this.setBase(id, head);

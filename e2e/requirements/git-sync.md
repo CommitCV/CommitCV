@@ -14,6 +14,7 @@
 
 ## Not covered
 
+- Resuming sessions: see `resume-session.md`.
 - Real git traffic (fake client via `window.__commitcvGitFactory`, see `fixtures/fake-git.ts`); merge, squash and branch cleanup run against a local bare repo in the vitest suites.
 - Auth failure ("Reconnect" link): covered in unit tests, since the fake cannot raise the real `GitAuthError` class.
 - Time is Playwright's fake clock (`page.clock`), so no real 30s waits.
