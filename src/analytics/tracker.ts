@@ -3,7 +3,7 @@ import {
     type TAnalyticsEvent,
     type TEventPayload,
 } from "./types.ts";
-import { sanitizeEventData } from "./sanitizer.ts";
+import { sanitizeEventData, sanitizePagePath } from "./sanitizer.ts";
 import {
     classifyCompileError,
     classifyJavaScriptError,
@@ -90,6 +90,9 @@ export function initUmami(): boolean {
         script.defer = true;
         script.src = normalizeScriptUrl(config.url);
         script.dataset.websiteId = config.websiteId;
+        // Umami's own pageviews would otherwise include the query string.
+        script.dataset.excludeSearch = "true";
+        script.dataset.excludeHash = "true";
 
         if (config.domains) {
             script.dataset.domains = config.domains;
@@ -176,7 +179,7 @@ export function trackPageView(url?: string): void {
         if (url) {
             window.umami.track((props: Record<string, unknown>) => ({
                 ...props,
-                url,
+                url: sanitizePagePath(url),
             }));
         } else {
             window.umami.track();

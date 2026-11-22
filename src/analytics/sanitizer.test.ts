@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeEventData } from "./sanitizer.ts";
+import { sanitizeEventData, sanitizePagePath } from "./sanitizer.ts";
 import { AnalyticsEvents } from "./types.ts";
 
 describe("sanitizeEventData", () => {
@@ -104,5 +104,27 @@ describe("sanitizeEventData", () => {
             );
             expect(result).toBeUndefined();
         });
+    });
+});
+
+describe("sanitizePagePath", () => {
+    it("drops OAuth return params such as signed_in and signin_error", () => {
+        expect(sanitizePagePath("/library?signed_in=git.example.org")).toBe(
+            "/library",
+        );
+        expect(sanitizePagePath("/signin?signin_error=access_denied")).toBe(
+            "/signin",
+        );
+    });
+
+    it("drops fragments and absolute origins", () => {
+        expect(sanitizePagePath("/editor#token=abc")).toBe("/editor");
+        expect(sanitizePagePath("https://commitcv.com/connect?x=1#y")).toBe(
+            "/connect",
+        );
+    });
+
+    it("keeps a plain path unchanged", () => {
+        expect(sanitizePagePath("/about")).toBe("/about");
     });
 });

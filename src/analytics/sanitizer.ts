@@ -119,3 +119,16 @@ function sanitizeString(value: string): string | undefined {
     }
     return trimmed;
 }
+
+/**
+ * Reduces a page URL to its path. Query strings and fragments can carry OAuth
+ * return params (`signed_in`, `signin_error`), provider hosts or other state,
+ * so they never reach analytics.
+ */
+export function sanitizePagePath(url: string): string {
+    try {
+        return new URL(url, "http://localhost").pathname;
+    } catch {
+        return "/";
+    }
+}
