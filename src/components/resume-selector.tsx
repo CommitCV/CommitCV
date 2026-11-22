@@ -11,11 +11,16 @@ import { parseResume } from "@resume/parse-resume";
 import { useResumeStore } from "@store/useResumeStore";
 import { trackResumeCreated, trackResumeImported } from "@analytics/tracker";
 
+// Choice cards sit on the page background, inside the surface box.
+const choiceCard =
+    "flex flex-col items-center justify-center rounded-xl border-4 border-border-light bg-light-100 text-center sm:aspect-square dark:border-border-dark dark:bg-dark-300";
+
 export default function ResumeSelector() {
     const navigate = useNavigate();
     const newResume = useResumeStore((store) => store.newResume);
     const load = useResumeStore((store) => store.load);
     const [error, setError] = useState("");
+    const [dragging, setDragging] = useState(false);
 
     async function uploadResume(file: File) {
         try {
@@ -39,7 +44,7 @@ export default function ResumeSelector() {
     }
 
     return (
-        <div className="mx-auto w-full max-w-4xl">
+        <div className="mx-auto w-full max-w-3xl">
             <Card
                 variant="surface"
                 className="p-6 md:p-8">
@@ -49,11 +54,9 @@ export default function ResumeSelector() {
                     sign in with GitHub to access your library of resumes
                 </p>
 
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <Card
-                        variant="elevated"
-                        className="flex flex-col items-center justify-center gap-6 rounded-xl p-10">
-                        <p className="text-center text-2xl font-semibold tracking-tight text-light-950 dark:text-dark-950">
+                <div className="mx-auto grid max-w-xl grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-12">
+                    <div className={`${choiceCard} gap-6 p-10`}>
+                        <p className="text-xl font-semibold tracking-tight text-light-950 dark:text-dark-950">
                             Start a new resume!
                         </p>
                         <Button
@@ -66,11 +69,42 @@ export default function ResumeSelector() {
                             }}>
                             Start editing
                         </Button>
-                    </Card>
-                    <label className="flex cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-4 border-dashed border-border-light p-10 text-center transition-opacity hover:opacity-80 dark:border-border-dark">
-                        <Upload className="h-8 w-8 text-light-700 dark:text-dark-700" />
-                        <span className="text-2xl font-semibold tracking-tight text-light-700 dark:text-dark-700">
-                            Drag or click to upload a .json file here
+                    </div>
+                    <label
+                        className={`${choiceCard} cursor-pointer p-3 transition-opacity hover:opacity-80 has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-accent`}
+                        onDragOver={(event) => {
+                            if (!event.dataTransfer.types.includes("Files")) {
+                                return;
+                            }
+                            event.preventDefault();
+                            setDragging(true);
+                        }}
+                        onDragLeave={(event) => {
+                            const next = event.relatedTarget;
+                            if (
+                                next instanceof Node &&
+                                event.currentTarget.contains(next)
+                            ) {
+                                return;
+                            }
+                            setDragging(false);
+                        }}
+                        onDrop={(event) => {
+                            event.preventDefault();
+                            setDragging(false);
+                            const file = event.dataTransfer.files[0];
+                            if (file) void uploadResume(file);
+                        }}>
+                        <span
+                            className={`flex h-full w-full flex-col items-center justify-center gap-4 rounded-lg border-4 border-dashed p-6 transition-colors ${
+                                dragging
+                                    ? "border-accent"
+                                    : "border-border-light dark:border-border-dark"
+                            }`}>
+                            <Upload className="h-8 w-8 text-light-700 dark:text-dark-700" />
+                            <span className="text-xl font-semibold tracking-tight text-light-700 dark:text-dark-700">
+                                Drag or click to upload a .json file here
+                            </span>
                         </span>
                         <input
                             type="file"
