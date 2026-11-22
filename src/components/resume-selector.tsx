@@ -45,7 +45,7 @@ export default function ResumeSelector() {
                     connect a git repository to access your library of resumes
                 </p>
 
-                <label
+                <div
                     onDragOver={(event) => {
                         event.preventDefault();
                         setDragging(true);
@@ -57,49 +57,50 @@ export default function ResumeSelector() {
                         const file = event.dataTransfer.files[0];
                         if (file) void uploadResume(file);
                     }}
-                    className={`flex cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-4 border-dashed p-12 text-center transition-opacity hover:opacity-80 ${
+                    className={`flex flex-col items-center justify-center gap-8 rounded-xl border-4 border-dashed p-12 text-center ${
                         dragging
                             ? "border-accent"
                             : "border-border-light dark:border-border-dark"
                     }`}>
-                    <Upload className="h-8 w-8 text-light-700 dark:text-dark-700" />
-                    <span className="text-2xl font-semibold tracking-tight text-light-700 dark:text-dark-700">
-                        Drag or click to upload a .json file here
-                    </span>
-                    <input
-                        type="file"
-                        accept=".json,application/json"
-                        className="sr-only"
-                        onChange={(event) => {
-                            const file = event.target.files?.[0];
-                            if (file) void uploadResume(file);
-                        }}
-                    />
-                </label>
-
-                <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
-                    <Button
-                        type="button"
-                        variant="primary"
-                        onClick={() => {
-                            // Saved straight away, so it is in the library even if untouched.
-                            newResume();
-                            void useResumeStore
-                                .getState()
-                                .save()
-                                .then(() => {
-                                    trackResumeCreated();
-                                    navigate("/editor");
-                                });
-                        }}>
-                        Start editing
-                    </Button>
-                    <Link
-                        to="/signin"
-                        className={buttonClass("secondary", "md", "gap-2")}>
-                        <Git className="h-4 w-4" />
-                        Connect a repository
-                    </Link>
+                    <label className="flex cursor-pointer flex-col items-center gap-4 transition-opacity hover:opacity-80">
+                        <Upload className="h-8 w-8 text-light-700 dark:text-dark-700" />
+                        <span className="text-2xl font-semibold tracking-tight text-light-700 dark:text-dark-700">
+                            Drag or click to upload a .json file here
+                        </span>
+                        <input
+                            type="file"
+                            accept=".json,application/json"
+                            className="sr-only"
+                            onChange={(event) => {
+                                const file = event.target.files?.[0];
+                                if (file) void uploadResume(file);
+                            }}
+                        />
+                    </label>
+                    <div className="flex flex-wrap items-center justify-center gap-4">
+                        <Button
+                            type="button"
+                            variant="primary"
+                            onClick={() => {
+                                // Saved straight away, so it is in the library even if untouched.
+                                newResume();
+                                void useResumeStore
+                                    .getState()
+                                    .save()
+                                    .then(() => {
+                                        trackResumeCreated();
+                                        navigate("/editor");
+                                    });
+                            }}>
+                            Start editing
+                        </Button>
+                        <Link
+                            to="/signin"
+                            className={buttonClass("secondary", "md", "gap-2")}>
+                            <Git className="h-4 w-4" />
+                            Connect a repository
+                        </Link>
+                    </div>
                 </div>
 
                 {error && (
