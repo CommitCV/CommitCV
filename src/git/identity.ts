@@ -21,7 +21,7 @@ export function authorFor(profile?: Partial<GitIdentity>): GitIdentity {
     };
 }
 
-const APP_ID = import.meta.env.VITE_GITHUB_APP_ID;
+const BOT_ID = import.meta.env.VITE_GITHUB_BOT_ID;
 const APP_SLUG = import.meta.env.VITE_GITHUB_APP_SLUG;
 
 /**
@@ -30,10 +30,10 @@ const APP_SLUG = import.meta.env.VITE_GITHUB_APP_SLUG;
  * links to the app's avatar and profile.
  */
 export const APP_COAUTHOR: GitIdentity =
-    APP_ID && APP_SLUG
+    BOT_ID && APP_SLUG
         ? {
               name: `${APP_SLUG}[bot]`,
-              email: `${APP_ID}+${APP_SLUG}[bot]@users.noreply.github.com`,
+              email: `${BOT_ID}+${APP_SLUG}[bot]@users.noreply.github.com`,
           }
         : COMMITTER;
 
