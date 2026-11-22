@@ -62,10 +62,16 @@ connection. A saved connection's repo lists its root `.json` files; opening
 one loads it into the editor, and a new resume can be created and committed
 straight into the repo. The library page lists every connected repo.
 
-Tokens are stored only in IndexedDB (`connections` store, database version 4,
+Tokens are stored only in IndexedDB (`connections` store, database version 5,
 shared opener in `src/storage/db.ts`). They never go in localStorage, the
 persisted draft or the resume source, which is
 `{ kind: "git", connectionId, path }`. Removing a connection deletes its token.
+
+Access and refresh tokens are AES-GCM encrypted at rest with a non-extractable
+key kept in the `keys` store, so they are not readable as plain text on disk or
+in devtools. That does not stop a script running on the origin, so the server
+also sends a strict `Content-Security-Policy` on HTML responses
+(`server/csp.ts`): only our own code and the `VITE_UMAMI_URL` origin may run.
 
 Create a token with permission to read and write repository contents:
 
