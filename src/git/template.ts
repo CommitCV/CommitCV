@@ -11,6 +11,8 @@ export interface TemplateOffer {
     label: string;
     /** Shown when the host has no template feature: the repo to import. */
     importFrom?: string;
+    /** A reminder for the page the link opens. */
+    hint?: string;
 }
 
 /**
@@ -34,6 +36,7 @@ export function templateOffer(
                 ? {
                       url: CODEBERG_TEMPLATE_URL,
                       label: "start from the CommitCV template",
+                      hint: "tick “Git Content (Default Branch)” on the next page so the resume files are copied",
                   }
                 : undefined;
         case "gitlab":

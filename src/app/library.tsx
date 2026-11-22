@@ -149,6 +149,10 @@ export default function Library() {
                     </p>
                 )}
 
+                <h2 className="text-2xl font-bold tracking-tight">
+                    Local resume library
+                </h2>
+
                 {entries?.length === 0 && (
                     <div
                         data-testid="library-empty"
