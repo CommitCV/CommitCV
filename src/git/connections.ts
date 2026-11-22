@@ -26,7 +26,10 @@ export class ConnectionStore {
     }
 
     private open(): Promise<IDBDatabase> {
-        this.db ??= openDb(this.factory);
+        this.db ??= openDb(this.factory).catch((error) => {
+            this.db = undefined;
+            throw error;
+        });
         return this.db;
     }
 
