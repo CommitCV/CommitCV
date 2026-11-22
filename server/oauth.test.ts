@@ -14,6 +14,7 @@ const apps = loadOAuthApps({
     OAUTH_GITLAB_CLIENT_SECRET: "gl-secret",
     OAUTH_BITBUCKET_CLIENT_ID: "bb-id",
     OAUTH_BITBUCKET_CLIENT_SECRET: "bb-secret",
+    OAUTH_BITBUCKET_ENABLED: "true",
     OAUTH_FORGEJO_INSTANCES: JSON.stringify({
         "Codeberg.org": { clientId: "cb-id", clientSecret: "cb-secret" },
         "bad host": { clientId: "x", clientSecret: "y" },
@@ -133,6 +134,22 @@ describe("oauth providers + login", () => {
             { provider: "forgejo", hosts: ["codeberg.org"] },
         ]);
         expect(text).not.toMatch(/secret|gl-id/);
+    });
+
+    it("hides bitbucket unless OAUTH_BITBUCKET_ENABLED=true", () => {
+        const creds = {
+            OAUTH_BITBUCKET_CLIENT_ID: "bb-id",
+            OAUTH_BITBUCKET_CLIENT_SECRET: "bb-secret",
+        };
+        expect(loadOAuthApps(creds)).toEqual([]);
+        expect(
+            loadOAuthApps({ ...creds, OAUTH_BITBUCKET_ENABLED: "1" }),
+        ).toEqual([]);
+        expect(
+            loadOAuthApps({ ...creds, OAUTH_BITBUCKET_ENABLED: "true" }).map(
+                (a) => a.provider,
+            ),
+        ).toEqual(["bitbucket"]);
     });
 
     it("offers nothing without a session secret", async () => {

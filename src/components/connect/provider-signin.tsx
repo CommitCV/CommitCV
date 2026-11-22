@@ -7,6 +7,7 @@ import {
     faGitlab,
 } from "@fortawesome/free-brands-svg-icons";
 import Button from "@components/ui/button";
+import { trackGit, type TGitErrorClass } from "../../analytics";
 import type { IConnection } from "../../git/connections";
 import {
     fetchProviders,
@@ -17,6 +18,7 @@ import {
     type Handoff,
     type ProviderOption,
 } from "../../git/oauth";
+import { whereOfHost } from "../../git/track";
 import RepoPicker from "./repo-picker";
 
 const ICONS = {
@@ -52,11 +54,15 @@ function ProviderButton({
                 type="button"
                 variant="secondary"
                 className={centered ? "w-64 justify-center" : undefined}
-                onClick={() =>
+                onClick={() => {
+                    trackGit("git connect started", {
+                        ...whereOfHost(host),
+                        method: "oauth",
+                    });
                     window.location.assign(
                         loginUrl(option.provider, host, returnTo),
-                    )
-                }>
+                    );
+                }}>
                 {icon && (
                     <FontAwesomeIcon
                         icon={icon}
@@ -86,6 +92,13 @@ function ProviderButton({
             )}
         </div>
     );
+}
+
+/** The callback's error codes, reduced to the closed analytics classes. */
+function signinErrorClass(code: string): TGitErrorClass {
+    if (code === "busy") return "rate_limited";
+    if (code === "not_configured") return "server";
+    return code === "denied" || code === "exchange_failed" ? "auth" : "unknown";
 }
 
 const initialParams = () => new URLSearchParams(window.location.search);
@@ -122,16 +135,34 @@ export default function ProviderSignin({
             setProviders(list);
             setLoaded(true);
         });
+        const returned = params.get("signin_error");
+        if (returned) {
+            trackGit("git sign-in returned", {
+                outcome: "failed",
+                error_class: signinErrorClass(returned),
+            });
+        }
         if (params.get("signed_in")) {
             takeHandoff().then(
-                (h) => active && setHandoff(h),
-                (reason: unknown) =>
-                    active &&
+                (h) => {
+                    trackGit("git sign-in returned", {
+                        provider: whereOfHost(h.host).provider,
+                        outcome: "ok",
+                    });
+                    if (active) setHandoff(h);
+                },
+                (reason: unknown) => {
+                    trackGit("git sign-in returned", {
+                        outcome: "failed",
+                        error_class: "unknown",
+                    });
+                    if (!active) return;
                     setError(
                         reason instanceof Error
                             ? reason.message
                             : "Sign-in failed.",
-                    ),
+                    );
+                },
             );
         }
         if (params.has("signed_in") || params.has("signin_error")) {

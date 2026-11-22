@@ -6,6 +6,9 @@ import starter from "@resume/starter-resume.json";
 import { resumeStorages, useResumeStore } from "./useResumeStore";
 import { ConflictError, UnauthorizedError } from "../git/errors";
 import { SessionDivergedError } from "@storage/git-resume-storage";
+import { connections } from "../git/connections";
+import { GitNetworkError } from "../git/errors";
+import { _resetAnalyticsForTesting } from "../analytics";
 
 class FakeStorage implements IResumeStorage {
     saved: { id: string; resume: IResume; message?: string }[] = [];
@@ -108,6 +111,83 @@ describe("useResumeStore", () => {
                 path: "cv.json",
             });
             useResumeStore.getState().setFilename("edited");
+        });
+
+        describe("analytics", () => {
+            const track = vi.fn();
+            beforeEach(() => {
+                track.mockClear();
+                vi.stubGlobal("window", { umami: { track } });
+                vi.spyOn(connections, "get").mockResolvedValue({
+                    id: "c1",
+                    url: "https://github.com/ada/secret-cv",
+                    provider: "github",
+                    label: "ada on github",
+                    token: "ghp_secret",
+                    author: { name: "Ada", email: "x" },
+                });
+            });
+            afterEach(() => {
+                vi.restoreAllMocks();
+                vi.unstubAllGlobals();
+                _resetAnalyticsForTesting();
+            });
+            const events = () => track.mock.calls;
+
+            it("reports a commit with provider and a duration bucket only", async () => {
+                await useResumeStore.getState().save("secret message");
+                await vi.waitFor(() => expect(events()).toHaveLength(1));
+                expect(events()[0]).toEqual([
+                    "git commit completed",
+                    {
+                        provider: "github",
+                        duration_bucket: "lt1s",
+                    },
+                ]);
+                expect(JSON.stringify(events())).not.toMatch(
+                    /secret|ada|cv\.json|ghp_/,
+                );
+            });
+
+            it("reports a failed save by error class, never its text", async () => {
+                git.error = new GitNetworkError("ECONNRESET ghp_secret");
+                await useResumeStore.getState().save();
+                await vi.waitFor(() => expect(events()).toHaveLength(1));
+                expect(events()[0]).toEqual([
+                    "git save failed",
+                    {
+                        provider: "github",
+                        error_class: "network",
+                    },
+                ]);
+            });
+
+            it("reports the conflict prompt and how it was resolved", async () => {
+                git.error = new ConflictError();
+                await useResumeStore.getState().save();
+                git.error = null;
+                await useResumeStore.getState().resolveConflict("mine");
+                expect(events()).toEqual([
+                    ["git sync prompt shown", { kind: "conflict" }],
+                    [
+                        "git sync prompt resolved",
+                        { kind: "conflict", choice: "mine" },
+                    ],
+                ]);
+            });
+
+            it("reports an expired sign-in on commit and autosave", async () => {
+                git.error = new UnauthorizedError();
+                await useResumeStore.getState().autosave();
+                await useResumeStore.getState().save();
+                await vi.waitFor(() => expect(events()).toHaveLength(3));
+                const names = events().map(([name, props]) => [
+                    name,
+                    (props as { during?: string }).during,
+                ]);
+                expect(names).toContainEqual(["git auth expired", "autosave"]);
+                expect(names).toContainEqual(["git auth expired", "commit"]);
+            });
         });
 
         it("autosaves to the session and keeps the commit state separate", async () => {

@@ -24,7 +24,9 @@ import {
 import { today } from "@resume/dates";
 import starter from "@resume/starter-resume.json";
 import { connections } from "../git/connections";
+import { classifyGitError, durationBucket, trackGit } from "../analytics";
 import { ConflictError, UnauthorizedError } from "../git/errors";
+import { trackGitFor } from "../git/track";
 import { openConnection } from "../git/open-connection";
 import { freshConnection } from "../git/oauth";
 import { sessions } from "../git/sessions";
@@ -421,11 +423,23 @@ export const useResumeStore = create<IResumeStore>()(
                 set({ source, saveState: "saving", saveError: null });
                 // Save is the user's action, so ask the browser to keep the library.
                 if (source.kind === "local") void requestPersistence();
+                const startedAt = Date.now();
                 try {
                     const id =
                         source.kind === "local" ? source.id : source.path;
                     const resume = get().resume!;
                     await storageFor(source).save(id, resume, message);
+                    if (source.kind === "git") {
+                        void trackGitFor(
+                            source.connectionId,
+                            "git commit completed",
+                            {
+                                duration_bucket: durationBucket(
+                                    Date.now() - startedAt,
+                                ),
+                            },
+                        );
+                    }
                     if (source.kind === "local") scheduleThumbnail(id, resume);
                     const now = get();
                     // A load swapped the document; its state is not ours to set.
@@ -454,9 +468,17 @@ export const useResumeStore = create<IResumeStore>()(
                     if (get().source !== source) return "skip";
                     if (err instanceof SessionDivergedError) {
                         set({ sync: { ...get().sync, phase: "diverged" } });
+                        trackGit("git sync prompt shown", { kind: "diverged" });
                         return "skip";
                     }
                     const auth = err instanceof UnauthorizedError;
+                    if (auth) {
+                        void trackGitFor(
+                            source.connectionId,
+                            "git auth expired",
+                            { during: "autosave" },
+                        );
+                    }
                     set({
                         sync: {
                             ...get().sync,
@@ -479,6 +501,10 @@ export const useResumeStore = create<IResumeStore>()(
                 if (!resume || source?.kind !== "git") return;
                 const storage = storageFor(source);
                 if (!isGitStorage(storage)) return;
+                trackGit("git sync prompt resolved", {
+                    kind: "conflict",
+                    choice,
+                });
                 set({ saveState: "saving", saveError: null });
                 try {
                     if (choice === "remote") {
@@ -505,6 +531,10 @@ export const useResumeStore = create<IResumeStore>()(
                 if (!resume || source?.kind !== "git") return;
                 const storage = storageFor(source);
                 if (!isGitStorage(storage)) return;
+                trackGit("git sync prompt resolved", {
+                    kind: "diverged",
+                    choice,
+                });
                 set({ saveState: "saving", saveError: null });
                 try {
                     if (choice === "remote") {
@@ -554,7 +584,18 @@ function failCommit(
     if (get().source !== source) return;
     if (err instanceof ConflictError && source.kind === "git") {
         set({ saveState: "dirty", sync: { ...get().sync, phase: "conflict" } });
+        trackGit("git sync prompt shown", { kind: "conflict" });
         return;
+    }
+    if (source.kind === "git") {
+        void trackGitFor(source.connectionId, "git save failed", {
+            error_class: classifyGitError(err),
+        });
+        if (err instanceof UnauthorizedError) {
+            void trackGitFor(source.connectionId, "git auth expired", {
+                during: "commit",
+            });
+        }
     }
     set({
         saveState: "error",

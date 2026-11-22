@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import Button from "@components/ui/button";
+import { trackGit } from "../../analytics";
 import { connections, type IConnection } from "../../git/connections";
 import {
     detectProvider,
@@ -8,6 +9,7 @@ import {
 } from "../../git/remote-config";
 import { TOKEN_HELP } from "../../git/token-help";
 import { testConnection } from "../../git/test-connection";
+import { whereOf } from "../../git/track";
 
 const input =
     "mt-1 w-full rounded border border-border-light bg-light-100 px-2 py-1.5 font-normal outline-none focus:border-accent dark:border-border-dark dark:bg-dark-200";
@@ -59,8 +61,21 @@ export default function ConnectForm({ onConnected }: ConnectFormProps) {
             return;
         }
         setBusy(true);
+        if (save) {
+            trackGit("git connect started", {
+                ...whereOf(next),
+                method: "token",
+            });
+        }
         const result = await testConnection(next);
         if (!result.ok) {
+            if (save) {
+                trackGit("git connect failed", {
+                    ...whereOf(next),
+                    method: "token",
+                    error_class: result.errorClass,
+                });
+            }
             setBusy(false);
             setStatus({ ok: false, text: result.error });
             return;
@@ -71,6 +86,7 @@ export default function ConnectForm({ onConnected }: ConnectFormProps) {
             return;
         }
         const saved = await connections.add(next);
+        trackGit("git connected", { ...whereOf(next), method: "token" });
         setBusy(false);
         setToken("");
         setStatus({ ok: true, text: "Repository connected." });

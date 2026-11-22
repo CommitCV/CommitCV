@@ -1,5 +1,6 @@
 import {
     AnalyticsEvents,
+    GIT_EVENT_SCHEMA,
     type TAnalyticsEvent,
     type TEventPayload,
 } from "./types.ts";
@@ -65,6 +66,28 @@ export function sanitizeEventData(
         return Object.keys(cleaned).length > 0 ? cleaned : undefined;
     }
 
+    // Git events are fail-closed: only the event's own enum values pass, and
+    // an event without a schema sends nothing. No generic fallback.
+    if (eventName.startsWith("git ")) {
+        const schema = (
+            GIT_EVENT_SCHEMA as Record<
+                string,
+                Record<string, readonly string[]>
+            >
+        )[eventName];
+        if (!schema) return undefined;
+        const cleaned: Record<string, string> = {};
+        for (const [key, value] of Object.entries(data)) {
+            const allowed = Object.hasOwn(schema, key)
+                ? schema[key]
+                : undefined;
+            if (typeof value === "string" && allowed?.includes(value)) {
+                cleaned[key] = value;
+            }
+        }
+        return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+    }
+
     // Generic fallback for any other events: allow only safe primitives without PII.
     const safeOutput: Record<string, string | number | boolean> = {};
     for (const [key, value] of Object.entries(data)) {
@@ -118,4 +141,17 @@ function sanitizeString(value: string): string | undefined {
         return undefined;
     }
     return trimmed;
+}
+
+/**
+ * Reduces a page URL to its path. Query strings and fragments can carry OAuth
+ * return params (`signed_in`, `signin_error`), provider hosts or other state,
+ * so they never reach analytics.
+ */
+export function sanitizePagePath(url: string): string {
+    try {
+        return new URL(url, "http://localhost").pathname;
+    } catch {
+        return "/";
+    }
 }

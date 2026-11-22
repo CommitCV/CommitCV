@@ -1,4 +1,5 @@
 import type { IResume } from "@resume/resume";
+import { trackGit } from "../analytics";
 import { ConflictError } from "../git/errors";
 import type {
     IGitStorage,
@@ -125,6 +126,7 @@ export async function squashSession(
         await storage.commit(path, resume);
     } catch (err) {
         if (!(err instanceof ConflictError)) throw err;
+        trackGit("git sync prompt shown", { kind: "conflict" });
         show(resume, connectionId, path);
         useResumeStore.setState({
             saveState: "dirty",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeEventData } from "./sanitizer.ts";
+import { sanitizeEventData, sanitizePagePath } from "./sanitizer.ts";
 import { AnalyticsEvents } from "./types.ts";
 
 describe("sanitizeEventData", () => {
@@ -104,5 +104,97 @@ describe("sanitizeEventData", () => {
             );
             expect(result).toBeUndefined();
         });
+    });
+});
+
+describe("sanitizePagePath", () => {
+    it("drops OAuth return params such as signed_in and signin_error", () => {
+        expect(sanitizePagePath("/library?signed_in=git.example.org")).toBe(
+            "/library",
+        );
+        expect(sanitizePagePath("/signin?signin_error=access_denied")).toBe(
+            "/signin",
+        );
+    });
+
+    it("drops fragments and absolute origins", () => {
+        expect(sanitizePagePath("/editor#token=abc")).toBe("/editor");
+        expect(sanitizePagePath("https://commitcv.com/connect?x=1#y")).toBe(
+            "/connect",
+        );
+    });
+
+    it("keeps a plain path unchanged", () => {
+        expect(sanitizePagePath("/about")).toBe("/about");
+    });
+});
+
+describe("git event allowlist", () => {
+    it("keeps only schema properties with allowed values", () => {
+        expect(
+            sanitizeEventData("git connected", {
+                provider: "github",
+                method: "oauth",
+            }),
+        ).toEqual({ provider: "github", method: "oauth" });
+    });
+
+    it("strips repo names, URLs, hosts, paths and unknown properties", () => {
+        const result = sanitizeEventData("git connected", {
+            provider: "github",
+            repo: "ada/secret-cv",
+            url: "https://github.com/ada/secret-cv",
+            host: "git.corp.example",
+            path: "resumes/ada.json",
+            sha: "0123456789abcdef",
+            message: "update my resume",
+        });
+        expect(result).toEqual({ provider: "github" });
+    });
+
+    it("drops values outside the enum, even harmless-looking ones", () => {
+        const result = sanitizeEventData("git connect failed", {
+            provider: "git.corp.example",
+            error_class: "Error: token ghp_abc was rejected",
+            method: 42,
+        });
+        expect(result).toBeUndefined();
+    });
+
+    it("rejects retired providers and host_kind", () => {
+        expect(
+            sanitizeEventData("git connected", {
+                provider: "bitbucket",
+                host_kind: "public",
+                method: "token",
+            }),
+        ).toEqual({ method: "token" });
+        expect(
+            sanitizeEventData("git connected", {
+                provider: "additional",
+                method: "token",
+            }),
+        ).toEqual({ provider: "additional", method: "token" });
+    });
+
+    it("sends nothing for an unknown git event (fail closed)", () => {
+        expect(
+            sanitizeEventData("git something new", {
+                provider: "github",
+                repo: "ada/cv",
+            }),
+        ).toBeUndefined();
+    });
+
+    it("sends nothing when every property is rejected", () => {
+        expect(
+            sanitizeEventData("git history opened", { repo: "ada/cv" }),
+        ).toBeUndefined();
+    });
+
+    it("does not apply the generic fallback to git events", () => {
+        expect(
+            sanitizeEventData("git commit completed", { count: 3, ok: true }),
+        ).toBeUndefined();
     });
 });

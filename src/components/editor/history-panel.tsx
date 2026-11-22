@@ -5,6 +5,7 @@ import ResumePreview from "@components/editor/resume-preview";
 import { entryMeta, restoreSummary } from "@resume/history-entries";
 import type { IHistoryEntry, IVersionedStorage } from "@storage/resume-storage";
 import { storageFor, useResumeStore } from "@store/useResumeStore";
+import { trackGitFor } from "../../git/track";
 
 const PAGE = 20;
 
@@ -42,6 +43,12 @@ export default function HistoryPanel({ onClose }: { onClose: () => void }) {
     const shown = loaded?.sha === selected?.sha ? loaded : null;
     const version = shown?.resume ?? null;
     const versionError = shown?.error ?? "";
+
+    const connectionId = source?.kind === "git" ? source.connectionId : "";
+    useEffect(() => {
+        if (connectionId)
+            void trackGitFor(connectionId, "git history opened", {});
+    }, [connectionId]);
 
     useEffect(() => {
         const dialog = ref.current;
@@ -107,6 +114,8 @@ export default function HistoryPanel({ onClose }: { onClose: () => void }) {
     function doRestore() {
         if (!version) return;
         restore(version);
+        if (connectionId)
+            void trackGitFor(connectionId, "git version restored", {});
         onClose();
     }
 

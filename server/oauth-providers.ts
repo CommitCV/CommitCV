@@ -100,6 +100,10 @@ type Env = Record<string, string | undefined>;
 export function loadOAuthApps(env: Env): OAuthApp[] {
     const apps: OAuthApp[] = [];
     for (const provider of PROVIDER_IDS) {
+        // Bitbucket support is experimental: hidden even with credentials
+        // unless OAUTH_BITBUCKET_ENABLED=true.
+        if (provider === "bitbucket" && env.OAUTH_BITBUCKET_ENABLED !== "true")
+            continue;
         const spec = SPECS[provider];
         const key = `OAUTH_${provider.toUpperCase()}`;
         const clientId = env[`${key}_CLIENT_ID`];
