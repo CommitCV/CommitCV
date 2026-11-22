@@ -471,6 +471,17 @@ export function gitProxy(options: GitProxyOptions): Hono {
                     continue;
                 }
 
+                if (response.status >= 400) {
+                    // Status and a short body only; never request headers.
+                    const detail = await response
+                        .clone()
+                        .text()
+                        .then((t) => t.slice(0, 200).replace(/\s+/g, " "))
+                        .catch(() => "");
+                    console.warn(
+                        `git-proxy: ${target.hostname}${target.pathname} -> ${response.status} ${detail}`,
+                    );
+                }
                 const out = new Headers(cors);
                 for (const name of PASS_RESPONSE_HEADERS) {
                     const value = response.headers.get(name);

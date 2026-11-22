@@ -160,6 +160,7 @@ export default function ProviderSignin({
             {handoff ? (
                 <RepoPicker
                     handoff={handoff}
+                    onBack={() => setHandoff(undefined)}
                     onConnected={(connection) => {
                         setHandoff(undefined);
                         onConnected(connection);

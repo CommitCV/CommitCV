@@ -19,15 +19,22 @@ const input =
 interface RepoPickerProps {
     handoff: Handoff;
     onConnected: (connection: IConnection) => void;
+    /** Steps back to choosing a provider (the sign-in is discarded). */
+    onBack?: () => void;
 }
 
 /** After sign-in: choose a repo (or paste a URL), then test and save. */
-export default function RepoPicker({ handoff, onConnected }: RepoPickerProps) {
+export default function RepoPicker({
+    handoff,
+    onConnected,
+    onBack,
+}: RepoPickerProps) {
     const [name, setName] = useState(handoff.user.name);
     const [email, setEmail] = useState(handoff.user.email ?? "");
     const [query, setQuery] = useState("");
     const [repos, setRepos] = useState<RepoSummary[]>();
     const [installUrl, setInstallUrl] = useState<string>();
+    const [reloads, setReloads] = useState(0);
     const [url, setUrl] = useState("");
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
@@ -55,7 +62,7 @@ export default function RepoPicker({ handoff, onConnected }: RepoPickerProps) {
             active = false;
             clearTimeout(timer);
         };
-    }, [handoff, query]);
+    }, [handoff, query, reloads]);
 
     const ready = Boolean(name.trim() && email.trim()) && !busy;
 
@@ -79,6 +86,15 @@ export default function RepoPicker({ handoff, onConnected }: RepoPickerProps) {
 
     return (
         <div className="space-y-3">
+            {onBack && (
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={onBack}>
+                    ← Back
+                </Button>
+            )}
             <p
                 role="status"
                 className="text-sm text-green-700 dark:text-green-400">
@@ -104,14 +120,26 @@ export default function RepoPicker({ handoff, onConnected }: RepoPickerProps) {
                     />
                 </label>
             </div>
-            <label className="block text-sm font-medium">
-                Search repositories
-                <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    className={input}
-                />
-            </label>
+            <div className="flex items-end gap-2">
+                <label className="block flex-1 text-sm font-medium">
+                    Search repositories
+                    <input
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        className={input}
+                    />
+                </label>
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                        setRepos(undefined);
+                        setReloads((n) => n + 1);
+                    }}>
+                    Refresh list
+                </Button>
+            </div>
             <ul
                 aria-label="Repositories"
                 className="max-h-64 space-y-1 overflow-y-auto">

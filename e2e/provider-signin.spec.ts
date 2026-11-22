@@ -131,6 +131,29 @@ test.describe("sign in with a git host", () => {
         await expect(page).toHaveURL(/\/library$/);
     });
 
+    test("refreshes the repo list and steps back to the providers", async ({
+        page,
+    }) => {
+        await fakeGit(page);
+        const seen = await mockOAuth(page);
+        await page.goto("/signin?signed_in=github");
+        await expect(
+            page.getByRole("button", { name: "Use ada/cv" }),
+        ).toBeVisible();
+        const before = seen.repoQueries.length;
+        await page.getByRole("button", { name: "Refresh list" }).click();
+        await expect(
+            page.getByRole("button", { name: "Use ada/cv" }),
+        ).toBeVisible();
+        expect(seen.repoQueries.length).toBeGreaterThan(before);
+
+        await page.getByRole("button", { name: "← Back" }).click();
+        await expect(
+            page.getByRole("button", { name: "Sign in with GitHub" }),
+        ).toBeVisible();
+        await expect(page.getByLabel("Search repositories")).toHaveCount(0);
+    });
+
     test("hides sign-in when nothing is configured", async ({ page }) => {
         await mockOAuth(page, { providers: [] });
         await page.goto("/connect");
