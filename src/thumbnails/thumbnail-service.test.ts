@@ -74,6 +74,22 @@ describe("ensureThumbnail", () => {
         expect(render).toHaveBeenCalledTimes(1);
     });
 
+    it("renders a newer resume requested while an older one is in flight", async () => {
+        const { service, render, store } = setup();
+        let release!: () => void;
+        render.mockImplementationOnce(
+            () => new Promise((r) => (release = () => r(new Blob(["old"])))),
+        );
+        const first = service.ensureThumbnail("a", makeResume("v1"));
+        const second = service.ensureThumbnail("a", makeResume("v2"));
+        await vi.waitFor(() => expect(render).toHaveBeenCalledTimes(1));
+        release();
+        await Promise.all([first, second]);
+
+        expect(render).toHaveBeenCalledTimes(2);
+        expect(store.get("a")!.hash).toBe(await hashResume(makeResume("v2")));
+    });
+
     it("resolves undefined instead of throwing when rendering fails", async () => {
         const { service, render, store } = setup();
         render.mockRejectedValueOnce(new Error("compile"));

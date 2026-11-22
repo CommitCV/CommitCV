@@ -20,7 +20,12 @@ export async function hashResume(resume: IResume): Promise<string> {
 }
 
 export function createThumbnailService({ cache, render }: IThumbnailDeps) {
-    const pending = new Map<string, Promise<Blob | undefined>>();
+    // Latest queued job per id. A request for different content waits for
+    // the one in flight, so the cache always ends with the newest resume.
+    const pending = new Map<
+        string,
+        { content: string; job: Promise<Blob | undefined> }
+    >();
 
     async function generate(id: string, resume: IResume) {
         try {
@@ -40,11 +45,15 @@ export function createThumbnailService({ cache, render }: IThumbnailDeps) {
         id: string,
         resume: IResume,
     ): Promise<Blob | undefined> {
-        let job = pending.get(id);
-        if (!job) {
-            job = generate(id, resume).finally(() => pending.delete(id));
-            pending.set(id, job);
-        }
+        const content = JSON.stringify(resume);
+        const last = pending.get(id);
+        if (last?.content === content) return last.job;
+        const job: Promise<Blob | undefined> = (last?.job ?? Promise.resolve())
+            .then(() => generate(id, resume))
+            .finally(() => {
+                if (pending.get(id)?.job === job) pending.delete(id);
+            });
+        pending.set(id, { content, job });
         return job;
     }
 
