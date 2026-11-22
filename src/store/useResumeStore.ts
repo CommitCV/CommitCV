@@ -26,6 +26,7 @@ import starter from "@resume/starter-resume.json";
 import { GitHubResumeStorage } from "@storage/github-resume-storage";
 import { IdbResumeStorage } from "@storage/idb-resume-storage";
 import { LocalResumeStorage } from "@storage/local-resume-storage";
+import { requestPersistence } from "@storage/persistence";
 import type { IResumeStorage } from "@storage/resume-storage";
 
 export type TResumeSource =
@@ -323,6 +324,8 @@ export const useResumeStore = create<IResumeStore>()(
                     source = { kind: "local", id: crypto.randomUUID() };
                 }
                 set({ source, saveState: "saving", saveError: null });
+                // Save is the user's action, so ask the browser to keep the library.
+                if (source.kind === "local") void requestPersistence();
                 try {
                     const id =
                         source.kind === "local" ? source.id : source.path;
