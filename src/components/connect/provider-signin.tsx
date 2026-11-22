@@ -31,9 +31,11 @@ const select =
 function ProviderButton({
     option,
     returnTo,
+    centered,
 }: {
     option: ProviderOption;
     returnTo?: string;
+    centered?: boolean;
 }) {
     const [host, setHost] = useState(option.hosts[0]);
     const codeberg = host === "codeberg.org";
@@ -44,10 +46,12 @@ function ProviderButton({
         ? faCodeberg
         : ICONS[option.provider as keyof typeof ICONS];
     return (
-        <div className="flex flex-wrap items-center gap-2">
+        <div
+            className={`flex flex-wrap items-center gap-2 ${centered ? "justify-center" : ""}`}>
             <Button
                 type="button"
                 variant="secondary"
+                className={centered ? "w-64 justify-center" : undefined}
                 onClick={() =>
                     window.location.assign(
                         loginUrl(option.provider, host, returnTo),
@@ -142,7 +146,7 @@ export default function ProviderSignin({
     return (
         <section
             aria-label="Sign in with a git host"
-            className="space-y-3 rounded-lg border border-border-light p-4 dark:border-border-dark">
+            className={`space-y-3 rounded-lg border border-border-light p-4 dark:border-border-dark ${standalone && !handoff ? "text-center" : ""}`}>
             <h2 className="text-lg font-semibold">
                 Sign in with your git host
             </h2>
@@ -168,6 +172,7 @@ export default function ProviderSignin({
                             key={option.provider}
                             option={option}
                             returnTo={returnTo}
+                            centered={standalone && !handoff}
                         />
                     ))}
                     {standalone && loaded && !providers.length && (

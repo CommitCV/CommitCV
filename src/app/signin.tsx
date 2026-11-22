@@ -10,8 +10,10 @@ export default function SignIn() {
         <div className="flex min-h-screen flex-col bg-light-100 text-light-950 dark:bg-dark-300 dark:text-dark-950">
             <Header />
             <main className="mx-auto w-full max-w-xl flex-1 space-y-6 px-8 py-10">
-                <h1 className="text-4xl font-bold tracking-tight">Sign in</h1>
-                <p className="text-light-700 dark:text-dark-700">
+                <h1 className="text-center text-4xl font-bold tracking-tight">
+                    Sign in
+                </h1>
+                <p className="text-center text-light-700 dark:text-dark-700">
                     Your resumes are saved as commits in a git repository you
                     own. Sign in with your git host to choose one.
                 </p>
@@ -20,7 +22,7 @@ export default function SignIn() {
                     returnTo="/signin"
                     onConnected={() => navigate("/library")}
                 />
-                <p className="text-sm text-light-700 dark:text-dark-700">
+                <p className="text-center text-sm text-light-700 dark:text-dark-700">
                     <Link
                         to="/library"
                         className="underline">
