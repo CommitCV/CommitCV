@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { IConnection } from "./connections";
 import { connections } from "./connections";
 import {
+    newRepoUrl,
     connectionFromHandoff,
     freshConnection,
     loginUrl,
@@ -47,6 +48,23 @@ describe("oauth helpers", () => {
             { name: "Ada", email: "a@x.io" },
         );
         expect(plain.oauth).toBeUndefined();
+    });
+});
+
+describe("newRepoUrl", () => {
+    it("points at each host's new-repository page", () => {
+        expect(newRepoUrl("github", "github.com")).toBe(
+            "https://github.com/new",
+        );
+        expect(newRepoUrl("gitlab", "gitlab.example.org")).toBe(
+            "https://gitlab.example.org/projects/new",
+        );
+        expect(newRepoUrl("bitbucket", "bitbucket.org")).toBe(
+            "https://bitbucket.org/repo/create",
+        );
+        expect(newRepoUrl("forgejo", "codeberg.org")).toBe(
+            "https://codeberg.org/repo/create",
+        );
     });
 });
 

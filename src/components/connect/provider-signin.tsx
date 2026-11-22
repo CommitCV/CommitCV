@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faBitbucket,
+    faCodeberg,
     faGithub,
     faGitlab,
 } from "@fortawesome/free-brands-svg-icons";
@@ -27,17 +28,34 @@ const ICONS = {
 const select =
     "rounded border border-border-light bg-light-100 px-2 py-1.5 text-sm dark:border-border-dark dark:bg-dark-200";
 
-function ProviderButton({ option }: { option: ProviderOption }) {
+function ProviderButton({
+    option,
+    returnTo,
+    centered,
+}: {
+    option: ProviderOption;
+    returnTo?: string;
+    centered?: boolean;
+}) {
     const [host, setHost] = useState(option.hosts[0]);
-    const name = PROVIDER_NAMES[option.provider] ?? option.provider;
-    const icon = ICONS[option.provider as keyof typeof ICONS];
+    const codeberg = host === "codeberg.org";
+    const name = codeberg
+        ? "Codeberg"
+        : (PROVIDER_NAMES[option.provider] ?? option.provider);
+    const icon = codeberg
+        ? faCodeberg
+        : ICONS[option.provider as keyof typeof ICONS];
     return (
-        <div className="flex flex-wrap items-center gap-2">
+        <div
+            className={`flex flex-wrap items-center gap-2 ${centered ? "justify-center" : ""}`}>
             <Button
                 type="button"
                 variant="secondary"
+                className={centered ? "w-64 justify-center" : undefined}
                 onClick={() =>
-                    window.location.assign(loginUrl(option.provider, host))
+                    window.location.assign(
+                        loginUrl(option.provider, host, returnTo),
+                    )
                 }>
                 {icon && (
                     <FontAwesomeIcon
@@ -58,7 +76,9 @@ function ProviderButton({ option }: { option: ProviderOption }) {
                     ))}
                 </select>
             ) : (
-                !/^(github|gitlab)\.com$|^bitbucket\.org$/.test(host) && (
+                !/^(github|gitlab)\.com$|^(bitbucket|codeberg)\.org$/.test(
+                    host,
+                ) && (
                     <span className="text-sm text-light-700 dark:text-dark-700">
                         {host}
                     </span>
@@ -77,10 +97,17 @@ const initialParams = () => new URLSearchParams(window.location.search);
  */
 export default function ProviderSignin({
     onConnected,
+    returnTo,
+    standalone = false,
 }: {
     onConnected: (connection: IConnection) => void;
+    /** Page the provider returns to; defaults to `/connect`. */
+    returnTo?: string;
+    /** The sign-in page itself: always shown, without the paste-a-URL hint. */
+    standalone?: boolean;
 }) {
     const [providers, setProviders] = useState<ProviderOption[]>([]);
+    const [loaded, setLoaded] = useState(false);
     const [params] = useState(initialParams);
     const [handoff, setHandoff] = useState<Handoff>();
     const [error, setError] = useState(() => {
@@ -90,7 +117,11 @@ export default function ProviderSignin({
 
     useEffect(() => {
         let active = true;
-        void fetchProviders().then((list) => active && setProviders(list));
+        void fetchProviders().then((list) => {
+            if (!active) return;
+            setProviders(list);
+            setLoaded(true);
+        });
         if (params.get("signed_in")) {
             takeHandoff().then(
                 (h) => active && setHandoff(h),
@@ -111,11 +142,11 @@ export default function ProviderSignin({
         };
     }, [params]);
 
-    if (!providers.length && !handoff && !error) return null;
+    if (!standalone && !providers.length && !handoff && !error) return null;
     return (
         <section
             aria-label="Sign in with a git host"
-            className="space-y-3 rounded-lg border border-border-light p-4 dark:border-border-dark">
+            className={`space-y-3 rounded-lg border border-border-light p-4 dark:border-border-dark ${standalone && !handoff ? "text-center" : ""}`}>
             <h2 className="text-lg font-semibold">
                 Sign in with your git host
             </h2>
@@ -129,6 +160,7 @@ export default function ProviderSignin({
             {handoff ? (
                 <RepoPicker
                     handoff={handoff}
+                    onBack={() => setHandoff(undefined)}
                     onConnected={(connection) => {
                         setHandoff(undefined);
                         onConnected(connection);
@@ -140,12 +172,19 @@ export default function ProviderSignin({
                         <ProviderButton
                             key={option.provider}
                             option={option}
+                            returnTo={returnTo}
+                            centered={standalone && !handoff}
                         />
                     ))}
+                    {standalone && loaded && !providers.length && (
+                        <p className="text-sm text-light-700 dark:text-dark-700">
+                            No git hosts are set up on this server.
+                        </p>
+                    )}
                     <p className="text-xs text-light-700 dark:text-dark-700">
-                        Or paste a repository URL and access token below. The
-                        sign-in token is handed to this browser once and never
-                        stored on the server.
+                        {standalone
+                            ? "The sign-in token is handed to this browser once and never stored on the server."
+                            : "Or paste a repository URL and access token below. The sign-in token is handed to this browser once and never stored on the server."}
                     </p>
                 </>
             )}

@@ -7,6 +7,7 @@ import About from "./about.tsx";
 import Editor from "./editor.tsx";
 import Library from "./library.tsx";
 import Connect from "./connect.tsx";
+import SignIn from "./signin.tsx";
 import { initUmami } from "@analytics/tracker";
 import PageTracker from "@components/page-tracker.tsx";
 import ErrorBoundary from "@components/error-boundary.tsx";
@@ -33,6 +34,10 @@ createRoot(document.getElementById("root")!).render(
                     <Route
                         path="/library"
                         element={<Library />}
+                    />
+                    <Route
+                        path="/signin"
+                        element={<SignIn />}
                     />
                     <Route
                         path="/connect"

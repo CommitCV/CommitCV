@@ -129,7 +129,7 @@ export default function ResumeSelector() {
                             Keep your resumes in any https git repository.
                         </p>
                         <Link
-                            to="/connect"
+                            to="/signin"
                             className={buttonClass("primary", "sm")}>
                             Connect a repository
                         </Link>

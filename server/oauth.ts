@@ -148,8 +148,14 @@ export function oauthApi(options: OAuthOptions): Hono {
             access_token?: string;
             refresh_token?: string;
             expires_in?: number;
+            error?: string;
+            error_description?: string;
         };
         if (!response.ok || !data.access_token) {
+            // Error codes only; never the body, which may hold tokens.
+            console.error(
+                `oauth ${a.provider}: token request failed (${response.status}) ${String(data.error ?? "")} ${String(data.error_description ?? "")}`.trim(),
+            );
             throw new Error("token request failed");
         }
         return {
@@ -275,6 +281,10 @@ export function oauthApi(options: OAuthOptions): Hono {
             );
             if (response.ok) {
                 user = normalizeUser(await response.json());
+            } else {
+                console.error(
+                    `oauth ${a.provider}: user lookup failed (${response.status})`,
+                );
             }
         } catch {
             // The page asks for the author instead.

@@ -22,6 +22,20 @@ export interface RepoSummary {
     private: boolean;
 }
 
+/** The host's "new repository" page, for users who have none yet. */
+export function newRepoUrl(provider: string, host: string): string {
+    switch (provider) {
+        case "github":
+            return "https://github.com/new";
+        case "gitlab":
+            return `https://${host}/projects/new`;
+        case "bitbucket":
+            return "https://bitbucket.org/repo/create";
+        default:
+            return `https://${host}/repo/create`;
+    }
+}
+
 export const PROVIDER_NAMES: Record<string, string> = {
     github: "GitHub",
     gitlab: "GitLab",
@@ -42,8 +56,12 @@ export function signinErrorMessage(code: string): string {
     return SIGNIN_ERRORS[code] ?? "Sign-in failed. Try again.";
 }
 
-export function loginUrl(provider: string, host: string): string {
-    const params = new URLSearchParams({ provider, host, return: "/connect" });
+export function loginUrl(
+    provider: string,
+    host: string,
+    returnTo = "/connect",
+): string {
+    const params = new URLSearchParams({ provider, host, return: returnTo });
     return `/api/oauth/login?${params}`;
 }
 

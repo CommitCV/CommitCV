@@ -4,12 +4,14 @@ import { connections, type IConnection } from "../../git/connections";
 import {
     connectionFromHandoff,
     listRepos,
+    newRepoUrl,
+    PROVIDER_NAMES,
     type Handoff,
     type RepoSummary,
 } from "../../git/oauth";
 import { parseRepoUrl } from "../../git/remote-config";
 import { testConnection } from "../../git/test-connection";
-import { TEMPLATE_REPO_URL } from "../../git/template";
+import { templateOffer } from "../../git/template";
 
 const input =
     "mt-1 w-full rounded border border-border-light bg-light-100 px-2 py-1.5 font-normal outline-none focus:border-accent dark:border-border-dark dark:bg-dark-200";
@@ -17,29 +19,26 @@ const input =
 interface RepoPickerProps {
     handoff: Handoff;
     onConnected: (connection: IConnection) => void;
-}
-
-function templatePath(): string | undefined {
-    try {
-        return TEMPLATE_REPO_URL
-            ? parseRepoUrl(TEMPLATE_REPO_URL).path
-            : undefined;
-    } catch {
-        return undefined;
-    }
+    /** Steps back to choosing a provider (the sign-in is discarded). */
+    onBack?: () => void;
 }
 
 /** After sign-in: choose a repo (or paste a URL), then test and save. */
-export default function RepoPicker({ handoff, onConnected }: RepoPickerProps) {
+export default function RepoPicker({
+    handoff,
+    onConnected,
+    onBack,
+}: RepoPickerProps) {
     const [name, setName] = useState(handoff.user.name);
     const [email, setEmail] = useState(handoff.user.email ?? "");
     const [query, setQuery] = useState("");
     const [repos, setRepos] = useState<RepoSummary[]>();
     const [installUrl, setInstallUrl] = useState<string>();
+    const [reloads, setReloads] = useState(0);
     const [url, setUrl] = useState("");
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
-    const template = handoff.provider === "github" ? templatePath() : undefined;
+    const template = templateOffer(handoff.provider, handoff.host);
 
     useEffect(() => {
         let active = true;
@@ -63,7 +62,7 @@ export default function RepoPicker({ handoff, onConnected }: RepoPickerProps) {
             active = false;
             clearTimeout(timer);
         };
-    }, [handoff, query]);
+    }, [handoff, query, reloads]);
 
     const ready = Boolean(name.trim() && email.trim()) && !busy;
 
@@ -87,6 +86,15 @@ export default function RepoPicker({ handoff, onConnected }: RepoPickerProps) {
 
     return (
         <div className="space-y-3">
+            {onBack && (
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={onBack}>
+                    ← Back
+                </Button>
+            )}
             <p
                 role="status"
                 className="text-sm text-green-700 dark:text-green-400">
@@ -112,14 +120,26 @@ export default function RepoPicker({ handoff, onConnected }: RepoPickerProps) {
                     />
                 </label>
             </div>
-            <label className="block text-sm font-medium">
-                Search repositories
-                <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    className={input}
-                />
-            </label>
+            <div className="flex items-end gap-2">
+                <label className="block flex-1 text-sm font-medium">
+                    Search repositories
+                    <input
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        className={input}
+                    />
+                </label>
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                        setRepos(undefined);
+                        setReloads((n) => n + 1);
+                    }}>
+                    Refresh list
+                </Button>
+            </div>
             <ul
                 aria-label="Repositories"
                 className="max-h-64 space-y-1 overflow-y-auto">
@@ -178,19 +198,62 @@ export default function RepoPicker({ handoff, onConnected }: RepoPickerProps) {
                     Connect URL
                 </Button>
             </div>
-            {template && (
-                <p className="text-sm">
-                    No repository yet?{" "}
-                    <a
-                        href={`${TEMPLATE_REPO_URL}/generate`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-accent underline">
-                        Create one from the CommitCV template
-                    </a>
-                    , add it to the app, then come back and sign in again.
-                </p>
-            )}
+            <p className="text-sm">
+                No repository yet?{" "}
+                <a
+                    href={newRepoUrl(handoff.provider, handoff.host)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-accent underline">
+                    Create one on{" "}
+                    {handoff.host === "codeberg.org"
+                        ? "Codeberg"
+                        : (PROVIDER_NAMES[handoff.provider] ?? handoff.host)}
+                </a>
+                {template && (
+                    <>
+                        {" "}
+                        or{" "}
+                        {template.importFrom ? (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void navigator.clipboard
+                                        ?.writeText(template.importFrom ?? "")
+                                        .catch(() => {});
+                                    window.open(
+                                        template.url,
+                                        "_blank",
+                                        "noreferrer",
+                                    );
+                                }}
+                                className="text-accent underline">
+                                {template.label}
+                            </button>
+                        ) : (
+                            <a
+                                href={template.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-accent underline">
+                                {template.label}
+                            </a>
+                        )}
+                        {template.importFrom && (
+                            <>
+                                {" "}
+                                (we copy <code>{template.importFrom}</code> to
+                                your clipboard first: paste it as the repository
+                                URL)
+                            </>
+                        )}
+                    </>
+                )}
+                . Make it private and add a README so it has a branch
+                {handoff.provider === "github" &&
+                    ", add it to the CommitCV app"}
+                , then come back and sign in again.
+            </p>
             {busy && <p className="text-sm">Working…</p>}
             {error && (
                 <p

@@ -31,7 +31,7 @@ export default function GitSyncStatus() {
                     <>
                         Sync stopped — sign-in expired.{" "}
                         <Link
-                            to="/connect"
+                            to="/signin"
                             className="underline">
                             Reconnect
                         </Link>

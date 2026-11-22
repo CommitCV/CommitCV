@@ -29,11 +29,11 @@ export default function Header() {
                         Resume Library
                     </NavLink>
                     {login === null ? (
-                        <a
-                            href="/api/auth/login"
+                        <NavLink
+                            to="/signin"
                             className={authButtonClass}>
                             Sign In
-                        </a>
+                        </NavLink>
                     ) : (
                         <button
                             type="button"
