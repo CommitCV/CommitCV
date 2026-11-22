@@ -34,8 +34,8 @@ pnpm build
 pnpm server
 ```
 
-The server serves the built frontend and handles GitHub OAuth and proxy
-requests. Use `.env.example` for local configuration.
+The server serves the built frontend and handles git host sign-in (OAuth)
+and the git proxy. Use `.env.example` for local configuration.
 
 ## Documentation
 

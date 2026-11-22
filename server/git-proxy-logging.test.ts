@@ -11,11 +11,7 @@ function loggedWhen(upstream: Upstream, timing = false) {
         vi.spyOn(console, m).mockImplementation(() => {}),
     );
     const app = createApp({
-        env: {
-            githubClientId: "cid",
-            githubClientSecret: "secret",
-            publicUrl: "https://cv.example.com",
-        },
+        publicUrl: "https://cv.example.com",
         distDir: "./server/test-dist",
         gitProxy: {
             resolve: async () => [{ address: "140.82.112.3", family: 4 }],

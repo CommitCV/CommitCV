@@ -23,6 +23,24 @@ export class GitNetworkError extends GitError {
     }
 }
 
+/** A save found the remote file changed since it was read. */
+export class ConflictError extends Error {
+    constructor(
+        message = "This file changed on the remote. Reload it before saving.",
+    ) {
+        super(message);
+        this.name = "ConflictError";
+    }
+}
+
+/** The git host rejected the stored credentials. */
+export class UnauthorizedError extends Error {
+    constructor(message = "Sign-in expired. Sign in again.") {
+        super(message);
+        this.name = "UnauthorizedError";
+    }
+}
+
 /** Maps isomorphic-git/fetch failures to our classes; strips the token. */
 export function mapGitError(err: unknown, secrets: string[]): GitError {
     if (err instanceof GitError) return err;

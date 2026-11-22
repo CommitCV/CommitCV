@@ -24,6 +24,7 @@ import {
 import { today } from "@resume/dates";
 import starter from "@resume/starter-resume.json";
 import { connections } from "../git/connections";
+import { ConflictError, UnauthorizedError } from "../git/errors";
 import { openConnection } from "../git/open-connection";
 import { freshConnection } from "../git/oauth";
 import { sessions } from "../git/sessions";
@@ -32,11 +33,6 @@ import {
     SessionDivergedError,
     type IGitStorage,
 } from "@storage/git-resume-storage";
-import {
-    ConflictError,
-    UnauthorizedError,
-} from "@storage/github-resume-storage";
-import { GitHubResumeStorage } from "@storage/github-resume-storage";
 import { IdbResumeStorage } from "@storage/idb-resume-storage";
 import { LocalResumeStorage } from "@storage/local-resume-storage";
 import { requestPersistence } from "@storage/persistence";
@@ -45,7 +41,6 @@ import { createBrowserThumbnails } from "../thumbnails";
 
 export type TResumeSource =
     | { kind: "local"; id: string }
-    | { kind: "github"; repo: string; path: string }
     /** `connectionId` points at a saved connection; its token never lands here. */
     | { kind: "git"; connectionId: string; path: string };
 
@@ -80,21 +75,12 @@ export interface IFocusedText {
     end: number;
 }
 
-const githubStorages = new Map<string, GitHubResumeStorage>();
 const gitStorages = new Map<string, GitResumeStorage>();
 
 // Storage seam: production uses the real adapters; tests swap them out.
 const localIdb = new IdbResumeStorage(undefined, new LocalResumeStorage());
 export const resumeStorages = {
     local: localIdb as IResumeStorage,
-    github(repo: string): IResumeStorage {
-        let storage = githubStorages.get(repo);
-        if (!storage) {
-            storage = new GitHubResumeStorage(repo);
-            githubStorages.set(repo, storage);
-        }
-        return storage;
-    },
     /** Resolves the saved connection on first use, so this stays sync. */
     git(connectionId: string): IResumeStorage | IGitStorage {
         let storage = gitStorages.get(connectionId);
@@ -121,8 +107,6 @@ export function storageFor(source: TResumeSource): IResumeStorage {
     switch (source.kind) {
         case "local":
             return resumeStorages.local;
-        case "github":
-            return resumeStorages.github(source.repo);
         case "git":
             return resumeStorages.git(source.connectionId);
     }

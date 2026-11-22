@@ -51,17 +51,6 @@ describe("startLocalAutosave", () => {
         expect(save).toHaveBeenCalledTimes(1);
     });
 
-    it("never saves github sources", () => {
-        const { save, edit, store, win } = setup({
-            source: { kind: "github", repo: "a/b", path: "r.json" },
-        });
-        edit();
-        win.dispatchEvent(new Event("pagehide"));
-        vi.advanceTimersByTime(5000);
-        store.setState({ saveState: "dirty" });
-        expect(save).not.toHaveBeenCalled();
-    });
-
     it("flushes pending edits on pagehide", () => {
         const { save, edit, win } = setup();
         edit();

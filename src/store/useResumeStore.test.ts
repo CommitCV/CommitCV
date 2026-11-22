@@ -4,10 +4,7 @@ import type { IResume, ISection } from "@resume/resume";
 import type { IResumeEntry, IResumeStorage } from "@storage/resume-storage";
 import starter from "@resume/starter-resume.json";
 import { resumeStorages, useResumeStore } from "./useResumeStore";
-import {
-    ConflictError,
-    UnauthorizedError,
-} from "@storage/github-resume-storage";
+import { ConflictError, UnauthorizedError } from "../git/errors";
 import { SessionDivergedError } from "@storage/git-resume-storage";
 
 class FakeStorage implements IResumeStorage {
@@ -29,14 +26,11 @@ class FakeStorage implements IResumeStorage {
 
 describe("useResumeStore", () => {
     const local = new FakeStorage();
-    const github = new FakeStorage();
 
     beforeEach(() => {
         local.saved = [];
-        github.saved = [];
         local.fail = false;
         resumeStorages.local = local;
-        resumeStorages.github = () => github;
         useResumeStore
             .getState()
             .load(makeResume(), { kind: "local", id: "r1" });
@@ -49,17 +43,6 @@ describe("useResumeStore", () => {
             id: "r1",
             message: "my message",
         });
-    });
-
-    it("sends github saves to the repo storage with the path as id", async () => {
-        useResumeStore.getState().load(makeResume(), {
-            kind: "github",
-            repo: "travis/cv",
-            path: "resume.json",
-        });
-        await useResumeStore.getState().save();
-        expect(github.saved).toHaveLength(1);
-        expect(github.saved[0]?.id).toBe("resume.json");
     });
 
     it("sends git saves to the connection's storage with the path as id", async () => {

@@ -1,31 +1,13 @@
 # Remote storage
 
-Two remotes exist. Any https git host (access token, git protocol through
-the proxy below) is the one the UI offers: see [Git client](git-sync.md). The
-GitHub OAuth contents-API adapter described next is kept in the code and the
-store (`github` source) but has no UI entry point since the connect page
-replaced the repository picker.
+Resumes are stored in any https git repository, with an access token or a
+host sign-in. The git protocol goes through the proxy below; see
+[Git client](git-sync.md) and
+[Sign in with a git host](git-sync.md#sign-in-with-a-git-host) for setup.
 
-GitHub storage saves each resume as a JSON file in a repository. The browser
-calls the CommitCV server, which forwards authenticated requests to GitHub.
-The GitHub access token remains in an HTTP-only cookie.
-
-The adapter remembers the last GitHub blob SHA for each opened file. A save
-with a stale SHA is rejected instead of overwriting a newer commit. The adapter
-can also list a file's commits and load an older revision, but the editor does
-not expose either yet.
-
-The header shows **Sign out** while a GitHub session is active. It clears the
-token cookie on the server.
-
-**Deprecated:** the `/api/auth/*` and `/api/github/*` routes (and the
-`gh_token` cookie) are legacy and will be removed. New sign-ins use
-`/api/oauth/*`, which hands the token to the browser once instead of keeping
-it in a server cookie; see [Sign in with a git host](git-sync.md#sign-in-with-a-git-host).
-The same `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` serve both.
-
-Configure OAuth with `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and
-`PUBLIC_URL`. Keep the client secret on the server.
+The server holds no sessions and no tokens: the browser keeps its own token and
+sends it only to the git host. OAuth is configured with the `OAUTH_*`
+variables and `PUBLIC_URL`. Keep client secrets on the server.
 
 ## Git proxy
 
@@ -34,7 +16,7 @@ smart-HTTP, built for isomorphic-git's `corsProxy` option. Git hosts send no
 CORS headers, so the browser cannot talk to them directly. The user's token
 travels in the browser's `Authorization` header; the proxy forwards it and
 nothing else about the request. It does not store tokens or resume content,
-never reads the `gh_token` cookie, and logs only method, host and status of
+never reads cookies, and logs only method, host and status of
 failed requests: no repository path, header or response body. With
 `GIT_PROXY_TIMING=1` it also logs timings and sizes per request, naming only
 the host and endpoint.

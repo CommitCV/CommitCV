@@ -3,11 +3,6 @@ import { createApp } from "./app.ts";
 import type { GitProxyOptions, Upstream } from "./git-proxy.ts";
 import { isPublicAddress } from "./git-proxy.ts";
 
-const env = {
-    githubClientId: "cid",
-    githubClientSecret: "secret",
-    publicUrl: "https://cv.example.com",
-};
 const REFS =
     "/api/git-proxy/github.com/o/r.git/info/refs?service=git-upload-pack";
 const hosts: Record<string, string> = {
@@ -35,7 +30,7 @@ function setup(options: Partial<GitProxyOptions> = {}, upstream?: Upstream) {
             });
         });
     const server = createApp({
-        env,
+        publicUrl: "https://cv.example.com",
         distDir: "./server/test-dist",
         gitProxy: {
             resolve: async (host) =>
@@ -251,7 +246,7 @@ describe("git proxy headers and CORS", () => {
         const response = await server.request(REFS, {
             headers: {
                 authorization: "Basic abc",
-                cookie: "gh_token=secret",
+                cookie: "session=secret",
                 "x-custom": "1",
                 "git-protocol": "version=2",
             },

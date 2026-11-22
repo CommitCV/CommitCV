@@ -89,27 +89,4 @@ test.describe("home", () => {
             page.getByTestId("resume-preview").locator("svg"),
         ).toBeVisible({ timeout: 30_000 });
     });
-
-    test("signs out of a GitHub session", async ({ page }) => {
-        await page.route("**/api/auth/session", (route) =>
-            route.fulfill({
-                contentType: "application/json",
-                body: JSON.stringify({ authenticated: true, login: "octocat" }),
-            }),
-        );
-        await page.route("**/api/auth/logout", (route) =>
-            route.fulfill({
-                contentType: "application/json",
-                body: JSON.stringify({ ok: true }),
-            }),
-        );
-        await page.goto("/");
-        await expect(
-            page.getByRole("link", { name: "Sign in with Git" }),
-        ).toHaveCount(0);
-        await page.getByRole("button", { name: "Sign out" }).click();
-        await expect(
-            page.getByRole("link", { name: "Sign in with Git" }),
-        ).toBeVisible();
-    });
 });
