@@ -6,7 +6,7 @@ test("autosaves and reopens a local resume", async ({ page }) => {
     await page.getByRole("button", { name: "Start editing" }).click();
     await page.getByLabel("Resume filename").fill("library-resume");
 
-    await page.getByRole("link", { name: "CommitCV Home" }).click();
+    await page.getByRole("link", { name: "Resume Library" }).click();
     const entry = page.getByRole("button", { name: /library-resume/ }).first();
     await expect(entry).toBeVisible();
     await entry.click();
@@ -49,7 +49,7 @@ test("autosaves an edit without any commit UI", async ({ page }) => {
     // Stay in the editor so the debounce, not the unmount flush, does the save.
     await page.waitForTimeout(1500);
     await page.reload();
-    await page.getByRole("link", { name: "CommitCV Home" }).click();
+    await page.getByRole("link", { name: "Resume Library" }).click();
     await page
         .getByRole("button", { name: /autosaved/ })
         .first()
@@ -57,13 +57,12 @@ test("autosaves an edit without any commit UI", async ({ page }) => {
     await expect(page.getByLabel("Resume filename")).toHaveValue("autosaved");
 });
 
-test("an untouched new resume stays out of the library", async ({ page }) => {
+test("a new resume is in the library even if untouched", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Start editing" }).click();
     await expect(page.getByLabel("Resume filename")).toBeVisible();
-    await page.waitForTimeout(1500);
-    await page.getByRole("link", { name: "CommitCV Home" }).click();
+    await page.getByRole("link", { name: "Resume Library" }).click();
     await expect(
         page.getByRole("button", { name: /Actions for / }),
-    ).toHaveCount(0);
+    ).toHaveCount(1);
 });

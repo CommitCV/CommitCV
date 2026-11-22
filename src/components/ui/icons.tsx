@@ -25,7 +25,7 @@ import {
     faXmark,
     type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
-import { faGithub } from "@fortawesome/free-brands-svg-icons";
+import { faGitAlt, faGithub } from "@fortawesome/free-brands-svg-icons";
 import {
     FontAwesomeIcon,
     type FontAwesomeIconProps,
@@ -52,6 +52,7 @@ export const ChevronDown = icon(faChevronDown);
 export const Download = icon(faDownload);
 export const EllipsisVertical = icon(faEllipsisVertical);
 export const FileExport = icon(faFileExport);
+export const Git = icon(faGitAlt);
 export const Github = icon(faGithub);
 export const Italic = icon(faItalic);
 export const Link = icon(faLink);

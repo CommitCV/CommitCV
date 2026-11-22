@@ -1,16 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import Header from "@components/header";
 import Footer from "@components/footer";
-import ProviderSignin from "@components/connect/provider-signin";
 import ConnectForm from "@components/connect/connect-form";
-import ConnectionList from "@components/connect/connection-list";
 import NewRemoteResume from "@components/connect/new-remote-resume";
 import RemoteFiles from "@components/connect/remote-files";
 import TemplateOffer from "@components/connect/template-offer";
 import { useRemoteEntries } from "@components/connect/use-remote-entries";
 import { connections, type IConnection } from "../git/connections";
-import { hasUnsyncedEdits, sessions } from "../git/sessions";
-import { forgetGitStorage } from "@store/useResumeStore";
 
 function RepoPanel({ connection }: { connection: IConnection }) {
     const { entries, error, reload } = useRemoteEntries(connection.id);
@@ -37,39 +33,14 @@ export default function Connect() {
     const [items, setItems] = useState<IConnection[]>([]);
     const [selectedId, setSelectedId] = useState<string>();
 
-    const [unsyncedIds, setUnsyncedIds] = useState<ReadonlySet<string>>(
-        new Set(),
-    );
-
-    const load = useCallback(async () => {
-        const [list, all] = await Promise.all([
-            connections.list(),
-            sessions.list(),
-        ]);
-        const unsynced = new Set(
-            all.filter(hasUnsyncedEdits).map((s) => s.connectionId),
-        );
-        return { list, unsynced };
-    }, []);
-    const refresh = useCallback(
-        () =>
-            load().then(({ list, unsynced }) => {
-                setItems(list);
-                setUnsyncedIds(unsynced);
-            }),
-        [load],
-    );
+    const refresh = useCallback(() => connections.list().then(setItems), []);
     useEffect(() => {
         let active = true;
-        void load().then(({ list, unsynced }) => {
-            if (!active) return;
-            setItems(list);
-            setUnsyncedIds(unsynced);
-        });
+        void connections.list().then((all) => active && setItems(all));
         return () => {
             active = false;
         };
-    }, [load]);
+    }, []);
 
     const selected = items.find((item) => item.id === selectedId);
 
@@ -86,12 +57,6 @@ export default function Connect() {
                 </p>
                 <div className="grid gap-6 lg:grid-cols-2">
                     <div className="space-y-6">
-                        <ProviderSignin
-                            onConnected={(connection) => {
-                                void refresh();
-                                setSelectedId(connection.id);
-                            }}
-                        />
                         <section className="rounded-lg border border-border-light p-4 dark:border-border-dark">
                             <ConnectForm
                                 onConnected={(connection) => {
@@ -103,28 +68,6 @@ export default function Connect() {
                         <TemplateOffer />
                     </div>
                     <div className="space-y-6">
-                        {items.length > 0 && (
-                            <section className="rounded-lg border border-border-light p-4 dark:border-border-dark">
-                                <h2 className="mb-3 text-lg font-semibold">
-                                    Saved connections
-                                </h2>
-                                <ConnectionList
-                                    items={items}
-                                    unsyncedIds={unsyncedIds}
-                                    selectedId={selectedId}
-                                    onSelect={setSelectedId}
-                                    onRemove={(id) => {
-                                        forgetGitStorage(id);
-                                        if (id === selectedId) {
-                                            setSelectedId(undefined);
-                                        }
-                                        void connections
-                                            .remove(id)
-                                            .then(refresh);
-                                    }}
-                                />
-                            </section>
-                        )}
                         {selected && (
                             <RepoPanel
                                 key={selected.id}

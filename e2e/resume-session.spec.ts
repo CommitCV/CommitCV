@@ -22,8 +22,7 @@ const seed = (page: Page, filename: string, minutesAgo = 5) =>
     );
 
 async function reopen(page: Page) {
-    await page.goto("/connect");
-    await page.getByTestId("connection").getByRole("button").first().click();
+    await page.goto("/library");
 }
 const openFile = (page: Page) =>
     page.getByRole("button", { name: "Open remote.json" }).click();
@@ -68,7 +67,7 @@ test.describe("resuming an unsquashed session", () => {
         await expect(dialog(page)).toContainText("5m ago");
         await dialog(page).getByRole("button", { name: "Cancel" }).click();
         await expect(dialog(page)).toHaveCount(0);
-        await expect(page).toHaveURL(/\/connect$/);
+        await expect(page).toHaveURL(/\/library$/);
         expect(await fake(page, "remoteBranches")).toEqual([branch]);
     });
 
@@ -253,7 +252,7 @@ test.describe("resuming an unsquashed session", () => {
         expect(await fake(page, "remoteBranches")).toEqual([]);
     });
 
-    test("shows a badge for files with a session, in the library and on connect", async ({
+    test("shows a badge for files with a session in the library", async ({
         page,
     }) => {
         await connect(page);
@@ -263,10 +262,6 @@ test.describe("resuming an unsquashed session", () => {
             .getByLabel("Remote repositories")
             .getByTestId("session-badge");
         await expect(badge).toHaveText("Unsaved session · 1h ago");
-        await reopen(page);
-        await expect(page.getByTestId("session-badge")).toContainText(
-            "Unsaved session",
-        );
     });
 
     test("no badge without a session", async ({ page }) => {

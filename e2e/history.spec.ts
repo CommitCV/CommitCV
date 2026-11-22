@@ -38,8 +38,7 @@ const seed = (page: Page, count: number) =>
 async function openRemote(page: Page, versions = 3) {
     await connect(page);
     if (versions > 0) await seed(page, versions);
-    await page.goto("/connect");
-    await page.getByTestId("connection").getByRole("button").first().click();
+    await page.goto("/library");
     await page.getByRole("button", { name: "Open remote.json" }).click();
     await expect(page).toHaveURL(/\/editor$/);
 }

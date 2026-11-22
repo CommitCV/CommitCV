@@ -106,10 +106,12 @@ test.describe("home", () => {
             }),
         );
         await page.goto("/");
-        await expect(page.getByRole("link", { name: "Sign In" })).toHaveCount(
-            0,
-        );
+        await expect(
+            page.getByRole("link", { name: "Sign in with Git" }),
+        ).toHaveCount(0);
         await page.getByRole("button", { name: "Sign out" }).click();
-        await expect(page.getByRole("link", { name: "Sign In" })).toBeVisible();
+        await expect(
+            page.getByRole("link", { name: "Sign in with Git" }),
+        ).toBeVisible();
     });
 });

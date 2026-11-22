@@ -71,7 +71,7 @@ test.describe("sign in with a git host", () => {
         page,
     }) => {
         await mockOAuth(page);
-        await page.goto("/connect");
+        await page.goto("/signin");
         await expect(
             page.getByRole("button", { name: "Sign in with GitHub" }),
         ).toBeVisible();
@@ -156,8 +156,7 @@ test.describe("sign in with a git host", () => {
 
     test("hides sign-in when nothing is configured", async ({ page }) => {
         await mockOAuth(page, { providers: [] });
-        await page.goto("/connect");
-        await expect(page.getByLabel("Repository URL")).toBeVisible();
+        await page.goto("/signin");
         await expect(
             page.getByRole("button", { name: /Sign in with/ }),
         ).toHaveCount(0);
@@ -168,7 +167,7 @@ test.describe("sign in with a git host", () => {
     }) => {
         await fakeGit(page);
         const seen = await mockOAuth(page);
-        await page.goto("/connect?signed_in=github");
+        await page.goto("/signin?signed_in=github");
         await expect(page.getByRole("status").first()).toContainText(
             "Signed in as ada on github.com",
         );
@@ -196,9 +195,7 @@ test.describe("sign in with a git host", () => {
         await page.getByLabel("Search repositories").fill("");
         await use.click();
 
-        await expect(page.getByTestId("connection")).toContainText(
-            "ada@github.com",
-        );
+        await expect(page).toHaveURL(/\/library$/);
         const local = await page.evaluate(() =>
             JSON.stringify({ ...localStorage }),
         );
@@ -231,7 +228,7 @@ test.describe("sign in with a git host", () => {
         await mockOAuth(page, {
             handoff: { status: 410, body: { error: "sign-in expired" } },
         });
-        await page.goto("/connect?signed_in=github");
+        await page.goto("/signin?signed_in=github");
         await expect(page.getByRole("alert")).toContainText(
             "That sign-in expired",
         );
@@ -242,7 +239,7 @@ test.describe("sign in with a git host", () => {
 
     test("shows a readable message for a denied sign-in", async ({ page }) => {
         await mockOAuth(page);
-        await page.goto("/connect?signin_error=denied");
+        await page.goto("/signin?signin_error=denied");
         await expect(page.getByRole("alert")).toContainText(
             "cancelled or denied",
         );
