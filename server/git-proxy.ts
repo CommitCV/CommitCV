@@ -346,6 +346,8 @@ export function gitProxy(options: GitProxyOptions): Hono {
         }
     }
 
+    const timing = process.env.GIT_PROXY_TIMING === "1";
+
     app.all("/*", async (c) => {
         const fail = (status: ProxyError["status"], message: string) =>
             c.json({ error: message }, status);
@@ -418,6 +420,7 @@ export function gitProxy(options: GitProxyOptions): Hono {
                 }),
             );
 
+            const startedAt = performance.now();
             for (let hop = 0; ; hop++) {
                 host = target.hostname;
                 const address = await pickAddress(host);
@@ -493,14 +496,18 @@ export function gitProxy(options: GitProxyOptions): Hono {
                     await response.body?.cancel();
                     throw new ProxyError(502, "upstream response too large");
                 }
-                handedOff = response.body !== null;
+                const timed = timing
+                    ? timeBody(response, {
+                          label: `${c.req.method} ${target.hostname} ${endpointOf(target)}`,
+                          startedAt,
+                          sent: received,
+                      })
+                    : response.body;
+                handedOff = timed !== null;
                 return new Response(
-                    response.body &&
-                        guardBody(
-                            response.body,
-                            maxResponse,
-                            deadline.signal,
-                            () => clearTimeout(deadlineTimer),
+                    timed &&
+                        guardBody(timed, maxResponse, deadline.signal, () =>
+                            clearTimeout(deadlineTimer),
                         ),
                     { status: response.status, headers: out },
                 );
@@ -522,4 +529,38 @@ export function gitProxy(options: GitProxyOptions): Hono {
     });
 
     return app;
+}
+
+/** `info/refs`, `git-upload-pack` or `git-receive-pack`: no owner or repo. */
+const endpointOf = (url: URL) =>
+    url.pathname.endsWith("/info/refs")
+        ? "info/refs"
+        : (url.pathname.split("/").pop() ?? "");
+
+/** Logs time to first byte, total time and sizes once the body finishes. */
+function timeBody(
+    response: Response,
+    {
+        label,
+        startedAt,
+        sent,
+    }: { label: string; startedAt: number; sent: number },
+): ReadableStream<Uint8Array> | null {
+    const firstByte = performance.now() - startedAt;
+    let received = 0;
+    const log = (note = "") =>
+        console.info(
+            `git-proxy timing: ${label} -> ${response.status} ttfb ${firstByte.toFixed(0)}ms total ${(performance.now() - startedAt).toFixed(0)}ms sent ${sent}B received ${received}B${note}`,
+        );
+    return (
+        response.body?.pipeThrough(
+            new TransformStream<Uint8Array, Uint8Array>({
+                transform(chunk, controller) {
+                    received += chunk.byteLength;
+                    controller.enqueue(chunk);
+                },
+                flush: () => log(),
+            }),
+        ) ?? (log(), null)
+    );
 }
