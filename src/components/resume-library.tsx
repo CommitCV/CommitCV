@@ -4,6 +4,7 @@ import type { IResumeEntry } from "@storage/resume-storage";
 import { resumeStorages, useResumeStore } from "@store/useResumeStore";
 import Button from "@components/ui/button";
 import { Trash } from "@components/ui/icons";
+import { trackResumeDeleted } from "@analytics/tracker";
 
 interface ResumeLibraryProps {
     compact?: boolean;
@@ -64,6 +65,7 @@ export default function ResumeLibrary({ compact = false }: ResumeLibraryProps) {
 
     async function deleteResume(id: string) {
         await resumeStorages.local.remove(id);
+        trackResumeDeleted();
         await refresh();
     }
 

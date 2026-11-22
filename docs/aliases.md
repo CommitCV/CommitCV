@@ -8,6 +8,7 @@ The frontend uses aliases for the main boundaries:
 - `@resume` for the resume domain
 - `@typst` for emission and compilation
 - `@storage` for persistence adapters
+- `@analytics` for Umami analytics and usage tracking
 
 Each alias is declared in the Vite and TypeScript configuration so editor
 imports and builds resolve the same way.

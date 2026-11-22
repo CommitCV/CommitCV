@@ -21,6 +21,11 @@ import {
     stepZoom,
     type FitMode,
 } from "@components/editor/zoom";
+import {
+    trackResumeDownloadedPdf,
+    trackResumeExported,
+    trackCompileError,
+} from "@analytics/tracker";
 
 interface ViewportToolbarProps {
     pageCount?: number;
@@ -87,6 +92,7 @@ export default function ViewportToolbar({
                         type: "application/json",
                     }),
                 );
+                trackResumeExported();
             } else if (kind === "typ") {
                 saveBlob(
                     `${resume.filename || "resume"}.typ`,
@@ -94,6 +100,7 @@ export default function ViewportToolbar({
                         type: "text/plain",
                     }),
                 );
+                trackResumeExported();
             } else {
                 const pdf = await typst.renderPdf(resumeToTypst(resume));
                 const buffer = new ArrayBuffer(pdf.byteLength);
@@ -104,8 +111,10 @@ export default function ViewportToolbar({
                         type: "application/pdf",
                     }),
                 );
+                trackResumeDownloadedPdf();
             }
         } catch (reason) {
+            trackCompileError(reason);
             setExportError(
                 reason instanceof Error ? reason.message : "Export failed",
             );
