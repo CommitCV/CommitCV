@@ -9,6 +9,7 @@ import {
 import { useOpenGitResume } from "@components/session/use-open-git-resume";
 import { sessionAge } from "@store/open-git-resume";
 import { resumeStorages } from "@store/useResumeStore";
+import { exportResume, type ExportKind } from "@resume/export-resume";
 import type { IResume } from "@resume/resume";
 import { connections, type IConnection } from "../../git/connections";
 import { parseRepoUrl } from "../../git/remote-config";
@@ -55,6 +56,38 @@ function Repo({ connection }: { connection: IConnection }) {
                 reason instanceof Error
                     ? reason.message
                     : "Unable to open resume",
+            );
+        }
+    }
+
+    async function exportFile(id: string, kind: ExportKind) {
+        setOpenError("");
+        try {
+            const storage = resumeStorages.git(connection.id);
+            const resume =
+                resumes?.get(id) ??
+                ("peek" in storage ? (await storage.peek([id])).get(id) : null);
+            if (!resume) throw new Error(`${id} could not be read`);
+            await exportResume(resume, kind);
+        } catch (reason) {
+            setOpenError(
+                reason instanceof Error
+                    ? reason.message
+                    : "Unable to download resume",
+            );
+        }
+    }
+
+    async function removeFile(id: string) {
+        setOpenError("");
+        try {
+            await resumeStorages.git(connection.id).remove(id);
+            reload();
+        } catch (reason) {
+            setOpenError(
+                reason instanceof Error
+                    ? reason.message
+                    : "Unable to delete resume",
             );
         }
     }
@@ -127,6 +160,10 @@ function Repo({ connection }: { connection: IConnection }) {
                                         : undefined
                                 }
                                 onOpen={(id) => void open(id)}
+                                onExport={(id, kind) =>
+                                    void exportFile(id, kind)
+                                }
+                                onDelete={(id) => void removeFile(id)}
                             />
                         );
                     })}

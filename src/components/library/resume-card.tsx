@@ -1,29 +1,35 @@
-import { useState } from "react";
-import Button from "@components/ui/button";
+import type { ExportKind } from "@resume/export-resume";
 import { lastEdited } from "@resume/library-entries";
 import type { IResumeEntry } from "@storage/resume-storage";
+import { useCardMenu } from "./use-card-menu";
 import { useThumbnail } from "./use-thumbnail";
 
 interface ResumeCardProps {
     entry: IResumeEntry;
     onOpen: (id: string) => void;
-    onDownload: (id: string) => void;
+    onExport: (id: string, kind: ExportKind) => void;
     onDelete: (id: string) => void;
 }
 
 export default function ResumeCard({
     entry,
     onOpen,
-    onDownload,
+    onExport,
     onDelete,
 }: ResumeCardProps) {
     const thumbnail = useThumbnail(entry.id);
-    const [confirming, setConfirming] = useState(false);
+    const { onContextMenu, kebab, popup, confirm } = useCardMenu({
+        name: entry.filename,
+        onOpen: () => onOpen(entry.id),
+        onExport: (kind) => onExport(entry.id, kind),
+        onDelete: () => onDelete(entry.id),
+    });
 
     return (
         <li
             data-testid="library-card"
-            className="flex flex-col overflow-hidden rounded-md border-4 border-border-light bg-light-200 dark:border-border-dark dark:bg-dark-100">
+            onContextMenu={onContextMenu}
+            className="relative flex flex-col overflow-hidden rounded-md border-4 border-border-light bg-light-200 dark:border-border-dark dark:bg-dark-100">
             <button
                 type="button"
                 aria-label={`Open ${entry.filename}`}
@@ -45,7 +51,7 @@ export default function ResumeCard({
                         </span>
                     )}
                 </div>
-                <div className="p-3">
+                <div className="p-3 pr-12">
                     <span className="flex items-center gap-2">
                         <span className="truncate font-semibold">
                             {entry.filename}
@@ -59,47 +65,9 @@ export default function ResumeCard({
                     </span>
                 </div>
             </button>
-            <div className="flex flex-wrap items-center gap-2 border-t-2 border-border-light p-2 dark:border-border-dark">
-                {confirming ? (
-                    <>
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            className="text-red-600"
-                            onClick={() => onDelete(entry.id)}>
-                            Confirm delete {entry.filename}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setConfirming(false)}>
-                            Cancel
-                        </Button>
-                    </>
-                ) : (
-                    <>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            aria-label={`Download ${entry.filename} JSON`}
-                            onClick={() => onDownload(entry.id)}>
-                            Download JSON
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            aria-label={`Delete ${entry.filename}`}
-                            className="text-red-600"
-                            onClick={() => setConfirming(true)}>
-                            Delete
-                        </Button>
-                    </>
-                )}
-            </div>
+            {kebab}
+            {confirm}
+            {popup}
         </li>
     );
 }

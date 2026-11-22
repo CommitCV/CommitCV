@@ -1,6 +1,8 @@
+import type { ExportKind } from "@resume/export-resume";
 import type { IResume } from "@resume/resume";
 import { lastEdited } from "@resume/library-entries";
 import type { IResumeEntry } from "@storage/resume-storage";
+import { useCardMenu } from "./use-card-menu";
 import { useInView } from "./use-in-view";
 import { useRemoteThumbnail } from "./use-remote-thumbnail";
 
@@ -15,6 +17,8 @@ interface RemoteResumeCardProps {
     /** "Unsaved session · 5m ago", when the file has one. */
     sessionLabel?: string;
     onOpen: (id: string) => void;
+    onExport: (id: string, kind: ExportKind) => void;
+    onDelete: (id: string) => void;
 }
 
 /** A resume in a git repository, laid out like a local library card. */
@@ -25,14 +29,23 @@ export default function RemoteResumeCard({
     resume,
     sessionLabel,
     onOpen,
+    onExport,
+    onDelete,
 }: RemoteResumeCardProps) {
+    const { onContextMenu, kebab, popup, confirm } = useCardMenu({
+        name: entry.id,
+        onOpen: () => onOpen(entry.id),
+        onExport: (kind) => onExport(entry.id, kind),
+        onDelete: () => onDelete(entry.id),
+    });
     const [ref, visible] = useInView();
     const thumbnail = useRemoteThumbnail(thumbnailKey, resume, visible);
     return (
         <li
             ref={ref}
             data-testid="library-card"
-            className="flex flex-col overflow-hidden rounded-md border-4 border-border-light bg-light-200 dark:border-border-dark dark:bg-dark-100">
+            onContextMenu={onContextMenu}
+            className="relative flex flex-col overflow-hidden rounded-md border-4 border-border-light bg-light-200 dark:border-border-dark dark:bg-dark-100">
             <button
                 type="button"
                 aria-label={`Open ${entry.id}`}
@@ -54,7 +67,7 @@ export default function RemoteResumeCard({
                         </span>
                     )}
                 </div>
-                <div className="p-3">
+                <div className="p-3 pr-12">
                     <span className="flex items-center gap-2">
                         <span className="truncate font-semibold">
                             {entry.filename}
@@ -80,6 +93,9 @@ export default function RemoteResumeCard({
                     )}
                 </div>
             </button>
+            {kebab}
+            {confirm}
+            {popup}
         </li>
     );
 }

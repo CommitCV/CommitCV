@@ -1,3 +1,4 @@
+import { openCardMenu } from "./fixtures/card-menu";
 import { test, expect } from "@playwright/test";
 
 test("autosaves and reopens a local resume", async ({ page }) => {
@@ -19,8 +20,15 @@ test("deletes a local resume", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Start editing" }).click();
     await page.getByLabel("Resume filename").fill("delete-me");
-    await page.getByRole("link", { name: "CommitCV Home" }).click();
-    await page.getByRole("button", { name: /Delete delete-me/ }).click();
+    await page.getByRole("link", { name: "Resume Library" }).click();
+    await openCardMenu(
+        page,
+        page.getByRole("button", { name: "Actions for delete-me" }),
+    );
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+    await page
+        .getByRole("button", { name: "Confirm delete delete-me" })
+        .click();
     await expect(page.getByRole("button", { name: /delete-me/ })).toHaveCount(
         0,
     );
@@ -55,5 +63,7 @@ test("an untouched new resume stays out of the library", async ({ page }) => {
     await expect(page.getByLabel("Resume filename")).toBeVisible();
     await page.waitForTimeout(1500);
     await page.getByRole("link", { name: "CommitCV Home" }).click();
-    await expect(page.getByRole("button", { name: /Delete / })).toHaveCount(0);
+    await expect(
+        page.getByRole("button", { name: /Actions for / }),
+    ).toHaveCount(0);
 });

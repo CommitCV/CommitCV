@@ -5,6 +5,7 @@ import {
     faBold,
     faChevronDown,
     faDownload,
+    faEllipsisVertical,
     faFileExport,
     faFloppyDisk,
     faItalic,
@@ -48,6 +49,7 @@ export const Bold = icon(faBold);
 export const Bullet = icon(faListUl);
 export const ChevronDown = icon(faChevronDown);
 export const Download = icon(faDownload);
+export const EllipsisVertical = icon(faEllipsisVertical);
 export const FileExport = icon(faFileExport);
 export const Github = icon(faGithub);
 export const Italic = icon(faItalic);

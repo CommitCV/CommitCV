@@ -44,7 +44,10 @@ export default function ContextMenu({
             left: Math.min(x, window.innerWidth - width - EDGE_GAP),
             top: Math.min(y, window.innerHeight - height - EDGE_GAP),
         });
-        menu.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
+        // Scrolling here would close the menu, which listens for scrolls.
+        menu.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus({
+            preventScroll: true,
+        });
     }, [x, y]);
 
     useEffect(() => {

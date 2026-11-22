@@ -8,6 +8,7 @@ import ResumeCard from "@components/library/resume-card";
 import { saveJson } from "@components/save-blob";
 import Button from "@components/ui/button";
 import { Download, Plus, Upload } from "@components/ui/icons";
+import { exportResume, type ExportKind } from "@resume/export-resume";
 import { importResumeFile } from "@resume/import-resume-file";
 import { sortEntries } from "@resume/library-entries";
 import type { IResumeEntry } from "@storage/resume-storage";
@@ -63,10 +64,9 @@ export default function Library() {
             navigate("/editor");
         }, "Unable to open resume");
 
-    const download = (id: string) =>
+    const exportOne = (id: string, kind: ExportKind) =>
         run(async () => {
-            const resume = await resumeStorages.local.load(id);
-            saveJson(`${resume.filename || "resume"}.json`, resume);
+            await exportResume(await resumeStorages.local.load(id), kind);
         }, "Unable to download resume");
 
     const downloadAll = () =>
@@ -178,7 +178,9 @@ export default function Library() {
                                 key={entry.id}
                                 entry={entry}
                                 onOpen={(id) => void open(id)}
-                                onDownload={(id) => void download(id)}
+                                onExport={(id, kind) =>
+                                    void exportOne(id, kind)
+                                }
                                 onDelete={(id) => void remove(id)}
                             />
                         ))}
