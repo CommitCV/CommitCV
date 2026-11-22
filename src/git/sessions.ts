@@ -20,6 +20,14 @@ export interface ISession {
     lastContent?: string;
 }
 
+/** Edits that exist only in this browser: not on the remote session branch. */
+export function hasUnsyncedEdits(session: ISession): boolean {
+    return (
+        session.lastContent !== undefined ||
+        session.headSha !== session.lastPushedSha
+    );
+}
+
 export interface ISessionStore {
     get(connectionId: string, path: string): Promise<ISession | undefined>;
     put(session: ISession): Promise<void>;

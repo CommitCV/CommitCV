@@ -7,6 +7,8 @@ interface ConnectionListProps {
     selectedId?: string;
     onSelect: (id: string) => void;
     onRemove: (id: string) => void;
+    /** Connections whose session holds edits not pushed to the remote yet. */
+    unsyncedIds?: ReadonlySet<string>;
 }
 
 /** Saved connections. The token is never rendered. */
@@ -15,6 +17,7 @@ export default function ConnectionList({
     selectedId,
     onSelect,
     onRemove,
+    unsyncedIds,
 }: ConnectionListProps) {
     const [confirming, setConfirming] = useState<string>();
     return (
@@ -38,7 +41,14 @@ export default function ConnectionList({
                         </span>
                     </button>
                     {confirming === item.id ? (
-                        <span className="flex gap-2">
+                        <span className="flex flex-wrap items-center gap-2">
+                            {unsyncedIds?.has(item.id) && (
+                                <span
+                                    role="alert"
+                                    className="basis-full text-xs text-red-600 dark:text-red-400">
+                                    Unsynced edits will be lost.
+                                </span>
+                            )}
                             <Button
                                 type="button"
                                 size="sm"

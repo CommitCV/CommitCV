@@ -5,6 +5,7 @@ import {
     faBold,
     faChevronDown,
     faDownload,
+    faEllipsisVertical,
     faFileExport,
     faFloppyDisk,
     faItalic,
@@ -21,6 +22,7 @@ import {
     faTrash,
     faUnderline,
     faUpload,
+    faXmark,
     type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
@@ -48,6 +50,7 @@ export const Bold = icon(faBold);
 export const Bullet = icon(faListUl);
 export const ChevronDown = icon(faChevronDown);
 export const Download = icon(faDownload);
+export const EllipsisVertical = icon(faEllipsisVertical);
 export const FileExport = icon(faFileExport);
 export const Github = icon(faGithub);
 export const Italic = icon(faItalic);
@@ -64,3 +67,4 @@ export const Trash = icon(faTrash);
 export const Underline = icon(faUnderline);
 export const Undo = icon(faRotateLeft);
 export const Upload = icon(faUpload);
+export const Xmark = icon(faXmark);

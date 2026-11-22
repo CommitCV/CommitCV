@@ -11,6 +11,8 @@ export interface IContextMenuItem {
     shortcut?: string;
     /** Draws a divider above the item, to group related options. */
     separatorBefore?: boolean;
+    /** Red text, for an action that deletes something. */
+    danger?: boolean;
 }
 
 interface ContextMenuProps {
@@ -44,7 +46,10 @@ export default function ContextMenu({
             left: Math.min(x, window.innerWidth - width - EDGE_GAP),
             top: Math.min(y, window.innerHeight - height - EDGE_GAP),
         });
-        menu.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
+        // Scrolling here would close the menu, which listens for scrolls.
+        menu.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus({
+            preventScroll: true,
+        });
     }, [x, y]);
 
     useEffect(() => {
@@ -115,7 +120,7 @@ export default function ContextMenu({
                             item.onSelect();
                             onClose();
                         }}
-                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left outline-none hover:bg-light-200 focus:bg-light-200 disabled:opacity-40 disabled:hover:bg-transparent dark:hover:bg-dark-100 dark:focus:bg-dark-100">
+                        className={`flex w-full items-center gap-2 px-3 py-1.5 text-left outline-none hover:bg-light-200 focus:bg-light-200 disabled:opacity-40 disabled:hover:bg-transparent dark:hover:bg-dark-100 dark:focus:bg-dark-100 ${item.danger ? "text-red-600 dark:text-red-400" : ""}`}>
                         {item.checked !== undefined && (
                             <span
                                 aria-hidden

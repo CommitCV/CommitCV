@@ -46,6 +46,22 @@ export default function EditorToolbar() {
         return () => document.removeEventListener("keydown", onKeyDown);
     }, [undo, redo]);
 
+    const commit = () =>
+        void save(isGit ? undefined : `update ${filename || "resume"}`);
+
+    // Mod+S commits a remote resume. Local ones autosave, so it only
+    // stops the browser's "save page" dialog.
+    useEffect(() => {
+        function onKeyDown(event: KeyboardEvent) {
+            if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+            if (event.shiftKey || event.key.toLowerCase() !== "s") return;
+            event.preventDefault();
+            if (!isLocal && saveState !== "saving") commit();
+        }
+        document.addEventListener("keydown", onKeyDown);
+        return () => document.removeEventListener("keydown", onKeyDown);
+    });
+
     return (
         <div
             className={`flex flex-wrap items-center gap-3 border-b-2 border-border-light bg-light-300 px-3 py-1.5 dark:border-border-dark dark:bg-dark-300 ${TOOLBAR_ROW}`}>
@@ -74,13 +90,7 @@ export default function EditorToolbar() {
                         size="sm"
                         className="gap-1.5"
                         disabled={saveState === "saving"}
-                        onClick={() =>
-                            void save(
-                                isGit
-                                    ? undefined
-                                    : `update ${filename || "resume"}`,
-                            )
-                        }>
+                        onClick={commit}>
                         <Save className="h-4 w-4" />
                         {saveState === "saving" ? "Saving…" : "Commit Changes"}
                     </Button>

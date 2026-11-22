@@ -239,6 +239,7 @@ export default function RepoPicker({
                                 {template.label}
                             </a>
                         )}
+                        {template.hint && <> ({template.hint})</>}
                         {template.importFrom && (
                             <>
                                 {" "}

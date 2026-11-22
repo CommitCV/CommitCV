@@ -269,3 +269,18 @@ then the repo picker, then sends the user to `/library`. Entry points (the
 library, the resume selector, "Reconnect" and the header's Sign In) link
 there. `/connect` still exists for pasting an access token and managing saved
 connections.
+
+## Remote previews
+
+The library's remote cards show a first-page preview. It is rendered in the
+browser when the card scrolls into view, from the file already in the local
+clone, and cached in IndexedDB (`remote:<connection>:<path>`) with a hash of
+the content, so it refreshes only when the file changes. Nothing is written
+to the repository. Previews are not removed when a connection is.
+
+## Card actions
+
+Every library card, local or remote, has a three-dot button (and a right-click
+menu) with Open, Download JSON / Typst / PDF, and Delete. Delete asks for
+confirmation on the card. For a remote card it commits the deletion to the
+default branch and pushes it.

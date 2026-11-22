@@ -1,8 +1,5 @@
 import { useState } from "react";
-import { standaloneTypst } from "@typst/standalone-typst";
-import { resumeToTypst } from "@typst/resume-to-typst";
-import { typst } from "@typst/typst-client";
-import { saveBlob, saveJson } from "@components/save-blob";
+import { exportResume, type ExportKind } from "@resume/export-resume";
 import ContextMenu from "@components/ui/context-menu";
 import { MOD_KEY } from "@components/ui/shortcuts";
 import { TOOLBAR_ROW, ToolbarButton } from "@components/ui/toolbar";
@@ -37,8 +34,6 @@ interface ViewportToolbarProps {
     fitMode: FitMode | null;
     onFitModeChange: (mode: FitMode | null) => void;
 }
-
-type ExportKind = "typ" | "json" | "pdf";
 
 const iconButton =
     "rounded p-1 text-light-800 transition-opacity hover:opacity-70 disabled:opacity-30 dark:text-dark-800";
@@ -86,29 +81,9 @@ export default function ViewportToolbar({
         setExporting(kind);
         setExportError("");
         try {
-            if (kind === "json") {
-                saveJson(`${resume.filename || "resume"}.json`, resume);
-                trackResumeExported();
-            } else if (kind === "typ") {
-                saveBlob(
-                    `${resume.filename || "resume"}.typ`,
-                    new Blob([await standaloneTypst(resume)], {
-                        type: "text/plain",
-                    }),
-                );
-                trackResumeExported();
-            } else {
-                const pdf = await typst.renderPdf(resumeToTypst(resume));
-                const buffer = new ArrayBuffer(pdf.byteLength);
-                new Uint8Array(buffer).set(pdf);
-                saveBlob(
-                    `${resume.filename || "resume"}.pdf`,
-                    new Blob([buffer], {
-                        type: "application/pdf",
-                    }),
-                );
-                trackResumeDownloadedPdf();
-            }
+            await exportResume(resume, kind);
+            if (kind === "pdf") trackResumeDownloadedPdf();
+            else trackResumeExported();
         } catch (reason) {
             trackCompileError(reason);
             setExportError(

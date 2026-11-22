@@ -63,6 +63,11 @@ export interface IGitStorage extends IVersionedStorage {
      * returns the default branch's version.
      */
     discardSession(id: string, branch?: string): Promise<IResume | null>;
+    /**
+     * Reads files from the default branch for previews. Unlike `load` it
+     * leaves the conflict bookkeeping alone; unreadable files are skipped.
+     */
+    peek(ids: string[]): Promise<Map<string, IResume>>;
     /** Unsquashed session branches of one file, most recent activity first. */
     findSessions(id: string): Promise<ISessionInfo[]>;
     /** Unsquashed sessions of every file in the repository. */
@@ -146,6 +151,25 @@ const slug = (path: string) =>
 /** Commits fetched per `deepen` while paging back through shallow history. */
 const DEEPEN_STEP = 50;
 const MAX_DEEPENS = 20;
+
+/**
+ * Parses a file from the repo. Legacy files are migrated, and a file
+ * written by another tool without `filename`/`date` gets them from its
+ * path so it still opens.
+ */
+const fromRepoFile = (json: unknown, id: string): IResume => {
+    const meta = { filename: id.replace(/\.json$/, ""), date: today() };
+    if (isLegacyResume(json)) return migrateLegacyResume(json, meta);
+    if (typeof json === "object" && json !== null) {
+        const record = json as Record<string, unknown>;
+        return parseResume({
+            ...record,
+            filename: record.filename ?? meta.filename,
+            date: record.date ?? meta.date,
+        });
+    }
+    return parseResume(json);
+};
 
 const parse = (text: string | null): IResume | null => {
     if (text === null) return null;
@@ -249,7 +273,25 @@ export class GitResumeStorage implements IGitStorage {
             this.seen.set(id, text);
             await this.setBase(id, head);
             if (text === null) throw new Error(`${id} not found`);
-            return parseResume(JSON.parse(text));
+            return fromRepoFile(JSON.parse(text), id);
+        });
+    }
+
+    async peek(ids: string[]): Promise<Map<string, IResume>> {
+        return this.guard(async () => {
+            const { client } = await this.sync(READ_TTL_MS);
+            const found = new Map<string, IResume>();
+            for (const id of ids) {
+                try {
+                    const text = await client.readFile(this.branch, id);
+                    if (text === null) continue;
+                    const json: unknown = JSON.parse(text);
+                    found.set(id, fromRepoFile(json, id));
+                } catch {
+                    // No preview for a file that is not a resume.
+                }
+            }
+            return found;
         });
     }
 
@@ -314,12 +356,7 @@ export class GitResumeStorage implements IGitStorage {
             let resume: IResume;
             try {
                 const json: unknown = JSON.parse(text);
-                resume = isLegacyResume(json)
-                    ? migrateLegacyResume(json, {
-                          filename: id.replace(/\.json$/, ""),
-                          date: today(),
-                      })
-                    : parseResume(json);
+                resume = fromRepoFile(json, id);
             } catch (err) {
                 const why =
                     err instanceof ResumeParseError

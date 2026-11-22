@@ -9,6 +9,7 @@ import RemoteFiles from "@components/connect/remote-files";
 import TemplateOffer from "@components/connect/template-offer";
 import { useRemoteEntries } from "@components/connect/use-remote-entries";
 import { connections, type IConnection } from "../git/connections";
+import { hasUnsyncedEdits, sessions } from "../git/sessions";
 import { forgetGitStorage } from "@store/useResumeStore";
 
 function RepoPanel({ connection }: { connection: IConnection }) {
@@ -36,14 +37,39 @@ export default function Connect() {
     const [items, setItems] = useState<IConnection[]>([]);
     const [selectedId, setSelectedId] = useState<string>();
 
-    const refresh = useCallback(() => connections.list().then(setItems), []);
+    const [unsyncedIds, setUnsyncedIds] = useState<ReadonlySet<string>>(
+        new Set(),
+    );
+
+    const load = useCallback(async () => {
+        const [list, all] = await Promise.all([
+            connections.list(),
+            sessions.list(),
+        ]);
+        const unsynced = new Set(
+            all.filter(hasUnsyncedEdits).map((s) => s.connectionId),
+        );
+        return { list, unsynced };
+    }, []);
+    const refresh = useCallback(
+        () =>
+            load().then(({ list, unsynced }) => {
+                setItems(list);
+                setUnsyncedIds(unsynced);
+            }),
+        [load],
+    );
     useEffect(() => {
         let active = true;
-        void connections.list().then((all) => active && setItems(all));
+        void load().then(({ list, unsynced }) => {
+            if (!active) return;
+            setItems(list);
+            setUnsyncedIds(unsynced);
+        });
         return () => {
             active = false;
         };
-    }, []);
+    }, [load]);
 
     const selected = items.find((item) => item.id === selectedId);
 
@@ -84,6 +110,7 @@ export default function Connect() {
                                 </h2>
                                 <ConnectionList
                                     items={items}
+                                    unsyncedIds={unsyncedIds}
                                     selectedId={selectedId}
                                     onSelect={setSelectedId}
                                     onRemove={(id) => {

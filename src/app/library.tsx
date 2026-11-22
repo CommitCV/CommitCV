@@ -8,6 +8,7 @@ import ResumeCard from "@components/library/resume-card";
 import { saveJson } from "@components/save-blob";
 import Button from "@components/ui/button";
 import { Download, Plus, Upload } from "@components/ui/icons";
+import { exportResume, type ExportKind } from "@resume/export-resume";
 import { importResumeFile } from "@resume/import-resume-file";
 import { sortEntries } from "@resume/library-entries";
 import type { IResumeEntry } from "@storage/resume-storage";
@@ -63,10 +64,9 @@ export default function Library() {
             navigate("/editor");
         }, "Unable to open resume");
 
-    const download = (id: string) =>
+    const exportOne = (id: string, kind: ExportKind) =>
         run(async () => {
-            const resume = await resumeStorages.local.load(id);
-            saveJson(`${resume.filename || "resume"}.json`, resume);
+            await exportResume(await resumeStorages.local.load(id), kind);
         }, "Unable to download resume");
 
     const downloadAll = () =>
@@ -84,6 +84,14 @@ export default function Library() {
             await resumeStorages.local.remove(id);
             await refresh();
         }, "Unable to delete resume");
+
+    // Saved straight away so the new resume is in the library even if untouched.
+    const createResume = () =>
+        run(async () => {
+            newResume();
+            await useResumeStore.getState().save();
+            navigate("/editor");
+        }, "Unable to create resume");
 
     const importFile = (file: File) =>
         run(async () => {
@@ -108,8 +116,7 @@ export default function Library() {
                             type="button"
                             variant="primary"
                             onClick={() => {
-                                newResume();
-                                navigate("/editor");
+                                void createResume();
                             }}>
                             <Plus className="mr-2 h-4 w-4" />
                             New resume
@@ -149,6 +156,10 @@ export default function Library() {
                     </p>
                 )}
 
+                <h2 className="text-2xl font-bold tracking-tight">
+                    Local resume library
+                </h2>
+
                 {entries?.length === 0 && (
                     <div
                         data-testid="library-empty"
@@ -159,8 +170,7 @@ export default function Library() {
                         <Button
                             type="button"
                             onClick={() => {
-                                newResume();
-                                navigate("/editor");
+                                void createResume();
                             }}>
                             New resume
                         </Button>
@@ -174,7 +184,9 @@ export default function Library() {
                                 key={entry.id}
                                 entry={entry}
                                 onOpen={(id) => void open(id)}
-                                onDownload={(id) => void download(id)}
+                                onExport={(id, kind) =>
+                                    void exportOne(id, kind)
+                                }
                                 onDelete={(id) => void remove(id)}
                             />
                         ))}

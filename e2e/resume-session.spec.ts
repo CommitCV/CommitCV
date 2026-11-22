@@ -140,6 +140,39 @@ test.describe("resuming an unsquashed session", () => {
         ).toContain('"second"');
     });
 
+    test("removing a repository warns when unpushed local edits would be lost", async ({
+        page,
+    }) => {
+        await page.clock.install();
+        await connect(page);
+        await reopen(page);
+        await openFile(page);
+        await rename(page, "first");
+        await page.clock.runFor(31_000);
+        await expect(status(page)).toContainText("Autosaved");
+        await page.evaluate(() => (window.__fake.failPush = true));
+        await rename(page, "second");
+        await page.clock.runFor(61_000);
+        await expect(status(page)).toHaveText("Sync failed — retrying");
+
+        await page.goto("/connect");
+        await page.getByRole("link", { name: "Resume Library" }).click();
+        const repo = page.getByTestId("remote-repo");
+        await repo.getByRole("button", { name: /^Remove / }).click();
+        await expect(repo).toContainText("Unsynced edits will be lost.");
+    });
+
+    test("removing a repository with nothing unsynced shows no warning", async ({
+        page,
+    }) => {
+        await connect(page);
+        await page.getByRole("link", { name: "Resume Library" }).click();
+        const repo = page.getByTestId("remote-repo");
+        await repo.getByRole("button", { name: /^Remove / }).click();
+        await expect(repo).toContainText("Remove this repository?");
+        await expect(repo).not.toContainText("Unsynced edits");
+    });
+
     test("the session as saved replaces unpushed local edits", async ({
         page,
     }) => {

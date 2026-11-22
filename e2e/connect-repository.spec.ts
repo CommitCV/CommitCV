@@ -1,3 +1,4 @@
+import { openCardMenu } from "./fixtures/card-menu";
 import { test, expect, type Page } from "@playwright/test";
 import { connect, fakeGit, TOKEN } from "./fixtures/fake-git";
 
@@ -112,8 +113,42 @@ test.describe("connect a repository", () => {
         await page.getByRole("link", { name: "Resume Library" }).click();
         const repo = page.getByTestId("remote-repo");
         await expect(repo).toContainText("acme/cv");
+        // Rendered in this browser from the repo's file, not stored in it.
+        await expect(repo.getByTestId("library-thumbnail")).toBeVisible();
         await repo.getByRole("button", { name: "Open remote.json" }).click();
         await expect(page).toHaveURL(/\/editor$/);
+    });
+
+    test("removes a repository from the library with the x, after confirming", async ({
+        page,
+    }) => {
+        await connect(page);
+        await page.getByRole("link", { name: "Resume Library" }).click();
+        const repo = page.getByTestId("remote-repo");
+        await repo.getByRole("button", { name: "Remove acme/cv" }).click();
+        await repo.getByRole("button", { name: "Cancel" }).click();
+        await expect(repo).toBeVisible();
+        await repo.getByRole("button", { name: "Remove acme/cv" }).click();
+        await repo
+            .getByRole("button", { name: "Confirm remove acme/cv" })
+            .click();
+        await expect(page.getByTestId("remote-repo")).toHaveCount(0);
+        await page.reload();
+        await expect(page.getByTestId("remote-repo")).toHaveCount(0);
+    });
+
+    test("downloads a remote resume from its card menu", async ({ page }) => {
+        await connect(page);
+        await page.getByRole("link", { name: "Resume Library" }).click();
+        const repo = page.getByTestId("remote-repo");
+        await expect(repo.getByTestId("library-thumbnail")).toBeVisible();
+        await openCardMenu(
+            page,
+            repo.getByRole("button", { name: "Actions for remote.json" }),
+        );
+        const download = page.waitForEvent("download");
+        await page.getByRole("menuitem", { name: "Download JSON" }).click();
+        expect((await download).suggestedFilename()).toMatch(/\.json$/);
     });
 
     test("removes a connection only after confirming", async ({ page }) => {

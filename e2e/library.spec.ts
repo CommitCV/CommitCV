@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { openCardMenu } from "./fixtures/card-menu";
 
 async function saveResume(page: Page, filename: string) {
     await page.goto("/");
@@ -88,11 +89,20 @@ test.describe("library", () => {
         await saveResume(page, "lib-download");
         await openLibrary(page);
 
-        const single = page.waitForEvent("download");
-        await page
-            .getByRole("button", { name: "Download lib-download JSON" })
-            .click();
-        expect((await single).suggestedFilename()).toBe("lib-download.json");
+        const menu = page.getByRole("menu", { name: "lib-download actions" });
+        for (const [item, file] of [
+            ["Download JSON", "lib-download.json"],
+            ["Download Typst", "lib-download.typ"],
+            ["Download PDF", "lib-download.pdf"],
+        ]) {
+            const download = page.waitForEvent("download", { timeout: 60000 });
+            await openCardMenu(
+                page,
+                page.getByRole("button", { name: "Actions for lib-download" }),
+            );
+            await menu.getByRole("menuitem", { name: item }).click();
+            expect((await download).suggestedFilename()).toBe(file);
+        }
 
         const all = page.waitForEvent("download");
         await page.getByRole("button", { name: "Download all" }).click();
@@ -106,11 +116,18 @@ test.describe("library", () => {
             .getByTestId("library-card")
             .filter({ hasText: "lib-delete" });
 
-        await card.getByRole("button", { name: "Delete lib-delete" }).click();
+        const menu = page.getByRole("menu", { name: "lib-delete actions" });
+        await openCardMenu(
+            page,
+            card.getByRole("button", { name: "Actions for lib-delete" }),
+        );
+        await menu.getByRole("menuitem", { name: "Delete" }).click();
         await card.getByRole("button", { name: "Cancel" }).click();
         await expect(card).toBeVisible();
 
-        await card.getByRole("button", { name: "Delete lib-delete" }).click();
+        // A right-click opens the same menu.
+        await card.click({ button: "right" });
+        await menu.getByRole("menuitem", { name: "Delete" }).click();
         await card
             .getByRole("button", { name: "Confirm delete lib-delete" })
             .click();
