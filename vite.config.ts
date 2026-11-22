@@ -25,6 +25,7 @@ export default defineConfig({
     plugins: [react(), tailwindcss(), eslint()],
     test: {
         environment: "node",
+        setupFiles: ["./vitest.setup.ts"],
         include: ["src/**/*.test.ts", "server/**/*.test.ts"],
     },
 });
