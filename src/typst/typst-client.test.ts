@@ -81,6 +81,28 @@ describe("TypstClient", () => {
         await expect(latest).resolves.toBe("<latest/>");
     });
 
+    it("queues background renders behind previews without replacing either", async () => {
+        const client = makeClient();
+        const running = client.renderSvg("#running");
+        const thumbA = client.renderSvg("#thumbA", { background: true });
+        const thumbB = client.renderSvg("#thumbB", { background: true });
+        const preview = client.renderSvg("#preview");
+        const newer = client.renderSvg("#newer");
+        const worker = FakeWorker.instances[0]!;
+
+        await expect(preview).rejects.toThrow(/replaced by a newer render/);
+        const order: string[] = [];
+        for (const id of [1, 5, 2, 3]) {
+            worker.reply({ id, ok: true, result: `<${id}/>` });
+            order.push((worker.sent.at(-1) as { source: string }).source);
+        }
+        expect(order.slice(0, 3)).toEqual(["#newer", "#thumbA", "#thumbB"]);
+        await expect(running).resolves.toBe("<1/>");
+        await expect(thumbA).resolves.toBe("<2/>");
+        await expect(thumbB).resolves.toBe("<3/>");
+        await expect(newer).resolves.toBe("<5/>");
+    });
+
     it("keeps pdf requests when a preview render replaces itself", async () => {
         const client = makeClient();
         const first = client.renderSvg("#a");

@@ -26,3 +26,13 @@ differently, so the request can be refused.
 Persistence only guards against automatic eviction. Clearing site data from the
 browser's settings can still remove the library, so download backups of
 resumes you care about, or connect a git repository.
+
+## Thumbnails
+
+Each local resume has a small first-page preview in a second IndexedDB store,
+`thumbnails`, for the library page. It is keyed by the resume id and tagged with
+a SHA-256 hash of the resume's content, so it is only re-rendered when the
+content changes. Generation runs in the background after a save, when the
+browser is idle, and is queued behind the live preview so typing never waits on
+it. A failed render is skipped and retried on the next save. Deleting a resume
+deletes its thumbnail.

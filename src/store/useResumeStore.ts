@@ -28,6 +28,7 @@ import { IdbResumeStorage } from "@storage/idb-resume-storage";
 import { LocalResumeStorage } from "@storage/local-resume-storage";
 import { requestPersistence } from "@storage/persistence";
 import type { IResumeStorage } from "@storage/resume-storage";
+import { createBrowserThumbnails } from "../thumbnails";
 
 export type TResumeSource =
     | { kind: "local"; id: string }
@@ -49,11 +50,9 @@ export interface IFocusedText {
 const githubStorages = new Map<string, GitHubResumeStorage>();
 
 // Storage seam: production uses the real adapters; tests swap them out.
+const localIdb = new IdbResumeStorage(undefined, new LocalResumeStorage());
 export const resumeStorages = {
-    local: new IdbResumeStorage(
-        undefined,
-        new LocalResumeStorage(),
-    ) as IResumeStorage,
+    local: localIdb as IResumeStorage,
     github(repo: string): IResumeStorage {
         let storage = githubStorages.get(repo);
         if (!storage) {
@@ -68,6 +67,19 @@ export function storageFor(source: TResumeSource): IResumeStorage {
     return source.kind === "local"
         ? resumeStorages.local
         : resumeStorages.github(source.repo);
+}
+
+let thumbnails: ReturnType<typeof createBrowserThumbnails> | undefined;
+
+/** Fire-and-forget: regenerates the thumbnail once the browser is idle. */
+function scheduleThumbnail(id: string, resume: IResume): void {
+    if (typeof document === "undefined") return;
+    const run = () => {
+        thumbnails ??= createBrowserThumbnails(localIdb);
+        void thumbnails.ensureThumbnail(id, resume);
+    };
+    if (typeof requestIdleCallback === "function") requestIdleCallback(run);
+    else setTimeout(run, 1000);
 }
 
 interface ISnapshot {
@@ -329,7 +341,9 @@ export const useResumeStore = create<IResumeStore>()(
                 try {
                     const id =
                         source.kind === "local" ? source.id : source.path;
-                    await storageFor(source).save(id, get().resume!, message);
+                    const resume = get().resume!;
+                    await storageFor(source).save(id, resume, message);
+                    if (source.kind === "local") scheduleThumbnail(id, resume);
                     set({ saveState: "clean" });
                 } catch (err) {
                     set({
