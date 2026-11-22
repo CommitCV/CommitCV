@@ -110,7 +110,7 @@ test.describe("sign in with a git host", () => {
         ).toHaveCount(0);
     });
 
-    test("return handoff, repo search and connect keep the token out of the URL and localStorage", async ({
+    test("return handoff, repo search and connect keep the token out of the URL and localStorage, and encrypted in IndexedDB", async ({
         page,
     }) => {
         await fakeGit(page);
@@ -166,7 +166,10 @@ test.describe("sign in with a git host", () => {
                     };
                 }),
         );
-        expect(stored).toContain(TOKEN);
+        // Saved, but only as ciphertext: never readable as plain text.
+        expect(stored).toContain("ada@github.com");
+        expect(stored).toContain("sealed");
+        expect(stored).not.toContain(TOKEN);
     });
 
     test("shows a readable message when the handoff fails", async ({
