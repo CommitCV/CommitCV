@@ -5,6 +5,7 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gitProxy } from "./git-proxy.ts";
 import type { GitProxyOptions } from "./git-proxy.ts";
+import { cspMiddleware } from "./csp.ts";
 import { githubApi } from "./github.ts";
 import type { ServerEnv } from "./github.ts";
 import { oauthApi } from "./oauth.ts";
@@ -49,6 +50,10 @@ export function createApp(options: CreateAppOptions = {}): Hono {
     if (options.fetchFn) env.fetchFn = options.fetchFn;
 
     const app = new Hono();
+    app.use(
+        "*",
+        cspMiddleware(process.env.VITE_UMAMI_URL || process.env.UMAMI_URL),
+    );
     app.route("/api", githubApi(env));
     // Production without SESSION_SECRET offers no sign-in at all; dev
     // falls back to a per-process key.
