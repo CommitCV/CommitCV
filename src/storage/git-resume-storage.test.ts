@@ -556,6 +556,7 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
             const store = new MemorySessionStore();
             const vol = new Volume();
             const s = storage(TOKEN, store, vol);
+            await s.load("cv.json");
             await s.saveSession("cv.json", two("a2", "b"));
             flaky.pushFails = true;
             await expect(
@@ -576,6 +577,7 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
         it("still clears a pushed record whose remote branch is gone", async () => {
             const store = new MemorySessionStore();
             const s = storage(TOKEN, store);
+            await s.load("cv.json");
             await s.saveSession("cv.json", two("a2", "b"));
             gitIn(bare, "branch", "-D", branches()[0]);
             expect(await s.findSessions("cv.json")).toEqual([]);
