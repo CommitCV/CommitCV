@@ -9,6 +9,11 @@ import { requestPersistence } from "@storage/persistence";
 import { resumeStorages, useResumeStore } from "@store/useResumeStore";
 import { trackResumeCreated, trackResumeImported } from "@analytics/tracker";
 
+// Choice cards sit on the page background, inside the surface box.
+// Both cards stretch to the row height, so they always match.
+const choiceCard =
+    "flex flex-col items-center justify-center rounded-xl border-4 border-border-light bg-light-100 text-center min-h-72 dark:border-border-dark dark:bg-dark-300";
+
 export default function ResumeSelector() {
     const navigate = useNavigate();
     const newResume = useResumeStore((store) => store.newResume);
@@ -35,49 +40,20 @@ export default function ResumeSelector() {
     }
 
     return (
-        <div className="mx-auto w-full max-w-4xl">
+        <div className="mx-auto w-full max-w-3xl">
             <Card
                 variant="surface"
                 className="p-6 md:p-8">
-                <p className="mb-8 text-center text-lg font-medium text-light-950 dark:text-dark-950">
-                    Upload an existing resume, start a new one, or
-                    <br />
-                    connect a git repository to access your library of resumes
+                <p className="mx-auto mb-8 max-w-xl text-balance text-center text-lg font-medium text-light-950 dark:text-dark-950">
+                    Upload an existing resume, start a new one, or connect a git
+                    repository to access your library of resumes
                 </p>
 
-                <div
-                    onDragOver={(event) => {
-                        event.preventDefault();
-                        setDragging(true);
-                    }}
-                    onDragLeave={() => setDragging(false)}
-                    onDrop={(event) => {
-                        event.preventDefault();
-                        setDragging(false);
-                        const file = event.dataTransfer.files[0];
-                        if (file) void uploadResume(file);
-                    }}
-                    className={`flex flex-col items-center justify-center gap-8 rounded-xl border-4 border-dashed p-12 text-center ${
-                        dragging
-                            ? "border-accent"
-                            : "border-border-light dark:border-border-dark"
-                    }`}>
-                    <label className="flex cursor-pointer flex-col items-center gap-4 transition-opacity hover:opacity-80">
-                        <Upload className="h-8 w-8 text-light-700 dark:text-dark-700" />
-                        <span className="text-2xl font-semibold tracking-tight text-light-700 dark:text-dark-700">
-                            Drag or click to upload a .json file here
-                        </span>
-                        <input
-                            type="file"
-                            accept=".json,application/json"
-                            className="sr-only"
-                            onChange={(event) => {
-                                const file = event.target.files?.[0];
-                                if (file) void uploadResume(file);
-                            }}
-                        />
-                    </label>
-                    <div className="flex flex-wrap items-center justify-center gap-4">
+                <div className="mx-auto grid max-w-2xl grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8">
+                    <div className={`${choiceCard} gap-6 p-8`}>
+                        <p className="text-xl font-semibold tracking-tight text-light-950 dark:text-dark-950">
+                            Start a new resume!
+                        </p>
                         <Button
                             type="button"
                             variant="primary"
@@ -94,6 +70,9 @@ export default function ResumeSelector() {
                             }}>
                             Start editing
                         </Button>
+                        <p className="text-sm text-light-700 dark:text-dark-700">
+                            or
+                        </p>
                         <Link
                             to="/signin"
                             className={buttonClass("secondary", "md", "gap-2")}>
@@ -101,6 +80,52 @@ export default function ResumeSelector() {
                             Connect a repository
                         </Link>
                     </div>
+                    <label
+                        className={`${choiceCard} relative cursor-pointer p-3 transition-opacity hover:opacity-80 has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-accent`}
+                        onDragOver={(event) => {
+                            if (!event.dataTransfer.types.includes("Files")) {
+                                return;
+                            }
+                            event.preventDefault();
+                            setDragging(true);
+                        }}
+                        onDragLeave={(event) => {
+                            const next = event.relatedTarget;
+                            if (
+                                next instanceof Node &&
+                                event.currentTarget.contains(next)
+                            ) {
+                                return;
+                            }
+                            setDragging(false);
+                        }}
+                        onDrop={(event) => {
+                            event.preventDefault();
+                            setDragging(false);
+                            const file = event.dataTransfer.files[0];
+                            if (file) void uploadResume(file);
+                        }}>
+                        <span
+                            className={`absolute inset-3 flex flex-col items-center justify-center gap-4 rounded-lg border-4 border-dashed p-6 transition-colors ${
+                                dragging
+                                    ? "border-accent"
+                                    : "border-border-light dark:border-border-dark"
+                            }`}>
+                            <Upload className="h-8 w-8 text-light-700 dark:text-dark-700" />
+                            <span className="text-xl font-semibold tracking-tight text-light-700 dark:text-dark-700">
+                                Drag or click to upload a .json file here
+                            </span>
+                        </span>
+                        <input
+                            type="file"
+                            accept=".json,application/json"
+                            className="sr-only"
+                            onChange={(event) => {
+                                const file = event.target.files?.[0];
+                                if (file) void uploadResume(file);
+                            }}
+                        />
+                    </label>
                 </div>
 
                 {error && (

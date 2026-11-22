@@ -60,8 +60,10 @@ V3 is a ground-up rewrite on Vite, React and Tailwind CSS v4.
 - Export .typ and Export .json are in a menu next to Download PDF.
 - Preview zoom ranges from 25% to 400%.
 - Icons use Font Awesome.
-- The home page follows the design mockup: an upright headline, square start and
-  upload cards, and one-line feature headings.
+- The home page follows the design mockup: an upright headline, matching start
+  and upload cards, and one-line feature headings.
+- On small screens the header collapses into a menu button, which opens Resume
+  Library and Sign in with Git.
 
 ### Security
 
@@ -81,5 +83,6 @@ V3 is a ground-up rewrite on Vite, React and Tailwind CSS v4.
 - A failed Typst start-up can be retried without reloading the page.
 - A failed export shows an error instead of failing silently.
 - GitHub file names containing `#` or `?` load and save the right file.
-- Dropping a JSON file on the home page upload box opens it in the editor.
-  Before, the browser opened the file in place of the app.
+    > > > > > > > a4af50b (feat(home): match the mockup and accept dropped
+    > > > > > > > files) Before, the browser opened the file in place of the
+    > > > > > > > app.
