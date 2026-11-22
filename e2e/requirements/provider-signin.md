@@ -17,5 +17,5 @@
 ## Not covered
 
 - The real OAuth redirect and code exchange: `/api/oauth/**` is route-mocked here; the flow (state, PKCE, handoff TTL, cookies) is covered by `server/oauth.test.ts` with an injected fetch.
-- "Create my repo from the CommitCV template": needs `VITE_TEMPLATE_REPO_URL` at build time; the server route is unit tested.
+- "Create one from the CommitCV template" link in the repo picker: needs `VITE_TEMPLATE_REPO_URL` at build time; opens the template's `/generate` page.
 - Token refresh on expiry: unit tested in `src/git/oauth.test.ts`.

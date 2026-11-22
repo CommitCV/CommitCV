@@ -3,7 +3,7 @@ import { createFsFromVolume, Volume } from "memfs";
 import type { FsClient, HttpClient } from "isomorphic-git";
 import { GitClient } from "./git-client";
 import { GitAuthError, GitConflictError, GitNetworkError } from "./errors";
-import { COMMITTER } from "./identity";
+import { APP_COAUTHOR, COMMITTER } from "./identity";
 import { bareRepoHttp, gitIn, hasGit, makeBareRepo } from "./test-remote";
 
 const URL_ = "https://git.example.com/me/resumes";
@@ -68,7 +68,7 @@ describe.skipIf(!hasGit)("GitClient against a local bare repo", () => {
                 "session/one",
             ),
         ).toBe(
-            `Ada <ada@example.com>|${COMMITTER.name} <${COMMITTER.email}>|${NOW / 1000}|feat: bump\n\ndetails\n\n`,
+            `Ada <ada@example.com>|${COMMITTER.name} <${COMMITTER.email}>|${NOW / 1000}|feat: bump\n\ndetails\n\nCo-authored-by: ${APP_COAUTHOR.name} <${APP_COAUTHOR.email}>\n\n`,
         );
         expect(gitIn(bare, "show", "session/one:a.json")).toBe('{"v":2}');
         expect(gitIn(bare, "show", "session/one:note.txt")).toBe("x");
@@ -146,7 +146,7 @@ describe.skipIf(!hasGit)("GitClient against a local bare repo", () => {
         expect(gitIn(bare, "rev-parse", "main^").trim()).toBe(before);
         expect(gitIn(bare, "show", "main:a.json")).toBe('{"v":3}');
         expect(gitIn(bare, "log", "-1", "--format=%an|%cn|%B", "main")).toBe(
-            `Ada|${COMMITTER.name}|update a\n\n- a\n\n`,
+            `Ada|${COMMITTER.name}|update a\n\n- a\n\nCo-authored-by: ${APP_COAUTHOR.name} <${APP_COAUTHOR.email}>\n\n`,
         );
         await c.deleteRemoteBranch("commitcv/a-1");
         await c.deleteLocalBranch("commitcv/a-1");

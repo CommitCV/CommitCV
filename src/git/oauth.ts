@@ -106,33 +106,17 @@ const bearer = (token: string) => ({ Authorization: `Bearer ${token}` });
 export async function listRepos(
     handoff: Pick<Handoff, "provider" | "host" | "accessToken">,
     q: string,
-): Promise<RepoSummary[]> {
+): Promise<{ repos: RepoSummary[]; installUrl?: string }> {
     const params = new URLSearchParams({
         provider: handoff.provider,
         host: handoff.host,
         q,
     });
-    const data = await json<{ repos: RepoSummary[] }>(
+    return json<{ repos: RepoSummary[]; installUrl?: string }>(
         await fetch(`/api/oauth/repos?${params}`, {
             headers: bearer(handoff.accessToken),
         }),
         "Could not list repositories.",
-    );
-    return data.repos;
-}
-
-export async function generateFromTemplate(
-    token: string,
-    template: string,
-    name: string,
-): Promise<RepoSummary> {
-    return json<RepoSummary>(
-        await fetch("/api/oauth/github/generate-from-template", {
-            method: "POST",
-            headers: { ...bearer(token), "Content-Type": "application/json" },
-            body: JSON.stringify({ template, name }),
-        }),
-        "Could not create the repository.",
     );
 }
 

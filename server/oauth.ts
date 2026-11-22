@@ -19,6 +19,8 @@ export interface OAuthOptions {
     /** HMAC key for the transaction cookie; empty disables sign-in. */
     sessionSecret: string;
     fetchFn: typeof fetch;
+    /** GitHub App slug, for the "choose repositories" link. */
+    githubAppSlug?: string;
     now?: () => number;
     handoff?: HandoffStore;
 }
@@ -253,7 +255,10 @@ export function oauthApi(options: OAuthOptions): Hono {
             };
             if (SPECS[a.provider].pkce) params.code_verifier = tx.verifier;
             tokens = await tokenRequest(a, params);
-        } catch {
+        } catch (error) {
+            console.error(
+                `oauth ${a.provider}: exchange failed: ${error instanceof Error ? error.message : "unknown"}`,
+            );
             return fail("exchange_failed");
         }
 
@@ -321,6 +326,13 @@ export function oauthApi(options: OAuthOptions): Hono {
         }
     });
 
-    app.route("/", oauthRepos({ apps: enabled ? apps : [], fetchFn }));
+    app.route(
+        "/",
+        oauthRepos({
+            apps: enabled ? apps : [],
+            fetchFn,
+            githubAppSlug: options.githubAppSlug,
+        }),
+    );
     return app;
 }

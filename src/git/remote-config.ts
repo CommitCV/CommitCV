@@ -94,7 +94,8 @@ export function authFor(config: RemoteConfig): GitCredentials {
     const { token } = config;
     switch (provider) {
         case "github":
-            return { username: token, password: "x-oauth-basic" };
+            // GitHub App user tokens need this username; PATs accept it too.
+            return { username: "x-access-token", password: token };
         case "gitlab":
             return { username: "oauth2", password: token };
         case "bitbucket":
