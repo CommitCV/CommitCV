@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 
 const server = createApp({
-    env: { githubClientId: "cid", githubClientSecret: "secret" },
     distDir: "./server/test-dist",
 });
 

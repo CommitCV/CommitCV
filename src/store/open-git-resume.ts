@@ -1,5 +1,5 @@
 import type { IResume } from "@resume/resume";
-import { ConflictError } from "@storage/github-resume-storage";
+import { ConflictError } from "../git/errors";
 import type {
     IGitStorage,
     IOpenedSession,

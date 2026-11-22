@@ -102,7 +102,7 @@ refuses to offer sign-in without it.
 
 | Provider  | Env                                                                       | Scopes                                                                             |
 | --------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| GitHub    | `GITHUB_CLIENT_ID/SECRET` (or `OAUTH_GITHUB_*`)                           | GitHub App: Contents read/write, Metadata read; the user picks repos               |
+| GitHub    | `OAUTH_GITHUB_CLIENT_ID/SECRET`                                           | GitHub App: Contents read/write, Metadata read; the user picks repos               |
 | GitLab    | `OAUTH_GITLAB_CLIENT_ID/SECRET`, `OAUTH_GITLAB_INSTANCES` for self-hosted | `read_api read_user read_repository write_repository`                              |
 | Bitbucket | `OAUTH_BITBUCKET_CLIENT_ID/SECRET`                                        | Set on the OAuth consumer: Account read, Repositories write. Needs a callback URL. |
 | Gitea     | `OAUTH_GITEA_INSTANCES`                                                   | `write:repository read:user`                                                       |
@@ -135,11 +135,9 @@ PKCE verifier live in a signed, httpOnly, SameSite=Lax cookie (Secure on an
 https `PUBLIC_URL`); `redirect_uri` is built from `PUBLIC_URL` and the return
 path must be a same-origin relative path.
 
-Two small routes exist because provider APIs send no CORS headers. Both take
-the token in the `Authorization` header, only talk to configured hosts and
-store nothing: `GET /api/oauth/repos?provider&host&q` and, for GitHub,
-`POST /api/oauth/github/generate-from-template` (kept, but the UI no longer
-calls it: a GitHub App token cannot create repos).
+One small route exists because provider APIs send no CORS headers:
+`GET /api/oauth/repos?provider&host&q`. It takes the token in the
+`Authorization` header, only talks to configured hosts and stores nothing.
 
 GitLab, Bitbucket, Gitea and Forgejo issue expiring tokens. The connection
 then also keeps `oauth: { host, refreshToken, expiresAt }` (IndexedDB only).

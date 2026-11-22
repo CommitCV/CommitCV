@@ -2,7 +2,12 @@ import type { IResume } from "@resume/resume";
 import { parseResume, ResumeParseError } from "@resume/parse-resume";
 import { isLegacyResume, migrateLegacyResume } from "@resume/legacy-resume";
 import { today } from "@resume/dates";
-import { GitAuthError, GitConflictError } from "../git/errors";
+import {
+    ConflictError,
+    GitAuthError,
+    GitConflictError,
+    UnauthorizedError,
+} from "../git/errors";
 import type { GitClient } from "../git/git-client";
 import {
     MemorySessionStore,
@@ -19,7 +24,6 @@ import type {
     IResumeEntry,
     IVersionedStorage,
 } from "./resume-storage";
-import { ConflictError, UnauthorizedError } from "./github-resume-storage";
 
 /** The slice of `GitClient` the adapter needs (lets tests and e2e fake it). */
 export type TGitClient = Pick<

@@ -6,7 +6,7 @@ import { GitClient } from "../git/git-client";
 import { bareRepoHttp, gitIn, hasGit, makeBareRepo } from "../git/test-remote";
 import { MemorySessionStore } from "../git/sessions";
 import { APP_COAUTHOR } from "../git/identity";
-import { ConflictError, UnauthorizedError } from "./github-resume-storage";
+import { ConflictError, UnauthorizedError } from "../git/errors";
 import {
     GitResumeStorage,
     SessionDivergedError,

@@ -3,7 +3,6 @@ import { createApp } from "./app.ts";
 import { contentSecurityPolicy } from "./csp.ts";
 
 const server = createApp({
-    env: { githubClientId: "cid", githubClientSecret: "secret" },
     distDir: "./server/test-dist",
 });
 

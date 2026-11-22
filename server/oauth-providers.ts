@@ -94,24 +94,16 @@ export function endpoint(app: OAuthApp, kind: "authorize" | "token"): string {
 type Env = Record<string, string | undefined>;
 
 /**
- * Builds the app table from env. `GITHUB_CLIENT_ID/SECRET` (the legacy
- * login) double as the GitHub app, so there is one GitHub registration.
- * Anything without credentials is simply absent.
+ * Builds the app table from env. Anything without credentials is
+ * simply absent.
  */
-export function loadOAuthApps(
-    env: Env,
-    github?: Partial<OAuthApp>,
-): OAuthApp[] {
+export function loadOAuthApps(env: Env): OAuthApp[] {
     const apps: OAuthApp[] = [];
     for (const provider of PROVIDER_IDS) {
         const spec = SPECS[provider];
         const key = `OAUTH_${provider.toUpperCase()}`;
-        let clientId = env[`${key}_CLIENT_ID`];
-        let clientSecret = env[`${key}_CLIENT_SECRET`];
-        if (provider === "github") {
-            clientId ||= github?.clientId;
-            clientSecret ||= github?.clientSecret;
-        }
+        const clientId = env[`${key}_CLIENT_ID`];
+        const clientSecret = env[`${key}_CLIENT_SECRET`];
         if (spec.defaultHost && clientId && clientSecret) {
             apps.push({
                 provider,

@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from "react";
 import Button from "@components/ui/button";
-import { useGitHubSession } from "@hooks/useGitHubSession";
 import { connections, type IConnection } from "../../git/connections";
 import {
     detectProvider,
@@ -18,12 +17,9 @@ interface ConnectFormProps {
 }
 
 export default function ConnectForm({ onConnected }: ConnectFormProps) {
-    const { login } = useGitHubSession();
     const [url, setUrl] = useState("");
     const [token, setToken] = useState("");
-    // Untouched, the name falls back to the signed-in GitHub login.
-    const [typedName, setName] = useState<string>();
-    const name = typedName ?? login ?? "";
+    const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [label, setLabel] = useState("");
     const [status, setStatus] = useState<{ ok: boolean; text: string }>();

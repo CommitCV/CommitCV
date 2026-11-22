@@ -45,7 +45,6 @@ export function toRepo(
 
 const bearer = (header: string | undefined) =>
     header?.match(/^Bearer ([\w.~+/=-]{1,2048})$/)?.[1];
-const NAME = /^[A-Za-z0-9_.-]{1,100}$/;
 
 /**
  * Provider REST APIs send no CORS headers, so repo listing and template
@@ -157,62 +156,6 @@ export function oauthRepos(options: {
             repos,
             ...(a.provider === "github" && installUrl && { installUrl }),
         });
-    });
-
-    app.post("/github/generate-from-template", async (c) => {
-        if (!apps.some((x) => x.provider === "github")) {
-            return c.json({ error: "provider not configured" }, 404);
-        }
-        const token = bearer(c.req.header("authorization"));
-        if (!token) return c.json({ error: "token required" }, 401);
-        const body = (await c.req.json().catch(() => ({}))) as {
-            template?: string;
-            name?: string;
-            private?: boolean;
-        };
-        const [owner, repo, ...rest] = (body.template ?? "").split("/");
-        if (
-            rest.length ||
-            !NAME.test(owner ?? "") ||
-            !NAME.test(repo ?? "") ||
-            !NAME.test(body.name ?? "")
-        ) {
-            return c.json({ error: "invalid template or name" }, 400);
-        }
-        let response: Response;
-        try {
-            response = await fetchFn(
-                `https://api.github.com/repos/${owner}/${repo}/generate`,
-                {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        Accept: "application/vnd.github+json",
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        name: body.name,
-                        description: "My resumes, managed with CommitCV",
-                        private: body.private !== false,
-                    }),
-                },
-            );
-        } catch {
-            return c.json({ error: "could not reach GitHub" }, 502);
-        }
-        c.header("Cache-Control", "no-store");
-        if (response.status === 401 || response.status === 403) {
-            return c.json({ error: "token rejected" }, 401);
-        }
-        if (response.status === 422) {
-            return c.json({ error: "a repository with that name exists" }, 409);
-        }
-        if (!response.ok) return c.json({ error: "GitHub error" }, 502);
-        const repoJson = (await response.json()) as Record<string, unknown>;
-        const made = toRepo("github", "github.com", repoJson);
-        return made
-            ? c.json(made, 201)
-            : c.json({ error: "unexpected response" }, 502);
     });
 
     return app;

@@ -10,32 +10,31 @@ V3 is a ground-up rewrite on Vite, React and Tailwind CSS v4.
 
 - Visual resume editor with sections, nested sections, per-row formatting and
   bullets. Text rows edit inline markup directly.
-- Live preview and PDF export compiled in the browser with Typst WASM.
-  Resume text is never sent to a rendering service.
+- Live preview and PDF export compiled in the browser with Typst WASM. Resume
+  text is never sent to a rendering service.
 - JSON and standalone Typst export.
 - Local library backed by browser `localStorage`, with an unsaved draft that
   survives a reload.
 - GitHub storage: sign in with OAuth, then save resumes as JSON files in a
-  repository you choose. A save over a file that changed on GitHub is
-  rejected instead of overwriting it.
+  repository you choose. A save over a file that changed on GitHub is rejected
+  instead of overwriting it.
 - Production server that serves the app and proxies the GitHub API. The access
   token stays in an HTTP-only cookie.
-- Sign out from the header while a GitHub session is active.
 - Docker image, container smoke test and MkDocs documentation site.
 - Unit tests (Vitest) and end-to-end tests (Playwright).
 - Undo and redo from the editor toolbar or with keyboard shortcuts.
 - Uploads in the old CommitCV format are converted to the current schema.
 - Formatting toolbar with bold, italic, underline, bullet and link buttons.
-  Styles apply to the selection, or to the whole line when nothing is
-  selected. `Mod+B`, `Mod+I` and `Mod+U` work too.
+  Styles apply to the selection, or to the whole line when nothing is selected.
+  `Mod+B`, `Mod+I` and `Mod+U` work too.
 - Text fields show styled text by default. A Formatted/Raw switch shows the
   inline markup instead, and the choice is remembered.
-- Drag and drop to reorder sections and text rows, or to move them into
-  another section. Hovering a drag over a closed section opens it.
+- Drag and drop to reorder sections and text rows, or to move them into another
+  section. Hovering a drag over a closed section opens it.
 - A layout menu on each section switches between full text, split and text
   split.
-- Preview zoom by pinch, `Mod` with `+`, `-` and `0`, a typed percentage,
-  preset levels, or fit to width or height. Previous and next page buttons.
+- Preview zoom by pinch, `Mod` with `+`, `-` and `0`, a typed percentage, preset
+  levels, or fit to width or height. Previous and next page buttons.
 
 ### Changed
 
@@ -50,8 +49,8 @@ V3 is a ground-up rewrite on Vite, React and Tailwind CSS v4.
 - Export .typ and Export .json are in a menu next to Download PDF.
 - Preview zoom ranges from 25% to 400%.
 - Icons use Font Awesome.
-- The home page follows the design mockup: an upright headline, square start
-  and upload cards, and one-line feature headings.
+- The home page follows the design mockup: an upright headline, square start and
+  upload cards, and one-line feature headings.
 
 ### Security
 
@@ -66,8 +65,8 @@ V3 is a ground-up rewrite on Vite, React and Tailwind CSS v4.
 - Text that starts with `=`, `-`, `+`, `/` or a number followed by a period no
   longer turns into a heading or list in the rendered resume.
 - The `bigger` flag is kept when the text also has inline styling.
-- A section stays open or closed with the section itself when sections are
-  moved or removed.
+- A section stays open or closed with the section itself when sections are moved
+  or removed.
 - A failed Typst start-up can be retried without reloading the page.
 - A failed export shows an error instead of failing silently.
 - GitHub file names containing `#` or `?` load and save the right file.

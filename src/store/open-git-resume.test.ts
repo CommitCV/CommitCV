@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { IResume } from "@resume/resume";
 import type { IOpenedSession, ISessionInfo } from "@storage/git-resume-storage";
-import { ConflictError } from "@storage/github-resume-storage";
+import { ConflictError } from "../git/errors";
 import {
     continueSession,
     discardSession,

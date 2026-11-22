@@ -81,7 +81,7 @@ function setup(
     ) as unknown as typeof fetch;
     const publicUrl = opts.publicUrl ?? "http://localhost:8787";
     const app = createApp({
-        env: { publicUrl },
+        publicUrl,
         distDir: "./server/test-dist",
         fetchFn,
         oauth: { apps, sessionSecret: "s3cret", publicUrl, ...opts },
@@ -627,55 +627,5 @@ describe("github app repos", () => {
             installUrl?: string;
         };
         expect(body.installUrl).toBeUndefined();
-    });
-});
-
-describe("generate from template", () => {
-    const gen = (
-        app: ReturnType<typeof setup>["app"],
-        body: unknown,
-        token = "Bearer abc",
-    ) =>
-        app.request("/api/oauth/github/generate-from-template", {
-            method: "POST",
-            headers: {
-                authorization: token,
-                "content-type": "application/json",
-            },
-            body: JSON.stringify(body),
-        });
-
-    it("creates a private repo from the template", async () => {
-        const { app, calls } = setup();
-        const res = await gen(app, {
-            template: "commitcv/template",
-            name: "my-cv",
-        });
-        expect(res.status).toBe(201);
-        expect(await res.json()).toMatchObject({
-            fullName: "ada/my-cv",
-            private: true,
-        });
-        expect(calls[0].url).toBe(
-            "https://api.github.com/repos/commitcv/template/generate",
-        );
-        expect(JSON.parse(String(calls[0].init?.body)).private).toBe(true);
-    });
-
-    it("validates owner, repo and name and requires a token", async () => {
-        const { app, fetchFn } = setup();
-        for (const body of [
-            { template: "a/b/c", name: "x" },
-            { template: "../x/y", name: "x" },
-            { template: "a/b", name: "x/y" },
-            { template: "a/b", name: "" },
-            {},
-        ]) {
-            expect((await gen(app, body)).status).toBe(400);
-        }
-        expect(
-            (await gen(app, { template: "a/b", name: "x" }, "")).status,
-        ).toBe(401);
-        expect(fetchFn).not.toHaveBeenCalled();
     });
 });
