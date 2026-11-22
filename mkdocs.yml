@@ -16,6 +16,7 @@ nav:
     - Home: index.md
     - Editor: editor.md
     - Resume schema: schema.md
+    - Resume library: library.md
     - Local storage: local-storage.md
     - Remote storage: remote-storage.md
     - Typst preview: typst-wasm.md

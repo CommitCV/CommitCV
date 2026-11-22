@@ -36,3 +36,6 @@ content changes. Generation runs in the background after a save, when the
 browser is idle, and is queued behind the live preview so typing never waits on
 it. A failed render is skipped and retried on the next save. Deleting a resume
 deletes its thumbnail.
+
+The [library page](library.md) shows these previews, the storage protection
+status and the backup options.

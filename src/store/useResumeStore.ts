@@ -71,13 +71,19 @@ export function storageFor(source: TResumeSource): IResumeStorage {
 
 let thumbnails: ReturnType<typeof createBrowserThumbnails> | undefined;
 
+/** Library previews for local resumes; separate from the test seam above. */
+export const localThumbnails = {
+    load: (id: string) => localIdb.loadThumbnail(id),
+    ensure(id: string, resume: IResume): Promise<Blob | undefined> {
+        thumbnails ??= createBrowserThumbnails(localIdb);
+        return thumbnails.ensureThumbnail(id, resume);
+    },
+};
+
 /** Fire-and-forget: regenerates the thumbnail once the browser is idle. */
 function scheduleThumbnail(id: string, resume: IResume): void {
     if (typeof document === "undefined") return;
-    const run = () => {
-        thumbnails ??= createBrowserThumbnails(localIdb);
-        void thumbnails.ensureThumbnail(id, resume);
-    };
+    const run = () => void localThumbnails.ensure(id, resume);
     if (typeof requestIdleCallback === "function") requestIdleCallback(run);
     else setTimeout(run, 1000);
 }

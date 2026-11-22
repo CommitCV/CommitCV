@@ -5,6 +5,7 @@ import "./index.css";
 import Home from "./home.tsx";
 import About from "./about.tsx";
 import Editor from "./editor.tsx";
+import Library from "./library.tsx";
 import { initUmami } from "@analytics/tracker";
 import PageTracker from "@components/page-tracker.tsx";
 import ErrorBoundary from "@components/error-boundary.tsx";
@@ -27,6 +28,10 @@ createRoot(document.getElementById("root")!).render(
                     <Route
                         path="/about"
                         element={<About />}
+                    />
+                    <Route
+                        path="/library"
+                        element={<Library />}
                     />
                     <Route
                         path="/editor"
