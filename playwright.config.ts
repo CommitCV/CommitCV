@@ -21,5 +21,12 @@ export default defineConfig({
         command: "pnpm dev --host 127.0.0.1 --port 4173",
         url: "http://127.0.0.1:4173",
         reuseExistingServer: !process.env.CI,
+        // Tests must not depend on a developer's local .env.
+        env: {
+            VITE_TEMPLATE_REPO_URL: "",
+            VITE_CODEBERG_TEMPLATE_URL: "",
+            VITE_GITHUB_BOT_ID: "",
+            VITE_GITHUB_APP_SLUG: "",
+        },
     },
 });
