@@ -83,6 +83,16 @@ test.describe("git session sync", () => {
         expect(await fake(page, "remoteBranches")).toEqual([]);
     });
 
+    test("Ctrl+S commits like the Commit Changes button", async ({ page }) => {
+        await openRemote(page);
+        await rename(page, "shortcut");
+        await page.keyboard.press("ControlOrMeta+s");
+        await expect(status(page)).toHaveText("Saved");
+        expect(await fake(page, "commits")).toEqual([
+            { path: "remote.json", message: "update shortcut" },
+        ]);
+    });
+
     test("asks how to resolve a conflicting change", async ({ page }) => {
         await openRemote(page);
         await rename(page, "mine");
