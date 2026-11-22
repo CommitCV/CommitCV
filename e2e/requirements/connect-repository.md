@@ -3,7 +3,7 @@
 ## Happy paths
 
 - [connect]: a valid URL, token and author saves a connection that is listed and survives a reload
-- [open]: a listed repo file opens in the editor and Commit Changes commits it
+- [open]: a listed repo file opens in the editor and Commit Changes commits it (squashed from a session branch, see git-sync.md)
 - [new resume]: a new resume file is created in the repo and opened
 - [library]: the library page shows connected repos and their resumes
 - [remove]: removing a connection needs a confirm step; cancelling keeps it

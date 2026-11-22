@@ -122,6 +122,39 @@ describe.skipIf(!hasGit)("GitClient against a local bare repo", () => {
         expect(await c.readFile("main", "local.json")).toBeNull();
     });
 
+    it("squashes a session branch into one default-branch commit", async () => {
+        const c = newClient(http);
+        await c.cloneOrOpen(URL_);
+        for (const v of ["2", "3"]) {
+            await c.commitFile({
+                branch: "commitcv/a-1",
+                path: "a.json",
+                content: `{"v":${v}}`,
+                message: `edit ${v}`,
+            });
+        }
+        await c.push({ branch: "commitcv/a-1" });
+        const before = gitIn(bare, "rev-parse", "main").trim();
+        const sha = await c.squashToDefault({
+            sessionBranch: "commitcv/a-1",
+            path: "a.json",
+            message: "update a",
+            body: "- a",
+        });
+        await c.push({ branch: "main" });
+        expect(gitIn(bare, "rev-parse", "main").trim()).toBe(sha);
+        expect(gitIn(bare, "rev-parse", "main^").trim()).toBe(before);
+        expect(gitIn(bare, "show", "main:a.json")).toBe('{"v":3}');
+        expect(gitIn(bare, "log", "-1", "--format=%an|%cn|%B", "main")).toBe(
+            `Ada|${COMMITTER.name}|update a\n\n- a\n\n`,
+        );
+        await c.deleteRemoteBranch("commitcv/a-1");
+        await c.deleteLocalBranch("commitcv/a-1");
+        await c.deleteLocalBranch("commitcv/a-1");
+        expect(await c.listRemoteBranches("commitcv/")).toEqual([]);
+        expect(await c.readFile("commitcv/a-1", "a.json")).toBeNull();
+    });
+
     it("lets a second client fetch the branch and read the file", async () => {
         const one = newClient(http);
         await one.cloneOrOpen(URL_);

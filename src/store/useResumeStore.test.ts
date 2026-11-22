@@ -4,6 +4,10 @@ import type { IResume, ISection } from "@resume/resume";
 import type { IResumeEntry, IResumeStorage } from "@storage/resume-storage";
 import starter from "@resume/starter-resume.json";
 import { resumeStorages, useResumeStore } from "./useResumeStore";
+import {
+    ConflictError,
+    UnauthorizedError,
+} from "@storage/github-resume-storage";
 
 class FakeStorage implements IResumeStorage {
     saved: { id: string; resume: IResume; message?: string }[] = [];
@@ -70,6 +74,97 @@ describe("useResumeStore", () => {
             expect.objectContaining({ id: "cv.json", message: "msg" }),
         ]);
         expect(local.saved).toHaveLength(0);
+    });
+
+    describe("git sessions", () => {
+        class FakeGit extends FakeStorage {
+            sessions: IResume[] = [];
+            commits: { force?: boolean }[] = [];
+            error: Error | null = null;
+            remote: IResume | null = makeResume();
+            async saveSession(_id: string, resume: IResume) {
+                if (this.error) throw this.error;
+                this.sessions.push(resume);
+            }
+            async commit(
+                _id: string,
+                _r: IResume,
+                o: { force?: boolean } = {},
+            ) {
+                if (this.error) throw this.error;
+                this.commits.push(o);
+            }
+            async save(id: string, resume: IResume, message?: string) {
+                await this.commit(id, resume);
+                await super.save(id, resume, message);
+            }
+            async discardSession() {
+                return this.remote;
+            }
+        }
+        let git: FakeGit;
+        beforeEach(() => {
+            git = new FakeGit();
+            resumeStorages.git = () => git;
+            useResumeStore.getState().load(makeResume(), {
+                kind: "git",
+                connectionId: "c1",
+                path: "cv.json",
+            });
+            useResumeStore.getState().setFilename("edited");
+        });
+
+        it("autosaves to the session and keeps the commit state separate", async () => {
+            expect(await useResumeStore.getState().autosave()).toBe("ok");
+            const state = useResumeStore.getState();
+            expect(git.sessions).toHaveLength(1);
+            expect(git.saved).toHaveLength(0);
+            expect(state.saveState).toBe("clean");
+            expect(state.sync.autosavedAt).not.toBeNull();
+            await state.save();
+            expect(useResumeStore.getState().sync.autosavedAt).toBeNull();
+        });
+
+        it("does not autosave local resumes", async () => {
+            useResumeStore
+                .getState()
+                .load(makeResume(), { kind: "local", id: "r1" });
+            expect(await useResumeStore.getState().autosave()).toBe("skip");
+        });
+
+        it("reports retry and auth failures and keeps the edit dirty", async () => {
+            git.error = new Error("offline");
+            expect(await useResumeStore.getState().autosave()).toBe("retry");
+            expect(useResumeStore.getState().sync.phase).toBe("retrying");
+            expect(useResumeStore.getState().saveState).toBe("dirty");
+            git.error = new UnauthorizedError();
+            expect(await useResumeStore.getState().autosave()).toBe("auth");
+            expect(useResumeStore.getState().sync.phase).toBe("auth");
+        });
+
+        it("turns a commit conflict into a prompt, then resolves it", async () => {
+            git.error = new ConflictError();
+            await useResumeStore.getState().save();
+            expect(useResumeStore.getState().sync.phase).toBe("conflict");
+            expect(useResumeStore.getState().saveState).toBe("dirty");
+            expect(await useResumeStore.getState().autosave()).toBe("skip");
+            git.error = null;
+            await useResumeStore.getState().resolveConflict("mine");
+            expect(git.commits).toEqual([{ force: true }]);
+            expect(useResumeStore.getState().sync.phase).toBe("idle");
+            expect(useResumeStore.getState().saveState).toBe("clean");
+        });
+
+        it("take remote loads the default branch version", async () => {
+            git.error = new ConflictError();
+            await useResumeStore.getState().save();
+            git.remote = { ...makeResume(), filename: "theirs" };
+            await useResumeStore.getState().resolveConflict("remote");
+            const state = useResumeStore.getState();
+            expect(state.resume?.filename).toBe("theirs");
+            expect(state.saveState).toBe("clean");
+            expect(state.sync.phase).toBe("idle");
+        });
     });
 
     it("marks dirty on edits and clean after a save", async () => {

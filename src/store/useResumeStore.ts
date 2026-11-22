@@ -25,7 +25,15 @@ import { today } from "@resume/dates";
 import starter from "@resume/starter-resume.json";
 import { connections } from "../git/connections";
 import { openConnection } from "../git/open-connection";
-import { GitResumeStorage } from "@storage/git-resume-storage";
+import { sessions } from "../git/sessions";
+import {
+    GitResumeStorage,
+    type IGitStorage,
+} from "@storage/git-resume-storage";
+import {
+    ConflictError,
+    UnauthorizedError,
+} from "@storage/github-resume-storage";
 import { GitHubResumeStorage } from "@storage/github-resume-storage";
 import { IdbResumeStorage } from "@storage/idb-resume-storage";
 import { LocalResumeStorage } from "@storage/local-resume-storage";
@@ -40,6 +48,17 @@ export type TResumeSource =
     | { kind: "git"; connectionId: string; path: string };
 
 export type TSaveState = "clean" | "dirty" | "saving" | "error";
+
+/** Git sessions: autosave progress, separate from commit's `saveState`. */
+export interface ISyncState {
+    phase: "idle" | "syncing" | "retrying" | "auth" | "conflict";
+    /** When the session branch last got the document (ms); null once committed. */
+    autosavedAt: number | null;
+}
+
+export type TAutosaveOutcome = "ok" | "retry" | "auth" | "skip";
+
+const idleSync: ISyncState = { phase: "idle", autosavedAt: null };
 
 /** Whether text fields show styled text or the raw markup. */
 export type TTextMode = "formatted" | "raw";
@@ -68,16 +87,21 @@ export const resumeStorages = {
         return storage;
     },
     /** Resolves the saved connection on first use, so this stays sync. */
-    git(connectionId: string): IResumeStorage {
+    git(connectionId: string): IResumeStorage | IGitStorage {
         let storage = gitStorages.get(connectionId);
         if (!storage) {
-            storage = new GitResumeStorage(async () => {
-                const connection = await connections.get(connectionId);
-                if (!connection) {
-                    throw new Error("This repository connection was removed.");
-                }
-                return openConnection(connection);
-            });
+            storage = new GitResumeStorage(
+                async () => {
+                    const connection = await connections.get(connectionId);
+                    if (!connection) {
+                        throw new Error(
+                            "This repository connection was removed.",
+                        );
+                    }
+                    return openConnection(connection);
+                },
+                { connectionId, sessions },
+            );
             gitStorages.set(connectionId, storage);
         }
         return storage;
@@ -140,6 +164,7 @@ interface IResumeStore {
     source: TResumeSource | null;
     saveState: TSaveState;
     saveError: string | null;
+    sync: ISyncState;
     /** Open sections by dotted path (`"2.0"`); UI-only, never persisted. */
     expanded: Record<string, boolean>;
     /** UI-only, never persisted. */
@@ -178,7 +203,14 @@ interface IResumeStore {
     /** Applies the current drag at the current drop target, if allowed. */
     drop(): void;
     save(message?: string): Promise<void>;
+    /** Git sources: push the current document to the session branch. */
+    autosave(): Promise<TAutosaveOutcome>;
+    /** After a commit conflict: overwrite the default branch, or take its version. */
+    resolveConflict(choice: "mine" | "remote"): Promise<void>;
 }
+
+const isGitStorage = (s: IResumeStorage): s is IGitStorage =>
+    "saveSession" in s;
 
 export const useResumeStore = create<IResumeStore>()(
     persist(
@@ -187,6 +219,7 @@ export const useResumeStore = create<IResumeStore>()(
             source: null,
             saveState: "clean",
             saveError: null,
+            sync: idleSync,
             expanded: {},
             focusedText: null,
             textMode: "formatted",
@@ -227,6 +260,7 @@ export const useResumeStore = create<IResumeStore>()(
                     source,
                     saveState: "clean",
                     saveError: null,
+                    sync: idleSync,
                     expanded: {},
                     ...clearedHistory,
                 }),
@@ -241,6 +275,7 @@ export const useResumeStore = create<IResumeStore>()(
                     // Untouched until the first edit, so autosave leaves it out of the library.
                     saveState: "clean",
                     saveError: null,
+                    sync: idleSync,
                     expanded: {},
                     ...clearedHistory,
                 }),
@@ -387,13 +422,66 @@ export const useResumeStore = create<IResumeStore>()(
                     if (now.source !== source) return;
                     set({
                         saveState: now.resume === resume ? "clean" : "dirty",
+                        sync: idleSync,
                     });
                 } catch (err) {
+                    failCommit(set, get, source, err);
+                }
+            },
+
+            autosave: async () => {
+                const { resume, source } = get();
+                if (!resume || source?.kind !== "git") return "skip";
+                // The conflict prompt owns the status until it is resolved.
+                if (get().sync.phase === "conflict") return "skip";
+                const storage = storageFor(source);
+                if (!isGitStorage(storage)) return "skip";
+                set({ sync: { ...get().sync, phase: "syncing" } });
+                try {
+                    await storage.saveSession(source.path, resume);
+                } catch (err) {
+                    if (get().source !== source) return "skip";
+                    const auth = err instanceof UnauthorizedError;
                     set({
-                        saveState: "error",
-                        saveError:
-                            err instanceof Error ? err.message : String(err),
+                        sync: {
+                            ...get().sync,
+                            phase: auth ? "auth" : "retrying",
+                        },
                     });
+                    return auth ? "auth" : "retry";
+                }
+                const now = get();
+                if (now.source !== source) return "skip";
+                set({
+                    saveState: now.resume === resume ? "clean" : "dirty",
+                    sync: { phase: "idle", autosavedAt: Date.now() },
+                });
+                return "ok";
+            },
+
+            resolveConflict: async (choice) => {
+                const { resume, source } = get();
+                if (!resume || source?.kind !== "git") return;
+                const storage = storageFor(source);
+                if (!isGitStorage(storage)) return;
+                set({ saveState: "saving", saveError: null });
+                try {
+                    if (choice === "remote") {
+                        const theirs = await storage.discardSession(
+                            source.path,
+                        );
+                        if (!theirs) throw new Error(`${source.path} is gone.`);
+                        if (get().source === source) get().load(theirs, source);
+                        return;
+                    }
+                    await storage.commit(source.path, resume, { force: true });
+                    if (get().source !== source) return;
+                    set({
+                        saveState: get().resume === resume ? "clean" : "dirty",
+                        sync: idleSync,
+                    });
+                } catch (err) {
+                    failCommit(set, get, source, err);
                 }
             },
         }),
@@ -408,6 +496,28 @@ export const useResumeStore = create<IResumeStore>()(
         },
     ),
 );
+
+/** Shared by commit paths: a conflict is a prompt, not an error. */
+function failCommit(
+    set: (partial: Partial<IResumeStore>) => void,
+    get: () => IResumeStore,
+    source: TResumeSource,
+    err: unknown,
+): void {
+    if (get().source !== source) return;
+    if (err instanceof ConflictError && source.kind === "git") {
+        set({ saveState: "dirty", sync: { ...get().sync, phase: "conflict" } });
+        return;
+    }
+    set({
+        saveState: "error",
+        saveError: err instanceof Error ? err.message : String(err),
+        sync:
+            err instanceof UnauthorizedError
+                ? { ...get().sync, phase: "auth" }
+                : get().sync,
+    });
+}
 
 function edit(
     set: (fn: (s: IResumeStore) => Partial<IResumeStore>) => void,

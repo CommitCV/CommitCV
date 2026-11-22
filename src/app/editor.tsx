@@ -6,6 +6,7 @@ import Header from "@components/header";
 import SectionEditor from "@components/editor/section-editor";
 import ResumePreview from "@components/editor/resume-preview";
 import { useEffect, useState } from "react";
+import { startGitAutosave } from "@store/git-autosave";
 import { startLocalAutosave } from "@store/local-autosave";
 import { useResumeStore } from "@store/useResumeStore";
 import { trackResumeCreated } from "@analytics/tracker";
@@ -26,6 +27,7 @@ export default function Editor() {
 
     // Unmounting flushes, so leaving for the library never drops an edit.
     useEffect(() => startLocalAutosave(useResumeStore), []);
+    useEffect(() => startGitAutosave(useResumeStore), []);
 
     useEffect(() => {
         if (!resume) {

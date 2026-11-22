@@ -3,6 +3,7 @@ import Button from "@components/ui/button";
 import { Save } from "@components/ui/icons";
 import { TOOLBAR_ROW } from "@components/ui/toolbar";
 import { useResumeStore } from "@store/useResumeStore";
+import GitSyncStatus from "./git-sync-status";
 
 export default function EditorToolbar() {
     const filename = useResumeStore((store) => store.resume?.filename ?? "");
@@ -10,6 +11,7 @@ export default function EditorToolbar() {
     const isLocal = useResumeStore(
         (store) => !store.source || store.source.kind === "local",
     );
+    const isGit = useResumeStore((store) => store.source?.kind === "git");
     const setFilename = useResumeStore((store) => store.setFilename);
     const save = useResumeStore((store) => store.save);
     const undo = useResumeStore((store) => store.undo);
@@ -71,18 +73,16 @@ export default function EditorToolbar() {
                         className="gap-1.5"
                         disabled={saveState === "saving"}
                         onClick={() =>
-                            void save(`update ${filename || "resume"}`)
+                            void save(
+                                isGit
+                                    ? undefined
+                                    : `update ${filename || "resume"}`,
+                            )
                         }>
                         <Save className="h-4 w-4" />
                         {saveState === "saving" ? "Saving…" : "Commit Changes"}
                     </Button>
-                    <span
-                        role="status"
-                        className="text-xs text-light-700 dark:text-dark-700">
-                        {saveState === "dirty" && "Unsaved changes"}
-                        {saveState === "clean" && "Saved"}
-                        {saveState === "error" && "Save failed"}
-                    </span>
+                    <GitSyncStatus />
                 </>
             )}
         </div>
