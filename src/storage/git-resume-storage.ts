@@ -328,12 +328,16 @@ export class GitResumeStorage implements IGitStorage {
             const record = records.find((r) => r.path === path);
             const onRemote = record && branches.includes(record.branch);
             if (record && !onRemote) {
-                if (record.lastPushedSha) {
+                const unpushed =
+                    record.headSha !== record.lastPushedSha ||
+                    record.lastContent !== undefined;
+                if (record.lastPushedSha && !unpushed) {
                     // Squashed or discarded elsewhere: the record is stale.
                     await this.endSession(client, record);
                     continue;
                 }
-                // Never pushed (offline): the work only exists locally.
+                // Never pushed, or edits made since the last push (offline):
+                // that work only exists locally, so offer it.
                 const info = await this.inspect(
                     client,
                     defaultBranch,

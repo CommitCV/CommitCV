@@ -552,6 +552,36 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
             expect((await store.list())[0].lastContent).toBeUndefined();
         });
 
+        it("keeps unpushed local edits when the remote branch was deleted", async () => {
+            const store = new MemorySessionStore();
+            const vol = new Volume();
+            const s = storage(TOKEN, store, vol);
+            await s.saveSession("cv.json", two("a2", "b"));
+            flaky.pushFails = true;
+            await expect(
+                s.saveSession("cv.json", two("a3", "b")),
+            ).rejects.toThrow();
+            flaky.pushFails = false;
+            gitIn(bare, "branch", "-D", branches()[0]);
+
+            const reopened = storage(TOKEN, store, vol);
+            const [info] = await reopened.findSessions("cv.json");
+            expect(info?.local).toBeDefined();
+            expect(
+                (await reopened.inspectSession("cv.json", info)).local,
+            ).toEqual(two("a3", "b"));
+            expect(await store.list()).toHaveLength(1);
+        });
+
+        it("still clears a pushed record whose remote branch is gone", async () => {
+            const store = new MemorySessionStore();
+            const s = storage(TOKEN, store);
+            await s.saveSession("cv.json", two("a2", "b"));
+            gitIn(bare, "branch", "-D", branches()[0]);
+            expect(await s.findSessions("cv.json")).toEqual([]);
+            expect(await store.list()).toEqual([]);
+        });
+
         it("using the session as saved drops unpushed local edits", async () => {
             const store = new MemorySessionStore();
             const vol = new Volume();
