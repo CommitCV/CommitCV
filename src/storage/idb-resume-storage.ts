@@ -78,18 +78,28 @@ export class IdbResumeStorage implements IResumeStorage {
     }
 
     private ready(): Promise<void> {
-        this.migrated ??= this.migrate();
+        this.migrated ??= this.migrate().catch((error) => {
+            this.migrated = undefined;
+            throw error;
+        });
         return this.migrated;
     }
 
-    // Moves each legacy resume over, then deletes it. One that fails
-    // to read or write stays where it is so nothing is lost.
+    // Moves each legacy resume over, then deletes it. An id that already
+    // has an IndexedDB copy keeps that copy, since it is at least as new.
+    // One that fails to read or write stays where it is so nothing is lost.
     private async migrate(): Promise<void> {
         if (!this.legacy) return;
         for (const entry of await this.legacy.list()) {
             try {
-                const resume = await this.legacy.load(entry.id);
-                await this.put({ id: entry.id, resume, updatedAt: Date.now() });
+                if (!(await this.get(entry.id))) {
+                    const resume = await this.legacy.load(entry.id);
+                    await this.put({
+                        id: entry.id,
+                        resume,
+                        updatedAt: Date.now(),
+                    });
+                }
                 await this.legacy.remove(entry.id);
             } catch {
                 continue;
@@ -98,14 +108,17 @@ export class IdbResumeStorage implements IResumeStorage {
     }
 
     private open(): Promise<IDBDatabase> {
-        this.db ??= new Promise((resolve, reject) => {
+        const db = (this.db ??= new Promise<IDBDatabase>((resolve, reject) => {
             const req = (this.factory ?? indexedDB).open(DB_NAME, 1);
             req.onupgradeneeded = () =>
                 req.result.createObjectStore(STORE, { keyPath: "id" });
             req.onsuccess = () => resolve(req.result);
             req.onerror = () => reject(req.error);
-        });
-        return this.db;
+        }).catch((error) => {
+            this.db = undefined;
+            throw error;
+        }));
+        return db;
     }
 
     private async all(): Promise<IRecord[]> {

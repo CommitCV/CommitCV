@@ -110,4 +110,49 @@ describe("IdbResumeStorage", () => {
         const again = new IdbResumeStorage(factory, legacy);
         expect((await again.load("a")).filename).toBe("new");
     });
+
+    it("keeps the IndexedDB copy and drops the legacy one when both exist", async () => {
+        const factory = new IDBFactory();
+        await new IdbResumeStorage(factory).save("a", makeResume("newer", "n"));
+        const legacy = fakeLegacy({ a: makeResume("older", "o") });
+
+        const storage = new IdbResumeStorage(factory, legacy);
+        expect((await storage.load("a")).filename).toBe("newer");
+        expect(await legacy.list()).toEqual([]);
+    });
+
+    it("retries the migration after it failed", async () => {
+        const inner = fakeLegacy({ a: makeResume("legacy", "x") });
+        let failures = 1;
+        const legacy: IResumeStorage = {
+            ...inner,
+            async list() {
+                if (failures-- > 0) throw new Error("storage unavailable");
+                return inner.list();
+            },
+        };
+        const storage = new IdbResumeStorage(new IDBFactory(), legacy);
+
+        await expect(storage.list()).rejects.toThrow(/unavailable/);
+        expect((await storage.list()).map((e) => e.id)).toEqual(["a"]);
+    });
+
+    it("retries opening the database after it failed", async () => {
+        const real = new IDBFactory();
+        let failures = 1;
+        const flaky = {
+            open(name: string, version?: number) {
+                if (failures-- <= 0) return real.open(name, version);
+                const req = {
+                    error: new Error("blocked"),
+                } as unknown as IDBOpenDBRequest;
+                setTimeout(() => req.onerror?.(new Event("error")));
+                return req;
+            },
+        } as unknown as IDBFactory;
+        const storage = new IdbResumeStorage(flaky);
+
+        await expect(storage.list()).rejects.toThrow(/blocked/);
+        expect(await storage.list()).toEqual([]);
+    });
 });
