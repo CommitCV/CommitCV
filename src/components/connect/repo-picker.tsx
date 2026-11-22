@@ -186,18 +186,37 @@ export default function RepoPicker({ handoff, onConnected }: RepoPickerProps) {
                     <>
                         {" "}
                         or{" "}
-                        <a
-                            href={template.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-accent underline">
-                            {template.label}
-                        </a>
+                        {template.importFrom ? (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void navigator.clipboard
+                                        ?.writeText(template.importFrom ?? "")
+                                        .catch(() => {});
+                                    window.open(
+                                        template.url,
+                                        "_blank",
+                                        "noreferrer",
+                                    );
+                                }}
+                                className="text-accent underline">
+                                {template.label}
+                            </button>
+                        ) : (
+                            <a
+                                href={template.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-accent underline">
+                                {template.label}
+                            </a>
+                        )}
                         {template.importFrom && (
                             <>
                                 {" "}
-                                (paste <code>{template.importFrom}</code> as the
-                                repository URL)
+                                (we copy <code>{template.importFrom}</code> to
+                                your clipboard first: paste it as the repository
+                                URL)
                             </>
                         )}
                     </>

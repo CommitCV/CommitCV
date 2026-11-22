@@ -2,9 +2,9 @@
 export const TEMPLATE_REPO_URL: string | undefined =
     import.meta.env.VITE_TEMPLATE_REPO_URL || undefined;
 
-/** The CommitCV template on Codeberg (template id from its create page). */
-const CODEBERG_TEMPLATE_URL =
-    "https://codeberg.org/repo/create?template_id=2925623";
+/** The CommitCV template on Codeberg: its create page with `template_id`. */
+const CODEBERG_TEMPLATE_URL: string | undefined =
+    import.meta.env.VITE_CODEBERG_TEMPLATE_URL || undefined;
 
 export interface TemplateOffer {
     url: string;
@@ -30,7 +30,7 @@ export function templateOffer(
                 label: "start from the CommitCV template",
             };
         case "forgejo":
-            return host === "codeberg.org"
+            return host === "codeberg.org" && CODEBERG_TEMPLATE_URL
                 ? {
                       url: CODEBERG_TEMPLATE_URL,
                       label: "start from the CommitCV template",

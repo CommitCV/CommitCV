@@ -3,6 +3,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 async function load(url: string) {
     vi.resetModules();
     vi.stubEnv("VITE_TEMPLATE_REPO_URL", url);
+    vi.stubEnv(
+        "VITE_CODEBERG_TEMPLATE_URL",
+        "https://codeberg.org/repo/create?template_id=2925623",
+    );
     return import("./template");
 }
 
