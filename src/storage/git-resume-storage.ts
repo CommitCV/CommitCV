@@ -101,7 +101,12 @@ export class GitResumeStorage implements IGitStorage {
     private queue: Promise<unknown> = Promise.resolve();
     /** Last content seen per path (null = absent), for conflict checks. */
     private readonly seen = new Map<string, string | null>();
-    /** Default head when each path was loaded: the merge base of a new session. */
+    /**
+     * A commit whose file holds what the editor's document derives from, per
+     * path: the merge base of the next session. Set on load and kept up to
+     * date after a commit or discard, never dropped, so a later commit does
+     * not mistake another device's push for part of the editor's base.
+     */
     private readonly loadedAt = new Map<string, string>();
 
     constructor(
@@ -212,6 +217,8 @@ export class GitResumeStorage implements IGitStorage {
                 startedAt: this.now(),
             };
             const base = await client.readFile(session.baseSha, id);
+            // What the editor's document derives from after this commit.
+            let editorSha = content === ours ? head : session.baseSha;
             const result = this.resolveContent(base, ours, content, force);
 
             if (result !== null && result !== ours) {
@@ -228,7 +235,7 @@ export class GitResumeStorage implements IGitStorage {
                 }
                 const next = parse(result);
                 const prev = parse(ours);
-                await client.squashToDefault({
+                const landed = await client.squashToDefault({
                     sessionBranch: session.branch,
                     path: id,
                     message:
@@ -246,8 +253,13 @@ export class GitResumeStorage implements IGitStorage {
                     throw err;
                 }
                 this.seen.set(id, result);
+                // A merge adds changes the editor never saw, so its own
+                // content (the session tip) stays the base in that case.
+                editorSha =
+                    result === content ? landed : (session.headSha ?? landed);
             }
             await this.endSession(client, session);
+            this.loadedAt.set(id, editorSha);
         });
     }
 
@@ -272,11 +284,12 @@ export class GitResumeStorage implements IGitStorage {
 
     async discardSession(id: string): Promise<IResume | null> {
         return this.guard(async () => {
-            const { client, defaultBranch } = await this.sync();
+            const { client, head, defaultBranch } = await this.sync();
             const session = await this.sessions.get(this.connectionId, id);
             if (session) await this.endSession(client, session);
             const text = await client.readFile(defaultBranch, id);
             this.seen.set(id, text);
+            this.loadedAt.set(id, head);
             return parse(text);
         });
     }
@@ -321,7 +334,6 @@ export class GitResumeStorage implements IGitStorage {
         }
         await client.deleteLocalBranch(session.branch);
         await this.sessions.delete(this.connectionId, session.path);
-        this.loadedAt.delete(session.path);
     }
 
     private async checkUnchanged(

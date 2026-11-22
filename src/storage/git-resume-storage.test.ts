@@ -184,6 +184,59 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
             expect(await sessions.list()).toEqual([]);
         });
 
+        describe("after another device pushes", () => {
+            const theirs = async (alpha = "a2") => {
+                const other = storage(TOKEN, new MemorySessionStore());
+                await other.load("cv.json");
+                await other.commit("cv.json", two(alpha, "b-theirs"));
+            };
+            const onMain = () => gitIn(bare, "show", "main:cv.json");
+
+            it("a commit keeps their edit", async () => {
+                seedTwo();
+                const mine = storage();
+                await mine.load("cv.json");
+                await mine.commit("cv.json", two("a2", "b"));
+                await theirs();
+                await mine.commit("cv.json", two("a3", "b")); // merges, never drops b-theirs
+                expect(JSON.parse(onMain())).toEqual(two("a3", "b-theirs"));
+            });
+
+            it("an autosave then a commit keeps their edit", async () => {
+                seedTwo();
+                const mine = storage();
+                await mine.load("cv.json");
+                await mine.commit("cv.json", two("a2", "b"));
+                await theirs();
+                await mine.saveSession("cv.json", two("a3", "b"));
+                await mine.commit("cv.json", two("a3", "b"));
+                expect(JSON.parse(onMain())).toEqual(two("a3", "b-theirs"));
+            });
+
+            it("a commit that merged their edit still keeps it next time", async () => {
+                seedTwo();
+                const mine = storage();
+                await mine.load("cv.json");
+                await theirs("a");
+                // The editor never saw b-theirs, so this commit merges it in.
+                await mine.commit("cv.json", two("a2", "b"));
+                expect(JSON.parse(onMain())).toEqual(two("a2", "b-theirs"));
+                await mine.commit("cv.json", two("a3", "b"));
+                expect(JSON.parse(onMain())).toEqual(two("a3", "b-theirs"));
+            });
+
+            it("a commit after discarding the session keeps their edit", async () => {
+                seedTwo();
+                const mine = storage();
+                await mine.load("cv.json");
+                await mine.saveSession("cv.json", two("a2", "b"));
+                await mine.discardSession("cv.json");
+                await theirs("a");
+                await mine.commit("cv.json", two("a3", "b"));
+                expect(JSON.parse(onMain())).toEqual(two("a3", "b-theirs"));
+            });
+        });
+
         it("commits without a prior autosave and a no-change commit is a no-op", async () => {
             seedTwo();
             const s = storage();
