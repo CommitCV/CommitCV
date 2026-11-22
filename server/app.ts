@@ -10,6 +10,15 @@ import type { ServerEnv } from "./github.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
+/** `{ [key]: n }` for a positive number in `process.env[name]`, else `{}`. */
+function numberFromEnv<K extends "deadlineMs" | "maxResponseBytes">(
+    key: K,
+    name: string,
+): Partial<Record<K, number>> {
+    const value = Number(process.env[name]);
+    return value > 0 ? ({ [key]: value } as Record<K, number>) : {};
+}
+
 export interface CreateAppOptions {
     env?: Partial<ServerEnv>;
     distDir?: string;
@@ -44,6 +53,11 @@ export function createApp(options: CreateAppOptions = {}): Hono {
                 .split(",")
                 .filter((h) => h.trim()),
             disabled: process.env.GIT_PROXY_DISABLED === "1",
+            ...numberFromEnv("deadlineMs", "GIT_PROXY_DEADLINE_MS"),
+            ...numberFromEnv(
+                "maxResponseBytes",
+                "GIT_PROXY_MAX_RESPONSE_BYTES",
+            ),
             ...options.gitProxy,
         }),
     );

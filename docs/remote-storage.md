@@ -36,10 +36,12 @@ dropped on a cross-host hop. Limits: 10 MB request body, 60 s to first
 response byte, 120 requests per minute per client IP. Browsers may call it
 only from `PUBLIC_URL` or the server's own origin.
 
-| Variable                  | Effect                                         |
-| ------------------------- | ---------------------------------------------- |
-| `GIT_PROXY_ALLOWED_HOSTS` | Comma-separated hosts; empty allows any public |
-| `GIT_PROXY_DISABLED`      | `1` turns the proxy off                        |
+| Variable                       | Effect                                               |
+| ------------------------------ | ---------------------------------------------------- |
+| `GIT_PROXY_ALLOWED_HOSTS`      | Comma-separated hosts; empty allows any public       |
+| `GIT_PROXY_DISABLED`           | `1` turns the proxy off                              |
+| `GIT_PROXY_DEADLINE_MS`        | Total time per request, default `300000`             |
+| `GIT_PROXY_MAX_RESPONSE_BYTES` | Most bytes relayed per response, default `100000000` |
 
 Residual risks: the rate limit is in memory, per process, and keyed on the
 last `X-Forwarded-For` entry (only trustworthy behind a proxy that sets it).

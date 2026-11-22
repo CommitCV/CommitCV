@@ -32,7 +32,12 @@ export interface GitProxyOptions {
     now?: () => number;
     maxBodyBytes?: number;
     rateLimitPerMinute?: number;
+    /** Per-hop wait for upstream response headers. */
     timeoutMs?: number;
+    /** Total time allowed for one request, body streaming included. */
+    deadlineMs?: number;
+    /** Most bytes relayed from upstream in one response. */
+    maxResponseBytes?: number;
 }
 
 class ProxyError extends Error {
@@ -153,6 +158,56 @@ function checkUrl(url: URL, method: string, allowed: string[]): void {
     }
 }
 
+// ── Response guard ─────────────────────────
+
+/**
+ * Relays `body` but errors it once it passes `maxBytes` or the `deadline`
+ * signal aborts, whichever the upstream does or doesn't cooperate with.
+ * `done` runs once when the stream ends, fails or is cancelled.
+ */
+function guardBody(
+    body: ReadableStream<Uint8Array>,
+    maxBytes: number,
+    deadline: AbortSignal,
+    done: () => void,
+): ReadableStream<Uint8Array> {
+    const reader = body.getReader();
+    let total = 0;
+    const expired = new Promise<never>((_resolve, reject) => {
+        deadline.addEventListener(
+            "abort",
+            () => reject(new Error("upstream deadline exceeded")),
+            { once: true },
+        );
+    });
+    expired.catch(() => {});
+    return new ReadableStream<Uint8Array>({
+        async pull(controller) {
+            try {
+                const { done: finished, value } = await Promise.race([
+                    reader.read(),
+                    expired,
+                ]);
+                if (finished) {
+                    done();
+                    return controller.close();
+                }
+                total += value.byteLength;
+                if (total > maxBytes) throw new Error("response too large");
+                controller.enqueue(value);
+            } catch (error) {
+                reader.cancel().catch(() => {});
+                done();
+                controller.error(error);
+            }
+        },
+        cancel(reason) {
+            done();
+            return reader.cancel(reason);
+        },
+    });
+}
+
 // ── Upstream (production) ──────────────────
 
 const NULL_BODY = new Set([101, 204, 205, 304]);
@@ -223,6 +278,8 @@ export function gitProxy(options: GitProxyOptions): Hono {
     const maxBody = options.maxBodyBytes ?? 10_000_000;
     const limit = options.rateLimitPerMinute ?? 120;
     const timeoutMs = options.timeoutMs ?? 60_000;
+    const deadlineMs = options.deadlineMs ?? 300_000;
+    const maxResponse = options.maxResponseBytes ?? 100_000_000;
     const allowedHosts = (options.allowedHosts ?? []).map((h) =>
         h.trim().toLowerCase(),
     );
@@ -309,6 +366,9 @@ export function gitProxy(options: GitProxyOptions): Hono {
         }
 
         let host = "";
+        const deadline = new AbortController();
+        const deadlineTimer = setTimeout(() => deadline.abort(), deadlineMs);
+        let handedOff = false;
         try {
             if (c.req.method !== "GET" && c.req.method !== "POST") {
                 throw new ProxyError(403, "method not allowed");
@@ -319,9 +379,14 @@ export function gitProxy(options: GitProxyOptions): Hono {
             const rest = inbound.pathname.replace(/^\/api\/git-proxy\//, "");
             const slash = rest.indexOf("/");
             if (slash < 1) throw new ProxyError(404, "not a git endpoint");
-            let target = new URL(
-                `https://${rest.slice(0, slash)}${rest.slice(slash)}${inbound.search}`,
-            );
+            let target: URL;
+            try {
+                target = new URL(
+                    `https://${rest.slice(0, slash)}${rest.slice(slash)}${inbound.search}`,
+                );
+            } catch {
+                throw new ProxyError(400, "invalid host");
+            }
             checkUrl(target, c.req.method, allowedHosts);
 
             const headers: Record<string, string> = {
@@ -357,20 +422,24 @@ export function gitProxy(options: GitProxyOptions): Hono {
                 const address = await pickAddress(host);
                 const controller = new AbortController();
                 const timer = setTimeout(() => controller.abort(), timeoutMs);
+                const signal = AbortSignal.any([
+                    controller.signal,
+                    deadline.signal,
+                ]);
                 let response: Response;
                 try {
                     response = await upstream(target, {
                         method: c.req.method,
                         headers,
                         body: hop === 0 ? body : undefined,
-                        signal: controller.signal,
+                        signal,
                         address,
                     });
                 } catch {
                     if (tooLarge) {
                         throw new ProxyError(413, "request body too large");
                     }
-                    throw controller.signal.aborted
+                    throw signal.aborted
                         ? new ProxyError(504, "upstream timed out")
                         : new ProxyError(502, "upstream request failed");
                 } finally {
@@ -388,7 +457,12 @@ export function gitProxy(options: GitProxyOptions): Hono {
                     ) {
                         throw new ProxyError(502, "unsupported redirect");
                     }
-                    const next = new URL(location, target);
+                    let next: URL;
+                    try {
+                        next = new URL(location, target);
+                    } catch {
+                        throw new ProxyError(502, "invalid redirect");
+                    }
                     checkUrl(next, "GET", allowedHosts);
                     if (next.hostname !== target.hostname) {
                         delete headers.authorization; // never leak the token
@@ -402,10 +476,22 @@ export function gitProxy(options: GitProxyOptions): Hono {
                     const value = response.headers.get(name);
                     if (value) out.set(name, value);
                 }
-                return new Response(response.body, {
-                    status: response.status,
-                    headers: out,
-                });
+                const declared = Number(response.headers.get("content-length"));
+                if (declared > maxResponse) {
+                    await response.body?.cancel();
+                    throw new ProxyError(502, "upstream response too large");
+                }
+                handedOff = response.body !== null;
+                return new Response(
+                    response.body &&
+                        guardBody(
+                            response.body,
+                            maxResponse,
+                            deadline.signal,
+                            () => clearTimeout(deadlineTimer),
+                        ),
+                    { status: response.status, headers: out },
+                );
             }
         } catch (error) {
             if (!(error instanceof ProxyError)) throw error;
@@ -418,6 +504,8 @@ export function gitProxy(options: GitProxyOptions): Hono {
                 status: error.status,
                 headers: { ...cors, "content-type": "application/json" },
             });
+        } finally {
+            if (!handedOff) clearTimeout(deadlineTimer);
         }
     });
 
