@@ -29,12 +29,16 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
     let bare: string;
     let http: HttpClient;
     let sessions: MemorySessionStore;
-    const storage = (token = TOKEN, store = sessions) =>
+    const storage = (
+        token = TOKEN,
+        store = sessions,
+        fs = createFsFromVolume(new Volume()),
+    ) =>
         new GitResumeStorage(
             async () => ({
                 url: URL_,
                 client: new GitClient({
-                    fs: createFsFromVolume(new Volume()) as unknown as FsClient,
+                    fs: fs as unknown as FsClient,
                     http,
                     auth: { username: token, password: "x-oauth-basic" },
                     author: { name: "Ada", email: "ada@example.com" },
@@ -42,6 +46,12 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
             }),
             { connectionId: "c1", sessions: store },
         );
+    /** Another device: it loads the file before it saves a change. */
+    const otherDevice = async (path: string, next: IResume) => {
+        const device = storage(TOKEN, new MemorySessionStore());
+        await device.load(path).catch(() => undefined); // a new file
+        await device.save(path, next);
+    };
     const sessionBranches = () =>
         gitIn(bare, "branch", "--list", "commitcv/*").trim();
     const count = (ref: string) =>
@@ -153,6 +163,7 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
         it("does nothing for unchanged content and adds commits for edits", async () => {
             seedTwo();
             const s = storage();
+            await s.load("cv.json");
             await s.saveSession("cv.json", two("a", "b"));
             expect(sessionBranches()).toBe("");
             await s.saveSession("cv.json", two("a2", "b"));
@@ -168,6 +179,7 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
         it("squashes to one default-branch commit and deletes the session", async () => {
             seedTwo();
             const s = storage();
+            await s.load("cv.json");
             await s.saveSession("cv.json", two("a2", "b"));
             await s.saveSession("cv.json", two("a2", "b2"));
             const before = main();
@@ -255,10 +267,7 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
             const mine = storage();
             await mine.load("cv.json");
             await mine.saveSession("cv.json", two("a2", "b"));
-            await storage(TOKEN, new MemorySessionStore()).save(
-                "other.json",
-                resume("other"),
-            );
+            await otherDevice("other.json", resume("other"));
             const moved = main();
             await mine.commit("cv.json", two("a2", "b"));
             expect(gitIn(bare, "rev-parse", "main^").trim()).toBe(moved);
@@ -277,10 +286,7 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
             const mine = storage();
             await mine.load("cv.json");
             await mine.saveSession("cv.json", two("a2", "b"));
-            await storage(TOKEN, new MemorySessionStore()).save(
-                "cv.json",
-                two("a", "b2"),
-            );
+            await otherDevice("cv.json", two("a", "b2"));
             await mine.commit("cv.json", two("a2", "b"));
             expect(JSON.parse(gitIn(bare, "show", "main:cv.json"))).toEqual(
                 two("a2", "b2"),
@@ -289,16 +295,65 @@ describe.skipIf(!hasGit)("GitResumeStorage", () => {
             expect(sessionBranches()).toBe("");
         });
 
+        describe("a draft restored after a reload (no load() call)", () => {
+            const restored = async () => {
+                seedTwo();
+                // The git filesystem persists across a reload, like the base.
+                const fs = createFsFromVolume(new Volume());
+                await storage(TOKEN, sessions, fs).load("cv.json");
+                // The tab reloads before the first autosave: no session row.
+                expect(await sessions.list()).toEqual([]);
+                return storage(TOKEN, sessions, fs);
+            };
+
+            it("raises the conflict prompt when the same section moved", async () => {
+                const mine = await restored();
+                await otherDevice("cv.json", two("theirs", "b"));
+                await expect(
+                    mine.commit("cv.json", two("mine", "b")),
+                ).rejects.toThrow(ConflictError);
+                expect(JSON.parse(gitIn(bare, "show", "main:cv.json"))).toEqual(
+                    two("theirs", "b"),
+                );
+            });
+
+            it("merges instead of reverting the other device's change", async () => {
+                const mine = await restored();
+                await otherDevice("cv.json", two("a", "theirs"));
+                await mine.commit("cv.json", two("mine", "b"));
+                expect(JSON.parse(gitIn(bare, "show", "main:cv.json"))).toEqual(
+                    two("mine", "theirs"),
+                );
+            });
+
+            it("starts a session on autosave from the saved base", async () => {
+                const mine = await restored();
+                await otherDevice("cv.json", two("a", "theirs"));
+                await mine.saveSession("cv.json", two("mine", "b"));
+                const [session] = await sessions.list();
+                expect(session.baseSha).toBe(
+                    await sessions.getBase("c1", "cv.json"),
+                );
+            });
+
+            it("treats an unknown base as a conflict, not as the head", async () => {
+                seedTwo();
+                const fresh = storage();
+                await fresh.saveSession("cv.json", two("mine", "b"));
+                expect(await sessions.list()).toEqual([]);
+                await expect(
+                    fresh.commit("cv.json", two("mine", "b")),
+                ).rejects.toThrow(ConflictError);
+            });
+        });
+
         describe("when both sides changed the same section", () => {
             const conflict = async () => {
                 seedTwo();
                 const mine = storage();
                 await mine.load("cv.json");
                 await mine.saveSession("cv.json", two("mine", "b"));
-                await storage(TOKEN, new MemorySessionStore()).save(
-                    "cv.json",
-                    two("theirs", "b"),
-                );
+                await otherDevice("cv.json", two("theirs", "b"));
                 await expect(
                     mine.commit("cv.json", two("mine", "b")),
                 ).rejects.toThrow(ConflictError);

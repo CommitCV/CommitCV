@@ -106,8 +106,25 @@ export class GitResumeStorage implements IGitStorage {
      * path: the merge base of the next session. Set on load and kept up to
      * date after a commit or discard, never dropped, so a later commit does
      * not mistake another device's push for part of the editor's base.
+     * Mirrored to the session store, which outlives a reload: a restored
+     * draft never calls `load`, so without it the base would fall back to
+     * the current head and a newer remote change would be reverted silently.
      */
     private readonly loadedAt = new Map<string, string>();
+
+    private async setBase(id: string, sha: string): Promise<void> {
+        this.loadedAt.set(id, sha);
+        await this.sessions.setBase(this.connectionId, id, sha);
+    }
+
+    /** The editor's base, or null when unknown (never loaded on this device). */
+    private async baseOf(id: string): Promise<string | null> {
+        return (
+            this.loadedAt.get(id) ??
+            (await this.sessions.getBase(this.connectionId, id)) ??
+            null
+        );
+    }
 
     constructor(
         open: () => Promise<IOpenedRepo>,
@@ -142,7 +159,7 @@ export class GitResumeStorage implements IGitStorage {
             const { client, head } = await this.sync();
             const text = await client.readFile(this.branch, id);
             this.seen.set(id, text);
-            this.loadedAt.set(id, head);
+            await this.setBase(id, head);
             if (text === null) throw new Error(`${id} not found`);
             return parseResume(JSON.parse(text));
         });
@@ -155,6 +172,10 @@ export class GitResumeStorage implements IGitStorage {
             let session = await this.sessions.get(this.connectionId, id);
             const onDefault = await client.readFile(defaultBranch, id);
             if (!session && content === onDefault) return;
+            const known = session?.baseSha ?? (await this.baseOf(id));
+            // Without a known base the file is not ours to overwrite: skip
+            // autosave and let Commit raise the conflict prompt instead.
+            if (!known && onDefault !== null) return;
             const branch =
                 session?.branch ?? `commitcv/${slug(id)}-${this.newId()}`;
             const current = session
@@ -164,7 +185,7 @@ export class GitResumeStorage implements IGitStorage {
                 connectionId: this.connectionId,
                 path: id,
                 branch,
-                baseSha: this.loadedAt.get(id) ?? head,
+                baseSha: known ?? head,
                 headSha: null,
                 lastPushedSha: null,
                 startedAt: this.now(),
@@ -207,11 +228,21 @@ export class GitResumeStorage implements IGitStorage {
             const { client, head, defaultBranch } = await this.sync();
             let session = await this.sessions.get(this.connectionId, id);
             const ours = await client.readFile(defaultBranch, id);
+            let baseSha = session?.baseSha ?? (await this.baseOf(id));
+            if (!baseSha) {
+                // Never loaded on this device: only a new file is safe.
+                if (ours !== null && ours !== content && !force) {
+                    throw new ConflictError(
+                        "This file changed in the repository while you edited it.",
+                    );
+                }
+                baseSha = head;
+            }
             session ??= {
                 connectionId: this.connectionId,
                 path: id,
                 branch: `commitcv/${slug(id)}-${this.newId()}`,
-                baseSha: this.loadedAt.get(id) ?? head,
+                baseSha,
                 headSha: null,
                 lastPushedSha: null,
                 startedAt: this.now(),
@@ -259,7 +290,7 @@ export class GitResumeStorage implements IGitStorage {
                     result === content ? landed : (session.headSha ?? landed);
             }
             await this.endSession(client, session);
-            this.loadedAt.set(id, editorSha);
+            await this.setBase(id, editorSha);
         });
     }
 
@@ -289,7 +320,7 @@ export class GitResumeStorage implements IGitStorage {
             if (session) await this.endSession(client, session);
             const text = await client.readFile(defaultBranch, id);
             this.seen.set(id, text);
-            this.loadedAt.set(id, head);
+            await this.setBase(id, head);
             return parse(text);
         });
     }

@@ -23,10 +23,18 @@ export interface ISessionStore {
     put(session: ISession): Promise<void>;
     delete(connectionId: string, path: string): Promise<void>;
     list(connectionId?: string): Promise<ISession[]>;
+    /**
+     * The commit the editor's document derives from, kept across reloads so a
+     * restored draft still has a merge base before its first session exists.
+     */
+    getBase(connectionId: string, path: string): Promise<string | undefined>;
+    setBase(connectionId: string, path: string, sha: string): Promise<void>;
 }
 
 const keyOf = (connectionId: string, path: string) =>
     `${connectionId}\n${path}`;
+const baseKeyOf = (connectionId: string, path: string) =>
+    `base\n${keyOf(connectionId, path)}`;
 
 export class SessionStore implements ISessionStore {
     private readonly factory?: IDBFactory;
@@ -37,7 +45,9 @@ export class SessionStore implements ISessionStore {
     }
 
     private open(): Promise<IDBDatabase> {
-        this.db ??= openDb(this.factory).catch((error) => {
+        this.db ??= openDb(this.factory, () => {
+            this.db = undefined;
+        }).catch((error) => {
             this.db = undefined;
             throw error;
         });
@@ -74,18 +84,41 @@ export class SessionStore implements ISessionStore {
 
     async list(connectionId?: string): Promise<ISession[]> {
         const db = await this.open();
-        const rows = await request<{ session: ISession }[]>(
+        const rows = await request<{ session?: ISession }[]>(
             db.transaction(SESSIONS).objectStore(SESSIONS).getAll(),
         );
+        // Base rows share the store but carry no session.
         return rows
-            .map((r) => r.session)
+            .flatMap((r) => (r.session ? [r.session] : []))
             .filter((s) => !connectionId || s.connectionId === connectionId);
+    }
+
+    async getBase(connectionId: string, path: string) {
+        const db = await this.open();
+        const row = await request<{ baseSha: string } | undefined>(
+            db
+                .transaction(SESSIONS)
+                .objectStore(SESSIONS)
+                .get(baseKeyOf(connectionId, path)),
+        );
+        return row?.baseSha;
+    }
+
+    async setBase(connectionId: string, path: string, sha: string) {
+        const db = await this.open();
+        const tx = db.transaction(SESSIONS, "readwrite");
+        tx.objectStore(SESSIONS).put({
+            id: baseKeyOf(connectionId, path),
+            baseSha: sha,
+        });
+        await transactionDone(tx);
     }
 }
 
 /** Non-durable store for tests and callers that do not need persistence. */
 export class MemorySessionStore implements ISessionStore {
     private readonly rows = new Map<string, ISession>();
+    private readonly bases = new Map<string, string>();
     async get(connectionId: string, path: string) {
         return this.rows.get(keyOf(connectionId, path));
     }
@@ -94,6 +127,12 @@ export class MemorySessionStore implements ISessionStore {
     }
     async delete(connectionId: string, path: string) {
         this.rows.delete(keyOf(connectionId, path));
+    }
+    async getBase(connectionId: string, path: string) {
+        return this.bases.get(keyOf(connectionId, path));
+    }
+    async setBase(connectionId: string, path: string, sha: string) {
+        this.bases.set(keyOf(connectionId, path), sha);
     }
     async list(connectionId?: string) {
         return [...this.rows.values()].filter(
