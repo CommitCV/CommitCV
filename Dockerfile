@@ -11,7 +11,11 @@ RUN pnpm build
 
 FROM node:24-alpine
 
-RUN apk upgrade --no-cache
+# The runtime only needs node. Drop the bundled package managers so their
+# vendored dependencies don't show up in image scans.
+RUN apk upgrade --no-cache \
+    && rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx \
+       /usr/local/bin/corepack /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg
 
 WORKDIR /app
 ENV NODE_ENV=production
