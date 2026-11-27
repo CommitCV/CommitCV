@@ -1,7 +1,8 @@
 name: Deploy
 
-# Pushes to main and v* branches build, scan, sign and push <image>:<sha>.
-# Pull requests do the same with the PR signing key, then deploy to beta.
+# Pushes to v* branches (including merges) build, sign and deploy to dev.
+# Pushes to main build, scan, sign and push <image>:<sha> only.
+# Pull requests into main do the same with the PR signing key, then deploy to beta.
 # A manual run (workflow_dispatch) deploys the chosen environment, reusing the
 # image already built for `sha` when there is one.
 #
@@ -70,7 +71,7 @@ jobs:
               id: config
               uses: ./.ci-tools/actions/load-config
 
-            # Decided once. Pushes get none (build and sign only).
+            # Decided once. Pushes to main get none (build and sign only).
             - name: Pick target
               id: target
               env:
@@ -82,6 +83,7 @@ jobs:
                   env=
                   [ "$EVENT" = workflow_dispatch ] && env="$INPUT_ENV"
                   [ "$EVENT" = pull_request ] && [ "$BASE_REF" = main ] && env=beta
+                  [ "$EVENT" = push ] && [[ "$GITHUB_REF" == refs/heads/v* ]] && env=dev
                   case "$env" in
                     dev)        ns=commitcv-dev ;;
                     beta)       ns=commitcv-beta ;;
