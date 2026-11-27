@@ -1,8 +1,7 @@
 name: Build and test
 
-# Pushes are tested by deploy.yml, which calls this workflow.
+# Called by deploy.yml for pushes and pull requests.
 on:
-    pull_request:
     workflow_call:
 
 jobs:

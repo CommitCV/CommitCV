@@ -1,33 +1,52 @@
 name: Deploy
 
-# push to dev   -> dev        (commitcv-dev)
-# push to main  -> beta       (commitcv-beta)
-# push of v*    -> production (commitcv), reusing the digest main built
+# Pushes to main and v* branches build, scan, sign and push <image>:<sha>.
+# Pull requests do the same with the PR signing key, then deploy to beta.
+# A manual run (workflow_dispatch) deploys the chosen environment, reusing the
+# image already built for `sha` when there is one.
 #
-# Pull requests build and scan only: no Vault login, no push, no signing,
-# no deploy. Vault and the deploy gateway are only reachable from gh-commitcv.
+# The environment comes from the workflow, never from the ref. The gateway
+# only checks the ref is allowed for it: dev from v* branches, beta from pull
+# requests into main, production from main.
+#
+# Vault and the gateway are only reachable from gh-commitcv. Fork pull
+# requests get no OIDC token, so they never reach the image job.
 
 on:
     push:
-        branches: [main, dev]
-        tags: ["v*"]
+        branches: [main, "v*"]
     pull_request:
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: Environment to deploy
+                type: choice
+                options: [dev, beta, production]
+                required: true
+            sha:
+                description: Commit whose image to deploy (default is this run's commit)
+                type: string
+                required: false
 
 permissions:
     contents: read
 
 concurrency:
-    group: deploy-${{ github.ref }}
+    group: deploy-${{ github.ref }}-${{ github.event_name }}
     cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
     test:
+        if: github.event_name != 'workflow_dispatch'
         uses: ./.github/workflows/build_test.yml
 
     image:
         needs: test
-        # Fork PRs must not run on the in-cluster runner.
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        # test is skipped on dispatch. Fork PRs must not use the in-cluster runner.
+        if: >-
+            ${{ !cancelled() && needs.test.result != 'failure'
+            && (github.event_name != 'pull_request'
+            || github.event.pull_request.head.repo.full_name == github.repository) }}
         runs-on: gh-commitcv
         timeout-minutes: 45
         permissions:
@@ -51,18 +70,37 @@ jobs:
               id: config
               uses: ./.ci-tools/actions/load-config
 
-            - name: Pick target environment
+            # Decided once. Pushes get none (build and sign only).
+            - name: Pick target
               id: target
+              env:
+                  EVENT: ${{ github.event_name }}
+                  INPUT_ENV: ${{ inputs.environment }}
+                  INPUT_SHA: ${{ inputs.sha }}
+                  BASE_REF: ${{ github.base_ref }}
               run: |
-                  case "$GITHUB_REF" in
-                    refs/heads/dev)  env=dev;        ns=commitcv-dev ;;
-                    refs/heads/main) env=beta;       ns=commitcv-beta ;;
-                    refs/tags/v*)    env=production; ns=commitcv ;;
-                    *)               env=;           ns= ;;
+                  env=
+                  [ "$EVENT" = workflow_dispatch ] && env="$INPUT_ENV"
+                  [ "$EVENT" = pull_request ] && [ "$BASE_REF" = main ] && env=beta
+                  case "$env" in
+                    dev)        ns=commitcv-dev ;;
+                    beta)       ns=commitcv-beta ;;
+                    production) ns=commitcv ;;
+                    *)          ns= ;;
                   esac
-                  echo "environment=$env" >> "$GITHUB_OUTPUT"
-                  echo "namespace=$ns" >> "$GITHUB_OUTPUT"
-                  echo "target: ${env:-none (build and scan only)}"
+                  # Signing key follows the ref: PR images get their own key.
+                  case "$GITHUB_REF" in
+                    refs/pull/*) role=commitcv-pr; key=hashivault://ci-sign-pr ;;
+                    *)           role=commitcv;    key="${{ vars.COSIGN_KEY_REF }}" ;;
+                  esac
+                  {
+                    echo "environment=$env"
+                    echo "namespace=$ns"
+                    echo "role=$role"
+                    echo "key=$key"
+                    echo "sha=${INPUT_SHA:-$GITHUB_SHA}"
+                  } >> "$GITHUB_OUTPUT"
+                  echo "target: ${env:-none (build and sign only)}, vault role $role"
 
             - name: Opengrep
               if: ${{ fromJSON(steps.config.outputs.config).scan.opengrep.enabled }}
@@ -78,9 +116,9 @@ jobs:
                   scanners: ${{ fromJSON(steps.config.outputs.config).scan.trivy.scanners }}
                   severity: ${{ fromJSON(steps.config.outputs.config).scan.trivy.severity }}
 
-            # Vault role `commitcv` only admits main, dev and v* tags.
             - name: Vault login and registry login
-              if: steps.target.outputs.environment != ''
+              env:
+                  ROLE: ${{ steps.target.outputs.role }}
               run: |
                   set -euo pipefail
                   [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] \
@@ -93,7 +131,7 @@ jobs:
                     | . + ("=" * ((4 - length % 4) % 4)) | @base64d | fromjson
                     | {iss, aud, repository, ref}' <<<"$jwt"
                   resp="$(curl -sS -X POST "${VAULT_ADDR%/}/v1/auth/github/login" \
-                    -d "$(jq -n --arg jwt "$jwt" '{role:"commitcv",jwt:$jwt}')")"
+                    -d "$(jq -n --arg jwt "$jwt" --arg role "$ROLE" '{role:$role,jwt:$jwt}')")"
                   token="$(jq -r '.auth.client_token // empty' <<<"$resp")"
                   [ -n "$token" ] || { echo "::error::Vault login failed: $(jq -c .errors <<<"$resp")"; exit 1; }
                   echo "::add-mask::$token"
@@ -106,32 +144,34 @@ jobs:
                   echo "::add-mask::$pass"
                   printf '%s' "$pass" | docker login git.travisf.ca -u "$user" --password-stdin
 
-            # For a v* tag, promote the image main already built and signed.
-            - name: Look for an existing image (tags only)
+            # Dispatch only: promote an image an earlier run already built and signed.
+            - name: Look for an existing image
               id: existing
-              if: startsWith(github.ref, 'refs/tags/v')
+              if: github.event_name == 'workflow_dispatch'
               env:
                   IMAGE: ${{ fromJSON(steps.config.outputs.config).app.image }}
+                  SHA: ${{ steps.target.outputs.sha }}
               run: |
-                  digest="$(docker buildx imagetools inspect "${IMAGE}:${GITHUB_SHA}" \
+                  digest="$(docker buildx imagetools inspect "${IMAGE}:${SHA}" \
                     --format '{{.Manifest.Digest}}' 2>/dev/null || true)"
                   if [ -n "$digest" ]; then
-                    echo "reusing ${IMAGE}:${GITHUB_SHA} -> $digest"
+                    echo "reusing ${IMAGE}:${SHA} -> $digest"
                     echo "digest=$digest" >> "$GITHUB_OUTPUT"
+                  elif [ "$SHA" != "$GITHUB_SHA" ]; then
+                    echo "::error::no image for ${SHA}; run the workflow from that commit's branch to build it"
+                    exit 1
                   else
-                    echo "no image for ${GITHUB_SHA}, building"
+                    echo "no image for ${SHA}, building"
                   fi
 
-            - name: Build
+            - name: Build and push
               id: build
               if: steps.existing.outputs.digest == ''
               env:
                   IMAGE: ${{ fromJSON(steps.config.outputs.config).app.image }}
-                  PUSH: ${{ steps.target.outputs.environment != '' }}
               run: |
                   set -euo pipefail
                   docker build -t "${IMAGE}:${GITHUB_SHA}" .
-                  [ "$PUSH" = true ] || exit 0
                   docker push "${IMAGE}:${GITHUB_SHA}"
                   digest="$(docker inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "${IMAGE}:${GITHUB_SHA}" \
                     | grep "^${IMAGE}@" | head -n1 | cut -d@ -f2)"
@@ -162,7 +202,7 @@ jobs:
               if: steps.build.outputs.digest != ''
               uses: ./.ci-tools/actions/sign
               with:
-                  key-ref: ${{ vars.COSIGN_KEY_REF }}
+                  key-ref: ${{ steps.target.outputs.key }}
                   image: ${{ fromJSON(steps.config.outputs.config).app.image }}
                   digest: ${{ steps.build.outputs.digest }}
 
@@ -171,6 +211,7 @@ jobs:
         if: needs.image.outputs.environment != '' && needs.image.outputs.digest != ''
         runs-on: gh-commitcv
         timeout-minutes: 10
+        environment: ${{ needs.image.outputs.environment }}
         permissions:
             contents: read
             id-token: write
