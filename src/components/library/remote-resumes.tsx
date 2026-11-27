@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import Button from "@components/ui/button";
 import { buttonClass } from "@components/ui/button-class";
 import { Xmark } from "@components/ui/icons";

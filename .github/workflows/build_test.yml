@@ -1,9 +1,8 @@
 name: Build and test
 
+# Called by deploy.yml for pushes and pull requests.
 on:
-    push:
-        branches: [main, "v*"]
-    pull_request:
+    workflow_call:
 
 jobs:
     verify:

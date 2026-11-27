@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { trackGit } from "../../analytics";
 import { trackGitFor } from "../../git/track";
 import type { ISessionInfo } from "@storage/git-resume-storage";

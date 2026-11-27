@@ -1,9 +1,5 @@
 export type OAuthProviderId =
-    | "github"
-    | "gitlab"
-    | "bitbucket"
-    | "gitea"
-    | "forgejo";
+    "github" | "gitlab" | "bitbucket" | "gitea" | "forgejo";
 
 /** One OAuth app the operator registered, for one provider on one host. */
 export interface OAuthApp {
