@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import starter from "@resume/starter-resume.json";
 import type { IResume } from "@resume/resume";
 import { today } from "@resume/dates";
