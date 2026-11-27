@@ -1,0 +1,192 @@
+name: Deploy
+
+# push to dev   -> dev        (commitcv-dev)
+# push to main  -> beta       (commitcv-beta)
+# push of v*    -> production (commitcv), reusing the digest main built
+#
+# Pull requests build and scan only: no Vault login, no push, no signing,
+# no deploy. Vault and the deploy gateway are only reachable from gh-commitcv.
+
+on:
+    push:
+        branches: [main, dev]
+        tags: ["v*"]
+    pull_request:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: deploy-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+    test:
+        uses: ./.github/workflows/build_test.yml
+
+    image:
+        needs: test
+        # Fork PRs must not run on the in-cluster runner.
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        runs-on: gh-commitcv
+        timeout-minutes: 45
+        permissions:
+            contents: read
+            id-token: write
+        outputs:
+            digest: ${{ steps.digest.outputs.digest }}
+            environment: ${{ steps.target.outputs.environment }}
+            namespace: ${{ steps.target.outputs.namespace }}
+        env:
+            VAULT_ADDR: ${{ vars.VAULT_ADDRESS }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  persist-credentials: false
+
+            - name: Fetch shared CI actions
+              run: git clone --depth 1 --branch v1 https://git.travisf.ca/infrastructure-ci/ci .ci-tools
+
+            - name: Load config
+              id: config
+              uses: ./.ci-tools/actions/load-config
+
+            - name: Pick target environment
+              id: target
+              run: |
+                  case "$GITHUB_REF" in
+                    refs/heads/dev)  env=dev;        ns=commitcv-dev ;;
+                    refs/heads/main) env=beta;       ns=commitcv-beta ;;
+                    refs/tags/v*)    env=production; ns=commitcv ;;
+                    *)               env=;           ns= ;;
+                  esac
+                  echo "environment=$env" >> "$GITHUB_OUTPUT"
+                  echo "namespace=$ns" >> "$GITHUB_OUTPUT"
+                  echo "target: ${env:-none (build and scan only)}"
+
+            - name: Opengrep
+              if: ${{ fromJSON(steps.config.outputs.config).scan.opengrep.enabled }}
+              uses: ./.ci-tools/actions/opengrep
+              with:
+                  config: ${{ fromJSON(steps.config.outputs.config).scan.opengrep.config }}
+                  fail-on: ${{ fromJSON(steps.config.outputs.config).scan.opengrep.fail_on }}
+
+            - name: Trivy
+              if: ${{ fromJSON(steps.config.outputs.config).scan.trivy.enabled }}
+              uses: ./.ci-tools/actions/trivy
+              with:
+                  scanners: ${{ fromJSON(steps.config.outputs.config).scan.trivy.scanners }}
+                  severity: ${{ fromJSON(steps.config.outputs.config).scan.trivy.severity }}
+
+            # Vault role `commitcv` only admits main, dev and v* tags.
+            - name: Vault login and registry login
+              if: steps.target.outputs.environment != ''
+              run: |
+                  set -euo pipefail
+                  [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] \
+                    || { echo "::error::no OIDC token: needs permissions.id-token: write"; exit 1; }
+                  jwt="$(curl -sSf -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+                    "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${VAULT_ADDR}" | jq -r .value)"
+                  echo "::add-mask::$jwt"
+                  # Claims Vault matches against (not the token), to debug bound_claims.
+                  jq -R -c 'split(".")[1] | gsub("-";"+") | gsub("_";"/")
+                    | . + ("=" * ((4 - length % 4) % 4)) | @base64d | fromjson
+                    | {iss, aud, repository, ref}' <<<"$jwt"
+                  resp="$(curl -sS -X POST "${VAULT_ADDR%/}/v1/auth/github/login" \
+                    -d "$(jq -n --arg jwt "$jwt" '{role:"commitcv",jwt:$jwt}')")"
+                  token="$(jq -r '.auth.client_token // empty' <<<"$resp")"
+                  [ -n "$token" ] || { echo "::error::Vault login failed: $(jq -c .errors <<<"$resp")"; exit 1; }
+                  echo "::add-mask::$token"
+                  echo "VAULT_TOKEN=$token" >> "$GITHUB_ENV"
+
+                  creds="$(curl -sSf -H "X-Vault-Token: $token" "${VAULT_ADDR%/}/v1/secrets/data/registry")"
+                  user="$(jq -r .data.data.username <<<"$creds")"
+                  pass="$(jq -r .data.data.password <<<"$creds")"
+                  echo "::add-mask::$user"
+                  echo "::add-mask::$pass"
+                  printf '%s' "$pass" | docker login git.travisf.ca -u "$user" --password-stdin
+
+            # For a v* tag, promote the image main already built and signed.
+            - name: Look for an existing image (tags only)
+              id: existing
+              if: startsWith(github.ref, 'refs/tags/v')
+              env:
+                  IMAGE: ${{ fromJSON(steps.config.outputs.config).app.image }}
+              run: |
+                  digest="$(docker buildx imagetools inspect "${IMAGE}:${GITHUB_SHA}" \
+                    --format '{{.Manifest.Digest}}' 2>/dev/null || true)"
+                  if [ -n "$digest" ]; then
+                    echo "reusing ${IMAGE}:${GITHUB_SHA} -> $digest"
+                    echo "digest=$digest" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "no image for ${GITHUB_SHA}, building"
+                  fi
+
+            - name: Build
+              id: build
+              if: steps.existing.outputs.digest == ''
+              env:
+                  IMAGE: ${{ fromJSON(steps.config.outputs.config).app.image }}
+                  PUSH: ${{ steps.target.outputs.environment != '' }}
+              run: |
+                  set -euo pipefail
+                  docker build -t "${IMAGE}:${GITHUB_SHA}" .
+                  [ "$PUSH" = true ] || exit 0
+                  docker push "${IMAGE}:${GITHUB_SHA}"
+                  digest="$(docker inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "${IMAGE}:${GITHUB_SHA}" \
+                    | grep "^${IMAGE}@" | head -n1 | cut -d@ -f2)"
+                  [ -n "$digest" ] || { echo "::error::could not resolve pushed digest"; exit 1; }
+                  echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+            - name: Resolve digest
+              id: digest
+              env:
+                  DIGEST: ${{ steps.existing.outputs.digest || steps.build.outputs.digest }}
+              run: echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+
+            - name: SBOM
+              if: steps.build.outputs.digest != ''
+              uses: ./.ci-tools/actions/syft
+              with:
+                  image: ${{ fromJSON(steps.config.outputs.config).app.image }}
+                  digest: ${{ steps.build.outputs.digest }}
+
+            - name: Vulnerability gate
+              if: steps.build.outputs.digest != '' && fromJSON(steps.config.outputs.config).scan.grype.enabled
+              uses: ./.ci-tools/actions/grype
+              with:
+                  fail-on: ${{ fromJSON(steps.config.outputs.config).scan.grype.fail_on }}
+                  only-fixed: ${{ fromJSON(steps.config.outputs.config).scan.grype.only_fixed }}
+
+            - name: Sign and attest
+              if: steps.build.outputs.digest != ''
+              uses: ./.ci-tools/actions/sign
+              with:
+                  key-ref: ${{ vars.COSIGN_KEY_REF }}
+                  image: ${{ fromJSON(steps.config.outputs.config).app.image }}
+                  digest: ${{ steps.build.outputs.digest }}
+
+    deploy:
+        needs: image
+        if: needs.image.outputs.environment != '' && needs.image.outputs.digest != ''
+        runs-on: gh-commitcv
+        timeout-minutes: 10
+        permissions:
+            contents: read
+            id-token: write
+        concurrency:
+            group: deploy-${{ needs.image.outputs.environment }}
+            cancel-in-progress: false
+        steps:
+            - name: Fetch shared CI actions
+              run: git clone --depth 1 --branch v1 https://git.travisf.ca/infrastructure-ci/ci .ci-tools
+
+            - name: Request deploy
+              uses: ./.ci-tools/actions/deploy-request
+              with:
+                  gateway-url: ${{ vars.DEPLOY_GATEWAY_URL }}
+                  app: commitcv
+                  namespace: ${{ needs.image.outputs.namespace }}
+                  environment: ${{ needs.image.outputs.environment }}
+                  image: git.travisf.ca/infrastructure/commitcv
+                  digest: ${{ needs.image.outputs.digest }}

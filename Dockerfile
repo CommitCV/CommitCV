@@ -21,5 +21,7 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/public ./public
 COPY --from=build /app/server ./server
 
+USER node
+
 EXPOSE 8787
 CMD ["node", "server/index.ts"]
