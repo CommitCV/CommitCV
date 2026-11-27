@@ -200,6 +200,24 @@ jobs:
                   fail-on: ${{ fromJSON(steps.config.outputs.config).scan.grype.fail_on }}
                   only-fixed: ${{ fromJSON(steps.config.outputs.config).scan.grype.only_fixed }}
 
+            # The Vault token has a 10 minute TTL and nothing renews it, so the one
+            # from the first login is expired by the time the build is done.
+            - name: Refresh Vault token
+              if: steps.build.outputs.digest != ''
+              env:
+                  ROLE: ${{ steps.target.outputs.role }}
+              run: |
+                  set -euo pipefail
+                  jwt="$(curl -sSf -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+                    "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${VAULT_ADDR}" | jq -r .value)"
+                  echo "::add-mask::$jwt"
+                  resp="$(curl -sS -X POST "${VAULT_ADDR%/}/v1/auth/github/login" \
+                    -d "$(jq -n --arg jwt "$jwt" --arg role "$ROLE" '{role:$role,jwt:$jwt}')")"
+                  token="$(jq -r '.auth.client_token // empty' <<<"$resp")"
+                  [ -n "$token" ] || { echo "::error::Vault login failed: $(jq -c .errors <<<"$resp")"; exit 1; }
+                  echo "::add-mask::$token"
+                  echo "VAULT_TOKEN=$token" >> "$GITHUB_ENV"
+
             - name: Sign and attest
               if: steps.build.outputs.digest != ''
               uses: ./.ci-tools/actions/sign
