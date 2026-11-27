@@ -17,8 +17,7 @@ import {
 // most one active session.
 
 export type TOpenOutcome =
-    | { kind: "opened" }
-    | { kind: "sessions"; sessions: ISessionInfo[] };
+    { kind: "opened" } | { kind: "sessions"; sessions: ISessionInfo[] };
 
 /** What continuing a session needs from the user before it can load. */
 export type TContinueOutcome =

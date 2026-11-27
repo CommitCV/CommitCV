@@ -1,10 +1,5 @@
 export type GitProvider =
-    | "github"
-    | "gitlab"
-    | "bitbucket"
-    | "gitea"
-    | "forgejo"
-    | "generic";
+    "github" | "gitlab" | "bitbucket" | "gitea" | "forgejo" | "generic";
 
 export interface RemoteConfig {
     url: string;
